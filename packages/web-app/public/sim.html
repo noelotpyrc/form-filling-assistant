@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulation Demo</title>
+  <style>
+    :root {
+      --bg: #f7f7f8;
+      --chat-bg: #ffffff;
+      --user-bg: #2563eb;
+      --user-text: #ffffff;
+      --assistant-bg: #f0f0f5;
+      --assistant-text: #1a1a2e;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --form-accent: #7c3aed;
+      --debug-bg: #1e1e2e;
+      --debug-text: #e0e0e0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      padding: 10px 20px;
+      background: var(--chat-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 16px; font-weight: 600; }
+    .header .badge {
+      font-size: 11px;
+      background: #fef3c7;
+      color: #92400e;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .header .status {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Controls bar */
+    .controls {
+      padding: 8px 20px;
+      background: var(--chat-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .controls label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .controls select, .controls button {
+      font-size: 13px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+    }
+    .controls button.primary {
+      background: var(--user-bg);
+      color: white;
+      border-color: var(--user-bg);
+      font-weight: 600;
+    }
+    .controls button.primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .controls button.danger {
+      background: #dc2626;
+      color: white;
+      border-color: #dc2626;
+    }
+    .controls .spacer { flex: 1; }
+    .controls .turn-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Three-column layout */
+    .main-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Chat panel */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--chat-bg);
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .message {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--assistant-bg);
+      color: var(--assistant-text);
+      border-bottom-left-radius: 4px;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: var(--user-bg);
+      color: var(--user-text);
+      border-bottom-right-radius: 4px;
+    }
+    .message.system {
+      align-self: center;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 4px 12px;
+    }
+    .message.user .sender-label,
+    .message.assistant .sender-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.7;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .cost-info {
+      align-self: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 2px 8px;
+    }
+    .loading {
+      align-self: flex-start;
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+    .loading .dot {
+      width: 8px; height: 8px;
+      background: #9ca3af;
+      border-radius: 50%;
+      animation: bounce 1.4s ease-in-out infinite both;
+    }
+    .loading .dot:nth-child(1) { animation-delay: -0.32s; }
+    .loading .dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+
+    /* Choice buttons in chat */
+    .choice-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 0;
+    }
+    .choice-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--form-accent);
+      background: white;
+      color: var(--form-accent);
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: default;
+    }
+    .choice-btn.selected {
+      background: var(--form-accent);
+      color: white;
+    }
+
+    /* Preview card */
+    .preview-card {
+      background: #f8f9fa;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      max-width: 90%;
+    }
+    .preview-card h3 { font-size: 14px; margin-bottom: 8px; }
+    .preview-card h4 { font-size: 12px; color: var(--form-accent); margin: 8px 0 4px; }
+    .preview-field { display: flex; gap: 8px; padding: 2px 0; }
+    .preview-field .label { color: var(--text-muted); min-width: 120px; }
+
+    /* Action button */
+    .action-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      cursor: default;
+    }
+    .action-btn.save-draft { background: #059669; }
+    .action-btn.submit { background: var(--user-bg); }
+
+    /* Form progress panel */
+    .form-panel {
+      width: 280px;
+      border-left: 1px solid var(--border);
+      background: var(--bg);
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 16px;
+    }
+    .form-panel h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--form-accent);
+    }
+    .progress-bar {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--form-accent);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .section-item {
+      padding: 6px 0;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .section-item .check { color: #22c55e; font-weight: bold; }
+    .section-item .count { color: var(--text-muted); font-size: 12px; }
+
+    /* Debug panel */
+    .debug-panel {
+      width: 340px;
+      background: var(--debug-bg);
+      color: var(--debug-text);
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 12px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .debug-panel h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #a78bfa;
+      margin: 12px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .debug-panel h3:first-child { margin-top: 0; }
+    .candidate {
+      padding: 6px 8px;
+      margin: 4px 0;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+    }
+    .candidate.selected {
+      background: rgba(167, 139, 250, 0.15);
+      border-left: 3px solid #a78bfa;
+    }
+    .candidate .rank {
+      font-weight: 700;
+      color: #fbbf24;
+    }
+    .candidate .intent {
+      color: #60a5fa;
+      font-weight: 600;
+    }
+    .candidate .reasoning {
+      color: #9ca3af;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .candidate .action-detail {
+      color: #34d399;
+      font-size: 11px;
+    }
+    .debug-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .debug-entry .timestamp {
+      color: #6b7280;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Simulation Demo</h1>
+    <span class="badge">SIM</span>
+    <span class="status" id="status">Ready</span>
+  </div>
+
+  <div class="controls" id="controls">
+    <label>Form</label>
+    <select id="formSelect"></select>
+    <label>Persona</label>
+    <select id="personaSelect"></select>
+    <label>Profile</label>
+    <select id="profileSelect"></select>
+    <label>LLM U</label>
+    <select id="modelSelect">
+      <option value="haiku">Haiku</option>
+      <option value="sonnet">Sonnet</option>
+    </select>
+    <label>Effort</label>
+    <select id="effortSelect" title="Model thinking effort level">
+      <option value="low">Low</option>
+      <option value="medium" selected>Medium</option>
+      <option value="high">High</option>
+      <option value="default">Default</option>
+    </select>
+    <label>Output</label>
+    <select id="outputModeSelect" title="LLM U output mode: structured (json-schema) vs streaming (parse)">
+      <option value="structured">Structured</option>
+      <option value="streaming">Streaming</option>
+    </select>
+    <label>Sampling</label>
+    <select id="samplingSelect" title="How to pick from LLM U's ranked candidates">
+      <option value="greedy">Greedy (rank 1)</option>
+      <option value="weighted" selected>Weighted (70/20/10)</option>
+      <option value="uniform">Uniform random</option>
+    </select>
+    <div class="spacer"></div>
+    <span class="turn-count" id="turnCount">Turn 0</span>
+    <button class="primary" id="startBtn" onclick="startSimulation()">Start</button>
+    <button class="danger" id="stopBtn" onclick="stopSimulation()" style="display:none">Stop</button>
+    <button id="exportBtn" onclick="exportLog()" style="display:none">Export</button>
+  </div>
+
+  <div class="main-container">
+    <!-- Chat panel (left) -->
+    <div class="chat-panel">
+      <div class="messages" id="messages">
+        <div class="message system">Select a form, persona, and profile, then click Start.</div>
+      </div>
+    </div>
+
+    <!-- Form progress panel (middle) -->
+    <div class="form-panel" id="formPanel">
+      <h3 id="formPanelTitle">Form Progress</h3>
+      <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-text" id="progressText">No form loaded</div>
+      <div id="sectionList"></div>
+    </div>
+
+    <!-- Debug panel (right) -->
+    <div class="debug-panel" id="debugPanel">
+      <h3>LLM U Candidates</h3>
+      <div id="debugContent">
+        <div style="color:#6b7280">Waiting for simulation...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/system-prompt.js"></script>
+  <script src="/js/action-parser.js"></script>
+  <script src="/js/sim-adapters.js"></script>
+  <script src="/js/logger.js"></script>
+  <script>
+    // ── State ──
+    var simRunning = false;
+    var simStopped = false;
+    var formMeta = null;
+    var formValues = {};
+    var claudeSessionId = null;
+    var turnNumber = 0;
+    var llmUSystemPrompt = null;
+    var llmUSessionId = null; // Session ID for LLM U resume
+    var personaName = '';
+    var totalCostA = 0;
+    var totalCostU = 0;
+    var simLog = []; // Accumulated structured log for export
+    var logSessionId = null; // Logger session ID for dev.html integration
+
+    // ── DOM refs ──
+    var messagesEl = document.getElementById('messages');
+    var statusEl = document.getElementById('status');
+    var startBtn = document.getElementById('startBtn');
+    var stopBtn = document.getElementById('stopBtn');
+    var turnCountEl = document.getElementById('turnCount');
+    var debugContent = document.getElementById('debugContent');
+    var formPanelTitle = document.getElementById('formPanelTitle');
+    var progressFill = document.getElementById('progressFill');
+    var progressText = document.getElementById('progressText');
+    var sectionList = document.getElementById('sectionList');
+
+    // ── Init: load config ──
+    async function init() {
+      try {
+        var res = await fetch('/api/sim/config');
+        var config = await res.json();
+
+        var formSelect = document.getElementById('formSelect');
+        for (var key in config.forms) {
+          var opt = document.createElement('option');
+          opt.value = config.forms[key];
+          opt.textContent = key;
+          formSelect.appendChild(opt);
+        }
+
+        var personaSelect = document.getElementById('personaSelect');
+        for (var key in config.personas) {
+          var opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = config.personas[key].name + ' (' + key + ')';
+          personaSelect.appendChild(opt);
+        }
+
+        var profileSelect = document.getElementById('profileSelect');
+        for (var p of config.profiles) {
+          var opt = document.createElement('option');
+          opt.value = p;
+          opt.textContent = p;
+          profileSelect.appendChild(opt);
+        }
+        // Default to impatient for faster demos
+        profileSelect.value = 'impatient';
+      } catch (err) {
+        addMessage('system', 'Failed to load sim config: ' + err.message);
+      }
+    }
+    init();
+
+    // ── UI helpers ──
+    function addMessage(role, text, label) {
+      var el = document.createElement('div');
+      el.className = 'message ' + role;
+      if (label) {
+        var labelEl = document.createElement('span');
+        labelEl.className = 'sender-label';
+        labelEl.textContent = label;
+        el.appendChild(labelEl);
+      }
+      var textNode = document.createTextNode(text);
+      el.appendChild(textNode);
+      messagesEl.appendChild(el);
+      scrollToBottom();
+      return el;
+    }
+
+    function addCostInfo(text) {
+      var el = document.createElement('div');
+      el.className = 'cost-info';
+      el.textContent = text;
+      messagesEl.appendChild(el);
+      scrollToBottom();
+    }
+
+    function showLoading(label) {
+      var el = document.createElement('div');
+      el.className = 'loading';
+      el.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+      if (label) {
+        var lbl = document.createElement('span');
+        lbl.style.cssText = 'font-size:11px;color:#9ca3af;margin-left:8px;';
+        lbl.textContent = label;
+        el.appendChild(lbl);
+      }
+      messagesEl.appendChild(el);
+      scrollToBottom();
+      return el;
+    }
+
+    function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+    function setStatus(text) { statusEl.textContent = text; }
+
+    function updateTurnCount() {
+      turnCountEl.textContent = 'Turn ' + turnNumber + ' · LLM A: $' + totalCostA.toFixed(3) + ' · LLM U: $' + totalCostU.toFixed(3);
+    }
+
+    // ── Form progress panel ──
+    function updateFormProgress() {
+      if (!formMeta) return;
+      var sections = formMeta.schema.sections;
+      var totalFilled = 0, totalRequired = 0;
+
+      sectionList.innerHTML = '';
+      for (var s of sections) {
+        var req = 0, fill = 0;
+        for (var f of s.fields) {
+          if (f.type === 'group' && f.fields) {
+            // Count group entries present in formValues
+            var groupPrefix = f.field_id + '-';
+            var maxIdx = -1;
+            for (var key in formValues) {
+              if (key.startsWith(groupPrefix)) {
+                var idx = parseInt(key.slice(groupPrefix.length).split('-')[0], 10);
+                if (!isNaN(idx) && idx > maxIdx) maxIdx = idx;
+              }
+            }
+            var entryCount = maxIdx + 1;
+            if (entryCount === 0) {
+              // No entries yet — count required sub-fields once (unfilled)
+              for (var sf of f.fields) {
+                if (sf.required) req++;
+              }
+            } else {
+              for (var ei = 0; ei < entryCount; ei++) {
+                for (var sf of f.fields) {
+                  if (!sf.required) continue;
+                  req++;
+                  var cid = f.field_id + '-' + ei + '-' + sf.field_id;
+                  if (formValues[cid] != null && formValues[cid] !== '') fill++;
+                }
+              }
+            }
+          } else {
+            if (!f.required) continue;
+            req++;
+            if (formValues[f.field_id] != null && formValues[f.field_id] !== '') fill++;
+          }
+        }
+        totalFilled += fill;
+        totalRequired += req;
+
+        var item = document.createElement('div');
+        item.className = 'section-item';
+        var complete = req > 0 && fill >= req;
+        item.innerHTML = '<span>' + s.title + '</span><span class="count">' +
+          (complete ? '<span class="check">✓</span> ' : '') + fill + '/' + req + '</span>';
+        sectionList.appendChild(item);
+      }
+
+      var pct = totalRequired > 0 ? Math.round((totalFilled / totalRequired) * 100) : 0;
+      progressFill.style.width = pct + '%';
+      progressText.textContent = totalFilled + '/' + totalRequired + ' required fields (' + pct + '%)';
+    }
+
+    // ── Render actions in chat (choice buttons, preview, buttons) ──
+    function renderAction(action) {
+      switch (action.type) {
+        case 'ask_choice': {
+          var container = document.createElement('div');
+          container.className = 'choice-buttons';
+          for (var opt of (action.options || [])) {
+            var btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.textContent = opt.label;
+            container.appendChild(btn);
+          }
+          messagesEl.appendChild(container);
+          scrollToBottom();
+          break;
+        }
+        case 'show_preview': {
+          var card = document.createElement('div');
+          card.className = 'preview-card';
+          if (action.title) {
+            var h3 = document.createElement('h3');
+            h3.textContent = action.title;
+            card.appendChild(h3);
+          }
+          for (var section of (action.sections || [])) {
+            var div = document.createElement('div');
+            var h4 = document.createElement('h4');
+            h4.textContent = section.title;
+            div.appendChild(h4);
+            for (var field of (section.fields || [])) {
+              var row = document.createElement('div');
+              row.className = 'preview-field';
+              row.innerHTML = '<span class="label">' + field.label + '</span><span class="value">' + field.value + '</span>';
+              div.appendChild(row);
+            }
+            card.appendChild(div);
+          }
+          messagesEl.appendChild(card);
+          scrollToBottom();
+          break;
+        }
+        case 'show_button': {
+          var btn = document.createElement('button');
+          btn.className = 'action-btn';
+          if (action.button === 'save_draft') {
+            btn.className += ' save-draft';
+            btn.textContent = 'Save Draft';
+          } else if (action.button === 'submit') {
+            btn.className += ' submit';
+            btn.textContent = 'Submit Application';
+          }
+          messagesEl.appendChild(btn);
+          scrollToBottom();
+          break;
+        }
+      }
+    }
+
+    // ── Debug panel: append LLM U candidates (cumulative log) ──
+    function showCandidates(turn, candidates, selectedIndex, costUsd, durationMs) {
+      // Add turn header with selection info
+      var mode = document.getElementById('samplingSelect').value;
+      var header = document.createElement('h3');
+      header.textContent = 'Turn ' + turn;
+      header.style.marginTop = debugContent.children.length > 0 ? '16px' : '0';
+      debugContent.appendChild(header);
+
+      // Cost/duration line
+      var costLine = document.createElement('div');
+      costLine.style.cssText = 'font-size:11px;color:#9ca3af;margin-bottom:2px;';
+      costLine.textContent = 'LLM U: $' + (costUsd || 0).toFixed(4) + ' · ' + ((durationMs || 0) / 1000).toFixed(1) + 's';
+      debugContent.appendChild(costLine);
+
+      // Selection summary line
+      var selInfo = document.createElement('div');
+      selInfo.style.cssText = 'font-size:12px;color:#6b7280;margin-bottom:6px;';
+      var picked = candidates[selectedIndex];
+      selInfo.textContent = '→ Picked rank ' + picked.rank + ' (' + picked.intent + ') via ' + mode +
+        (selectedIndex > 0 ? ' — not rank 1!' : '');
+      if (selectedIndex > 0) selInfo.style.color = '#f59e0b';
+      debugContent.appendChild(selInfo);
+
+      for (var i = 0; i < candidates.length; i++) {
+        var c = candidates[i];
+        var div = document.createElement('div');
+        div.className = 'candidate' + (i === selectedIndex ? ' selected' : '');
+
+        var actionLines = [];
+        for (var a of c.actions) {
+          if (a.text) actionLines.push(a.action + ': "' + (a.text.length > 80 ? a.text.slice(0, 80) + '...' : a.text) + '"');
+          else if (a.label) actionLines.push(a.action + ': "' + a.label + '"');
+          else if (a.fields) actionLines.push(a.action + ': {' + Object.keys(a.fields).join(', ') + '}');
+          else actionLines.push(a.action);
+        }
+
+        div.innerHTML =
+          '<span class="rank">[' + c.rank + ']' + (i === selectedIndex ? ' ✓' : '') + '</span> ' +
+          '<span class="intent">' + c.intent + '</span>' +
+          '<div class="reasoning">' + c.reasoning + '</div>' +
+          '<div class="action-detail">' + actionLines.join('<br>') + '</div>';
+        debugContent.appendChild(div);
+      }
+      // Auto-scroll to bottom
+      debugContent.scrollTop = debugContent.scrollHeight;
+    }
+
+    function addDebugEntry(text) {
+      var entry = document.createElement('div');
+      entry.className = 'debug-entry';
+      var ts = new Date().toLocaleTimeString();
+      entry.innerHTML = '<span class="timestamp">' + ts + '</span> ' + text;
+      debugContent.appendChild(entry);
+      debugContent.scrollTop = debugContent.scrollHeight;
+    }
+
+    // ── SSE call to LLM A (same as the web app's /api/generate) ──
+    async function callLlmA(fullPrompt, sessionId) {
+      var controller = new AbortController();
+      var res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: fullPrompt, resume: sessionId || undefined }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = '';
+      var fullText = '';
+      var eventType = null;
+      var resultSessionId = '';
+      var durationMs = 0;
+      var costUsd = 0;
+
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (var line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ') && eventType) {
+            try {
+              var data = JSON.parse(line.slice(6));
+              if (eventType === 'text') fullText += data.text;
+              else if (eventType === 'done') {
+                resultSessionId = data.session_id;
+                durationMs = data.duration_ms;
+                costUsd = data.cost_usd;
+              }
+              else if (eventType === 'error') throw new Error(data.message);
+            } catch (e) { if (eventType === 'error') throw e; }
+            eventType = null;
+          }
+        }
+      }
+
+      return { text: fullText, sessionId: resultSessionId, durationMs: durationMs, costUsd: costUsd };
+    }
+
+    // ── Candidate sampling ──
+    // Weighted random selection across ranked candidates.
+    // Returns the index of the selected candidate.
+    function sampleCandidate(candidates) {
+      var mode = document.getElementById('samplingSelect').value;
+      var n = candidates.length;
+      if (n === 0) return -1;
+      if (n === 1 || mode === 'greedy') return 0;
+
+      if (mode === 'uniform') {
+        return Math.floor(Math.random() * n);
+      }
+
+      // Weighted: 70/20/10 for rank 1/2/3 (normalized if fewer candidates)
+      var weights = [0.7, 0.2, 0.1];
+      // Truncate to number of candidates and normalize
+      var w = weights.slice(0, n);
+      var sum = w.reduce(function(a, b) { return a + b; }, 0);
+      var r = Math.random() * sum;
+      var cumulative = 0;
+      for (var i = 0; i < w.length; i++) {
+        cumulative += w[i];
+        if (r <= cumulative) return i;
+      }
+      return 0; // fallback
+    }
+
+    // ── Call LLM U via server endpoint ──
+    async function callLlmU(screenView) {
+      var model = document.getElementById('modelSelect').value;
+      var effort = document.getElementById('effortSelect').value;
+      var res = await fetch('/api/generate-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: 'Here is what you see on your screen right now:\n\n' + screenView,
+          systemPrompt: llmUSystemPrompt,
+          model: model,
+          resume: llmUSessionId || undefined,
+          effort: effort !== 'default' ? effort : undefined,
+        }),
+      });
+      if (!res.ok) {
+        var err = await res.json();
+        throw new Error(err.error || 'LLM U call failed');
+      }
+      var data = await res.json();
+      // Capture session ID for resume on next turn
+      if (data.sessionId) {
+        llmUSessionId = data.sessionId;
+      }
+      if (data.costUsd) {
+        totalCostU += data.costUsd;
+      }
+      // Return candidates + metadata
+      var result = data.data;
+      result._costUsd = data.costUsd || 0;
+      result._durationMs = data.durationMs || 0;
+      return result;
+    }
+
+    // ── Call LLM U via streaming endpoint (no json-schema) ──
+    async function callLlmUStreaming(screenView) {
+      var model = document.getElementById('modelSelect').value;
+      var effort = document.getElementById('effortSelect').value;
+      var prompt = 'Here is what you see on your screen right now:\n\n' + screenView;
+
+      // Use the same /api/generate streaming endpoint, but pass systemPrompt/model/effort
+      var res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: prompt,
+          systemPrompt: llmUSystemPrompt,
+          model: model,
+          resume: llmUSessionId || undefined,
+          effort: effort !== 'default' ? effort : undefined,
+        }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      // Consume the SSE stream (same parsing as callLlmA)
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = '';
+      var fullText = '';
+      var eventType = null;
+      var resultSessionId = '';
+      var durationMs = 0;
+      var costUsd = 0;
+
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (var line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ') && eventType) {
+            try {
+              var data = JSON.parse(line.slice(6));
+              if (eventType === 'text') fullText += data.text;
+              else if (eventType === 'done') {
+                resultSessionId = data.session_id;
+                durationMs = data.duration_ms;
+                costUsd = data.cost_usd;
+              }
+              else if (eventType === 'error') throw new Error(data.message);
+            } catch (e) { if (eventType === 'error') throw e; }
+            eventType = null;
+          }
+        }
+      }
+
+      // Capture session ID for resume
+      if (resultSessionId) llmUSessionId = resultSessionId;
+      if (costUsd) totalCostU += costUsd;
+
+      // Parse JSON from the streamed text (model may wrap in ```json ... ```)
+      var jsonText = fullText.trim();
+      var fenceMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) jsonText = fenceMatch[1].trim();
+
+      var parsed;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch (e) {
+        throw new Error('LLM U streaming: failed to parse JSON from response (' + jsonText.length + ' chars). Preview: ' + jsonText.slice(0, 200));
+      }
+
+      parsed._costUsd = costUsd || 0;
+      parsed._durationMs = durationMs || 0;
+      return parsed;
+    }
+
+    // ── Resolve file key from persona ──
+    async function resolveFile(fileKey) {
+      var res = await fetch('/api/sim/resolve-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ persona: personaName, fileKey: fileKey }),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    }
+
+    // ── Apply set_fields to local formValues ──
+    function applySetFields(fields) {
+      if (!Array.isArray(fields)) return;
+      for (var f of fields) {
+        var fieldId = f.field_id;
+        var dotMatch = fieldId.match(/^(.+)\.(\d+)\.(.+)$/);
+        var compositeId = dotMatch
+          ? dotMatch[1] + '-' + parseInt(dotMatch[2]) + '-' + dotMatch[3]
+          : fieldId;
+        formValues[compositeId] = f.value;
+      }
+    }
+
+    // ── Main simulation loop ──
+    async function startSimulation() {
+      if (simRunning) return;
+
+      // Read config
+      var formFile = document.getElementById('formSelect').value;
+      personaName = document.getElementById('personaSelect').value;
+      var profileName = document.getElementById('profileSelect').value;
+
+      if (!formFile) { alert('Select a form'); return; }
+
+      // Reset state
+      simRunning = true;
+      simStopped = false;
+      formValues = {};
+      claudeSessionId = null;
+      llmUSessionId = null;
+      turnNumber = 0;
+      totalCostA = 0;
+      totalCostU = 0;
+      simLog = [];
+      messagesEl.innerHTML = '';
+      debugContent.innerHTML = '<div style="color:#6b7280">Starting simulation...</div>';
+      document.getElementById('exportBtn').style.display = 'none';
+      startBtn.style.display = 'none';
+      stopBtn.style.display = '';
+      document.getElementById('formSelect').disabled = true;
+      document.getElementById('personaSelect').disabled = true;
+      document.getElementById('profileSelect').disabled = true;
+
+      try {
+        // Load form
+        var formRes = await fetch('/forms/' + formFile);
+        formMeta = await formRes.json();
+        formPanelTitle.textContent = formMeta.name;
+        updateFormProgress();
+
+        var modelName = document.getElementById('modelSelect').value;
+        var effortLevel = document.getElementById('effortSelect').value;
+        var samplingMode = document.getElementById('samplingSelect').value;
+        var outputMode = document.getElementById('outputModeSelect').value;
+        addMessage('system', 'Simulation: ' + formMeta.name + ' × ' + personaName + ' × ' + profileName + ' (model=' + modelName + ', effort=' + effortLevel + ', output=' + outputMode + ', sampling=' + samplingMode + ')');
+        logEntry({ type: 'session_start', form: formMeta.name, persona: personaName, profile: profileName, model: modelName, effort: effortLevel, output: outputMode, sampling: samplingMode });
+
+        // Logger: write to IndexedDB so session appears in dev.html
+        logSessionId = 'sim-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        Logger.sessionStart(logSessionId, formMeta.form_id, '[SIM] ' + formMeta.name + ' × ' + personaName + ' × ' + profileName);
+
+        // Get LLM U system prompt
+        setStatus('Building LLM U prompt...');
+        var promptRes = await fetch('/api/sim/llm-u-prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ persona: personaName, profile: profileName }),
+        });
+        var promptData = await promptRes.json();
+        llmUSystemPrompt = promptData.systemPrompt;
+        addDebugEntry('LLM U prompt: ' + llmUSystemPrompt.length + ' chars');
+
+        // Turn 0: send greeting to LLM A
+        var greeting = 'Help me fill out this form.';
+        addMessage('user', greeting, 'USER (LLM U)');
+
+        setStatus('LLM A thinking...');
+        var loadingEl = showLoading('LLM A');
+        var systemPrompt = SystemPrompt.build(formMeta, '', formValues);
+        var fullPrompt = systemPrompt + '\n\n---\n\nUser message: ' + greeting;
+
+        var llmAResult = await callLlmA(fullPrompt, null);
+        loadingEl.remove();
+        claudeSessionId = llmAResult.sessionId;
+        totalCostA += llmAResult.costUsd;
+        turnNumber++;
+
+        // Display LLM A response
+        var assistantText = ActionParser.extractText(llmAResult.text);
+        var actions = ActionParser.parseActions(llmAResult.text);
+        addMessage('assistant', assistantText, 'LLM A');
+        for (var action of actions) {
+          if (action.type === 'set_fields') applySetFields(action.fields);
+          renderAction(action);
+        }
+        updateFormProgress();
+        addCostInfo('Turn ' + turnNumber + ': $' + llmAResult.costUsd.toFixed(4) + ' · ' + (llmAResult.durationMs / 1000).toFixed(1) + 's');
+        updateTurnCount();
+        logEntry({ type: 'llm_a', turn: turnNumber, text: assistantText, rawText: llmAResult.text, actions: actions, costUsd: llmAResult.costUsd, durationMs: llmAResult.durationMs, claudeSessionId: claudeSessionId });
+            Logger.modelOutput(logSessionId, { rawText: llmAResult.text, parsedActions: actions, durationMs: llmAResult.durationMs, costUsd: llmAResult.costUsd, claudeSessionId: claudeSessionId });
+
+        // Stuck detection
+        var STUCK_THRESHOLD = 3;
+        var lastIntent = '';
+        var lastScreenHash = '';
+        var intentRepeatCount = 0;
+
+        // Main loop
+        var MAX_TURNS = 30;
+        while (turnNumber < MAX_TURNS && !simStopped) {
+          // Render screen view for LLM U
+          assistantText = ActionParser.extractText(llmAResult.text);
+          actions = ActionParser.parseActions(llmAResult.text);
+          var formMetaForRenderer = { name: formMeta.name, schema: formMeta.schema };
+          var screenView = SimAdapters.renderScreenView(assistantText, actions, formMetaForRenderer, formValues);
+
+          // Check for button
+          var buttonAction = actions.find(function(a) { return a.type === 'show_button'; });
+
+          // Log the screen view sent to LLM U
+          logEntry({ type: 'middleman_to_llm_u', turn: turnNumber + 1, screenView: screenView, llmUSessionId: llmUSessionId || null });
+
+          // Call LLM U
+          setStatus('LLM U deciding...');
+          loadingEl = showLoading('LLM U');
+          var llmUResponse;
+          try {
+            var outputMode = document.getElementById('outputModeSelect').value;
+            llmUResponse = outputMode === 'streaming'
+              ? await callLlmUStreaming(screenView)
+              : await callLlmU(screenView);
+          } catch (err) {
+            loadingEl.remove();
+            logEntry({ type: 'llm_u_error', turn: turnNumber + 1, error: err.message, screenView: screenView, llmUSessionId: llmUSessionId || null });
+            addMessage('system', 'LLM U error: ' + err.message);
+            break;
+          }
+          loadingEl.remove();
+
+          if (!llmUResponse.candidates || llmUResponse.candidates.length === 0) {
+            addMessage('system', 'LLM U produced no candidates. Stopping.');
+            break;
+          }
+
+          // Sample a candidate (greedy, weighted, or uniform)
+          var selectedIndex = sampleCandidate(llmUResponse.candidates);
+
+          // Show candidates in debug panel (highlight selected)
+          showCandidates(turnNumber + 1, llmUResponse.candidates, selectedIndex, llmUResponse._costUsd, llmUResponse._durationMs);
+          logEntry({ type: 'llm_u', turn: turnNumber + 1, candidates: llmUResponse.candidates, selectedIndex: selectedIndex, screenView: screenView });
+
+          // Pick selected candidate and process ALL actions
+          var selected = llmUResponse.candidates[selectedIndex];
+          var allActions = selected.actions || [];
+
+          if (allActions.length === 0) {
+            addMessage('system', 'LLM U candidate [' + selected.rank + '] has no actions. Stopping.');
+            break;
+          }
+
+          // ── Process ALL actions via processActions() ──
+          var plan = SimAdapters.processActions(allActions, formValues, buttonAction ? buttonAction.button : null);
+
+          // Log the action processing plan
+          logEntry({
+            type: 'middleman_plan', turn: turnNumber + 1,
+            selectedRank: selected.rank, intent: selected.intent,
+            inputActions: allActions,
+            plan: {
+              stop: plan.stop,
+              fieldEdits: plan.fieldEdits,
+              messageCount: plan.messages.length,
+              messages: plan.messages.map(function(m) { return { text: m.text.slice(0, 200), isSystem: m.isSystem || false, fileKey: m.fileKey || null }; }),
+              clickButton: plan.clickButton,
+            },
+          });
+
+          // Stuck detection
+          var screenHash = screenView.slice(0, 200);
+          if (selected.intent === lastIntent && screenHash === lastScreenHash) {
+            intentRepeatCount++;
+            if (intentRepeatCount >= STUCK_THRESHOLD) {
+              addMessage('system', 'Stuck loop detected: "' + selected.intent + '" repeated ' + intentRepeatCount + ' times. Stopping.');
+              break;
+            }
+          } else {
+            lastIntent = selected.intent;
+            lastScreenHash = screenHash;
+            intentRepeatCount = 1;
+          }
+
+          // Stop action
+          if (plan.stop) {
+            addMessage('system', 'LLM U requested stop.');
+            logEntry({ type: 'user_action', turn: turnNumber + 1, intent: selected.intent, actions: allActions });
+            break;
+          }
+
+          // Apply field edits (silent, no model call)
+          if (Object.keys(plan.fieldEdits).length > 0) {
+            Object.assign(formValues, plan.fieldEdits);
+            addMessage('system', 'User edited fields: ' + Object.keys(plan.fieldEdits).join(', '));
+            updateFormProgress();
+          }
+
+          // Resolve file references in plan messages
+          for (var mi = 0; mi < plan.messages.length; mi++) {
+            var pm = plan.messages[mi];
+            if (pm.fileKey) {
+              var fileData = await resolveFile(pm.fileKey);
+              if (fileData) {
+                addDebugEntry('Resolved file: ' + pm.fileKey + ' → ' + fileData.filename);
+                pm.resolvedFile = fileData;
+              } else {
+                addDebugEntry('Unknown file: ' + pm.fileKey);
+              }
+            }
+          }
+
+          // Log the selected user action
+          logEntry({ type: 'user_action', turn: turnNumber + 1, intent: selected.intent, actions: allActions, formStateSnapshot: Object.assign({}, formValues) });
+          Logger.userMessage(logSessionId, '[LLM U] intent=' + selected.intent + ' action=' + allActions.map(function(a){return a.action}).join('+'), 'sim_user');
+
+          // ── Handle click_button (special 2-turn flow) ──
+          if (plan.clickButton) {
+            turnNumber++;
+            var buttonType = plan.clickButton;
+            var clickMsg = buttonType === 'save_draft' ? '[system] User clicked: Save Draft' : '[system] User clicked: Submit';
+            addMessage('system', clickMsg);
+
+            logEntry({ type: 'middleman_to_llm_a', turn: turnNumber, messageForLlmA: clickMsg, claudeSessionId: claudeSessionId });
+
+            setStatus('LLM A thinking...');
+            loadingEl = showLoading('LLM A');
+            systemPrompt = SystemPrompt.build(formMeta, '', formValues);
+            fullPrompt = systemPrompt + '\n\n---\n\nUser message: ' + clickMsg;
+            llmAResult = await callLlmA(fullPrompt, claudeSessionId);
+            loadingEl.remove();
+            claudeSessionId = llmAResult.sessionId;
+            totalCostA += llmAResult.costUsd;
+
+            assistantText = ActionParser.extractText(llmAResult.text);
+            actions = ActionParser.parseActions(llmAResult.text);
+            addMessage('assistant', assistantText, 'LLM A');
+            for (var a of actions) {
+              if (a.type === 'set_fields') applySetFields(a.fields);
+              renderAction(a);
+            }
+            updateFormProgress();
+            addCostInfo('Turn ' + turnNumber + ': $' + llmAResult.costUsd.toFixed(4));
+            updateTurnCount();
+            logEntry({ type: 'llm_a', turn: turnNumber, text: assistantText, rawText: llmAResult.text, actions: actions, costUsd: llmAResult.costUsd, durationMs: llmAResult.durationMs, claudeSessionId: claudeSessionId });
+            Logger.modelOutput(logSessionId, { rawText: llmAResult.text, parsedActions: actions, durationMs: llmAResult.durationMs, costUsd: llmAResult.costUsd, claudeSessionId: claudeSessionId });
+
+            // Inject button response
+            var responseMsg = buttonType === 'save_draft'
+              ? '[system] Draft saved successfully.'
+              : '[system] Submission saved. Reference: APP-2026-' + String(Math.floor(Math.random() * 100000)).padStart(5, '0');
+            addMessage('system', responseMsg);
+
+            // Feed response back to LLM A
+            turnNumber++;
+            setStatus('LLM A thinking...');
+            loadingEl = showLoading('LLM A');
+            systemPrompt = SystemPrompt.build(formMeta, '', formValues);
+            fullPrompt = systemPrompt + '\n\n---\n\nUser message: ' + responseMsg;
+            llmAResult = await callLlmA(fullPrompt, claudeSessionId);
+            loadingEl.remove();
+            claudeSessionId = llmAResult.sessionId;
+            totalCostA += llmAResult.costUsd;
+
+            assistantText = ActionParser.extractText(llmAResult.text);
+            actions = ActionParser.parseActions(llmAResult.text);
+            addMessage('assistant', assistantText, 'LLM A');
+            for (var a of actions) {
+              if (a.type === 'set_fields') applySetFields(a.fields);
+              renderAction(a);
+            }
+            updateFormProgress();
+            updateTurnCount();
+            logEntry({ type: 'llm_a', turn: turnNumber, text: assistantText, rawText: llmAResult.text, actions: actions, costUsd: llmAResult.costUsd, durationMs: llmAResult.durationMs, claudeSessionId: claudeSessionId });
+            Logger.modelOutput(logSessionId, { rawText: llmAResult.text, parsedActions: actions, durationMs: llmAResult.durationMs, costUsd: llmAResult.costUsd, claudeSessionId: claudeSessionId });
+            continue;
+          }
+
+          // ── Handle messages (message, select_choice, and combos) ──
+          if (plan.messages.length > 0) {
+            var messageForLlmA = SimAdapters.buildLlmAMessage(plan.messages);
+
+            if (messageForLlmA) {
+              turnNumber++;
+
+              // Log the combined message being sent to LLM A
+              logEntry({
+                type: 'middleman_to_llm_a', turn: turnNumber,
+                messageForLlmA: messageForLlmA.slice(0, 2000),
+                claudeSessionId: claudeSessionId,
+              });
+
+              // Display each message in chat UI
+              for (var di = 0; di < plan.messages.length; di++) {
+                var dm = plan.messages[di];
+                if (dm.isSystem) {
+                  addMessage('system', dm.text);
+                  // Highlight selected choice button
+                  var choiceAction = allActions.find(function(a) { return a.action === 'select_choice'; });
+                  if (choiceAction) {
+                    var btns = messagesEl.querySelectorAll('.choice-btn');
+                    btns.forEach(function(b) {
+                      if (b.textContent === choiceAction.label) b.classList.add('selected');
+                    });
+                  }
+                } else {
+                  var displayText = dm.text;
+                  if (dm.resolvedFile) {
+                    displayText = '[Uploaded file: ' + dm.resolvedFile.filename + '] ' + dm.text;
+                  }
+                  addMessage('user', displayText, 'USER (LLM U)');
+                }
+              }
+
+              setStatus('LLM A thinking...');
+              loadingEl = showLoading('LLM A');
+              systemPrompt = SystemPrompt.build(formMeta, '', formValues);
+              fullPrompt = systemPrompt + '\n\n---\n\nUser message: ' + messageForLlmA;
+              llmAResult = await callLlmA(fullPrompt, claudeSessionId);
+              loadingEl.remove();
+              claudeSessionId = llmAResult.sessionId;
+              totalCostA += llmAResult.costUsd;
+
+              assistantText = ActionParser.extractText(llmAResult.text);
+              actions = ActionParser.parseActions(llmAResult.text);
+              addMessage('assistant', assistantText, 'LLM A');
+              for (var a of actions) {
+                if (a.type === 'set_fields') applySetFields(a.fields);
+                renderAction(a);
+              }
+              updateFormProgress();
+              addCostInfo('Turn ' + turnNumber + ': $' + llmAResult.costUsd.toFixed(4) + ' · ' + (llmAResult.durationMs / 1000).toFixed(1) + 's');
+              updateTurnCount();
+              logEntry({ type: 'llm_a', turn: turnNumber, text: assistantText, rawText: llmAResult.text, actions: actions, costUsd: llmAResult.costUsd, durationMs: llmAResult.durationMs, claudeSessionId: claudeSessionId });
+              Logger.modelOutput(logSessionId, { rawText: llmAResult.text, parsedActions: actions, durationMs: llmAResult.durationMs, costUsd: llmAResult.costUsd, claudeSessionId: claudeSessionId });
+              continue;
+            }
+          }
+
+          // Field edits only (no messages, no button) — just advance the turn
+          if (Object.keys(plan.fieldEdits).length > 0) {
+            turnNumber++;
+            updateTurnCount();
+            continue;
+          }
+
+          // Fallback
+          addMessage('system', 'No actionable output. Stopping.');
+          break;
+        }
+
+        if (turnNumber >= MAX_TURNS) {
+          addMessage('system', 'Max turns (' + MAX_TURNS + ') reached.');
+        }
+
+      } catch (err) {
+        addMessage('system', 'Simulation error: ' + err.message);
+        console.error(err);
+      }
+
+      // Done
+      logEntry({ type: 'session_end', turn: turnNumber, costA: totalCostA, costU: totalCostU, formValues: Object.assign({}, formValues) });
+      simRunning = false;
+      startBtn.style.display = '';
+      startBtn.textContent = 'Restart';
+      stopBtn.style.display = 'none';
+      document.getElementById('exportBtn').style.display = '';
+      document.getElementById('formSelect').disabled = false;
+      document.getElementById('personaSelect').disabled = false;
+      document.getElementById('profileSelect').disabled = false;
+      setStatus('Done — ' + turnNumber + ' turns');
+      addMessage('system', 'Simulation complete. ' + turnNumber + ' turns, LLM A: $' + totalCostA.toFixed(4) + ', LLM U: $' + totalCostU.toFixed(4));
+    }
+
+    function stopSimulation() {
+      simStopped = true;
+      setStatus('Stopping...');
+    }
+
+    // ── Log entry helper ──
+    function logEntry(entry) {
+      entry.timestamp = new Date().toISOString();
+      simLog.push(entry);
+    }
+
+    // ── Export log as JSONL download ──
+    function exportLog() {
+      if (simLog.length === 0) { alert('No log to export'); return; }
+
+      var profileName = document.getElementById('profileSelect').value;
+      var formKey = document.getElementById('formSelect').selectedOptions[0]?.textContent || 'form';
+      var filename = 'sim-' + formKey + '-' + personaName + '-' + profileName + '-' + new Date().toISOString().replace(/[:.]/g, '-') + '.jsonl';
+
+      var lines = simLog.map(function(e) { return JSON.stringify(e); }).join('\n');
+      var blob = new Blob([lines], { type: 'application/jsonl' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

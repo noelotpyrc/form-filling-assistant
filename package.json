@@ -1,0 +1,30 @@
+{
+  "name": "form-filling-assistant",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:shared": "npm run build -w packages/shared",
+    "dev:masters": "npm run dev -w packages/mock-masters",
+    "dev:patient": "npm run dev -w packages/mock-patient",
+    "dev:masters-b": "npm run dev -w packages/mock-masters-b",
+    "dev:mcp": "npm run dev -w packages/mcp-server",
+    "dev:web": "npx tsx packages/web-app/src/index.ts",
+    "dev:persist": "npm run dev -w packages/persistence-server",
+    "typecheck": "npm run typecheck --workspaces",
+    "test:integration": "npm test -w packages/integration-tests",
+    "e2e": "npx tsx packages/integration-tests/src/e2e/run-scenario.ts",
+    "replay": "npx tsx packages/integration-tests/src/e2e/replay-session.ts",
+    "e2e:sim": "npx tsx packages/integration-tests/src/e2e/simulator/simulate.ts",
+    "demo:a2u": "npx tsx packages/integration-tests/src/e2e/simulator/demo-a2u.ts",
+    "demo:u2a": "npx tsx packages/integration-tests/src/e2e/simulator/demo-u2a.ts",
+    "demo:llm-u": "npx tsx packages/integration-tests/src/e2e/simulator/demo-llm-u.ts",
+    "vault": "npx tsx packages/mcp-server/src/cli/vault-cli.ts",
+    "model-test": "npx tsx packages/integration-tests/src/e2e/model-test/test-small-models.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

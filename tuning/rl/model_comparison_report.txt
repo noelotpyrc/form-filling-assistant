@@ -1,0 +1,225 @@
+================================================================================
+LoRA ADAPTER ANALYSIS REPORT
+================================================================================
+Adapter:    ./models/qwen35-08b-dspy-format-lora
+Base model: unsloth/Qwen3.5-0.8B
+LoRA rank:  16  alpha: 16
+LoRA pairs: 186  params: 10,822,656
+
+────────────────────────────────────────────────────────────────────────────────
+ARCHITECTURE MAP (Qwen3.5-0.8B)
+────────────────────────────────────────────────────────────────────────────────
+Layer    Attn Type    Attn Modules                                          MLP Modules
+-------  -----------  ----------------------------------------------------  -----------------------------
+0        linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+1        linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+2        linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+★  3     self_attn    q_proj, k_proj, v_proj, o_proj                        gate_proj, up_proj, down_proj
+4        linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+5        linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+6        linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+★  7     self_attn    q_proj, k_proj, v_proj, o_proj                        gate_proj, up_proj, down_proj
+8        linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+9        linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+10       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+★ 11     self_attn    q_proj, k_proj, v_proj, o_proj                        gate_proj, up_proj, down_proj
+12       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+13       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+14       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+★ 15     self_attn    q_proj, k_proj, v_proj, o_proj                        gate_proj, up_proj, down_proj
+16       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+17       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+18       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+★ 19     self_attn    q_proj, k_proj, v_proj, o_proj                        gate_proj, up_proj, down_proj
+20       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+21       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+22       linear_attn  in_proj_qkv, in_proj_z, in_proj_b, in_proj_a, o_proj  gate_proj, up_proj, down_proj
+★ 23     self_attn    q_proj, k_proj, v_proj, o_proj                        gate_proj, up_proj, down_proj
+  ★ = standard self-attention layer (6 of 24)
+
+────────────────────────────────────────────────────────────────────────────────
+PER-LAYER EFFECTIVE WEIGHT CHANGE  ||ΔW|| = ||B @ A||
+────────────────────────────────────────────────────────────────────────────────
+  Layer  Type           #Mod    Total ||ΔW||    Avg ||ΔW||    Max ||ΔW||  Relative
+-------  -----------  ------  --------------  ------------  ------------  ------------------------------
+      0  linear_attn       8          5.0696        0.6337        1.1832  ████████████
+      1  linear_attn       8          5.6031        0.7004        1.3119  ██████████████
+      2  linear_attn       8          5.5298        0.6912        1.2765  █████████████
+      3  self_attn         7          4.8868        0.6981        1.3328  ████████████
+      4  linear_attn       8          5.8184        0.7273        1.3552  ██████████████
+      5  linear_attn       8          5.9405        0.7426        1.351   ███████████████
+      6  linear_attn       8          6.1147        0.7643        1.3813  ███████████████
+      7  self_attn         7          5.5782        0.7969        1.3803  ██████████████
+      8  linear_attn       8          6.6003        0.825         1.5     ████████████████
+      9  linear_attn       8          6.7158        0.8395        1.6114  ████████████████
+     10  linear_attn       8          7.1092        0.8886        1.5388  █████████████████
+     11  self_attn         7         10.4318        1.4903        4.8857  ██████████████████████████
+     12  linear_attn       8          7.1885        0.8986        1.6833  ██████████████████
+     13  linear_attn       8          7.6336        0.9542        1.6723  ███████████████████
+     14  linear_attn       8          7.193         0.8991        1.6282  ██████████████████
+     15  self_attn         7          9.2298        1.3185        3.8028  ███████████████████████
+     16  linear_attn       8          7.44          0.93          1.8225  ██████████████████
+     17  linear_attn       8          8.0969        1.0121        2.0924  ████████████████████
+     18  linear_attn       8          8.5811        1.0726        2.5257  █████████████████████
+     19  self_attn         7         10.3052        1.4722        4.2299  ██████████████████████████
+     20  linear_attn       8          9.3108        1.1639        3.0493  ███████████████████████
+     21  linear_attn       8         10.8659        1.3582        3.9511  ███████████████████████████
+     22  linear_attn       8         11.8531        1.4816        5.0377  ██████████████████████████████
+     23  self_attn         7         10.3863        1.4838        4.1957  ██████████████████████████
+
+────────────────────────────────────────────────────────────────────────────────
+SUMMARY BY COMPONENT TYPE
+────────────────────────────────────────────────────────────────────────────────
+
+  LINEAR_ATTN (90 modules)
+  Gated DeltaNet linear attention (18 layers). Efficient local pattern recognition with O(n) complexity. Handles token-level patterns, format compliance, and local syntactic structure.
+    Avg ||ΔW||:   0.791958
+    Max ||ΔW||:   5.037716
+    Total ||ΔW||: 71.276236
+
+  MLP (72 modules)
+  Feed-forward networks (24 layers, one per layer). Stores factual knowledge and learned transformations. Acts as the model's 'memory' for patterns learned during training.
+    Avg ||ΔW||:   1.133735
+    Max ||ΔW||:   2.203390
+    Total ||ΔW||: 81.628894
+
+  SELF_ATTN (24 modules)
+  Standard self-attention (6 layers at positions 3,7,11,15,19,23). Handles complex reasoning, long-range dependencies, and relational understanding between distant tokens. Most impactful for connecting user text to field schemas.
+    Avg ||ΔW||:   1.274047
+    Max ||ΔW||:   4.885684
+    Total ||ΔW||: 30.577135
+
+────────────────────────────────────────────────────────────────────────────────
+TOP 15 MOST CHANGED MODULES
+────────────────────────────────────────────────────────────────────────────────
+Module Path                       Attn Type      ||ΔW||    Mean |ΔW|
+--------------------------------  -----------  --------  -----------
+layer.22.linear_attn.in_proj_qkv  linear_attn   5.03772   0.00113807
+layer.11.self_attn.q_proj         self_attn     4.88568   0.0014155
+layer.19.self_attn.q_proj         self_attn     4.22993   0.0010646
+layer.23.self_attn.q_proj         self_attn     4.1957    0.00119358
+layer.21.linear_attn.in_proj_qkv  linear_attn   3.95108   0.0009869
+layer.15.self_attn.q_proj         self_attn     3.80284   0.00107471
+layer.20.linear_attn.in_proj_qkv  linear_attn   3.04932   0.00080866
+layer.18.linear_attn.in_proj_qkv  linear_attn   2.52572   0.00067569
+layer.22.mlp.gate_proj            linear_attn   2.20339   0.00080929
+layer.21.mlp.gate_proj            linear_attn   2.18934   0.0008275
+layer.23.mlp.gate_proj            self_attn     2.15036   0.00077776
+layer.17.linear_attn.in_proj_qkv  linear_attn   2.09236   0.00059294
+layer.20.mlp.gate_proj            linear_attn   1.95395   0.00072451
+layer.18.mlp.gate_proj            linear_attn   1.93743   0.00075067
+layer.11.self_attn.k_proj         self_attn     1.93742   0.00167934
+
+
+==========================================================================================
+LoRA ADAPTER COMPARISON REPORT
+==========================================================================================
+Adapter 1 (base): ./models/qwen35-08b-dspy-format-lora
+Adapter 2 (new):  /tmp/grpo_lora/grpo-extractor-lora
+Common pairs: 186
+
+──────────────────────────────────────────────────────────────────────────────────────────
+PER-LAYER DRIFT (adapter1 → adapter2)
+──────────────────────────────────────────────────────────────────────────────────────────
+  Layer  Type           #Mod  Avg Drift%    Max Drift%      Avg CosSim  Relative
+-------  -----------  ------  ------------  ------------  ------------  ------------------------------
+      0  linear_attn       8  0.437%        0.645%             1.00037  ██████████████████████████████
+      1  linear_attn       8  0.354%        0.433%             1.00036  ████████████████████████
+      2  linear_attn       8  0.360%        0.444%             1.00037  ████████████████████████
+      3  self_attn         7  0.409%        0.548%             1.00034  ████████████████████████████
+      4  linear_attn       8  0.346%        0.376%             1.00036  ███████████████████████
+      5  linear_attn       8  0.327%        0.373%             1.00035  ██████████████████████
+      6  linear_attn       8  0.322%        0.369%             1.00036  ██████████████████████
+      7  self_attn         7  0.356%        0.431%             1.00032  ████████████████████████
+      8  linear_attn       8  0.305%        0.345%             1.00036  ████████████████████
+      9  linear_attn       8  0.318%        0.396%             1.00039  █████████████████████
+     10  linear_attn       8  0.287%        0.364%             1.00041  ███████████████████
+     11  self_attn         7  0.391%        0.801%             1.0004   ██████████████████████████
+     12  linear_attn       8  0.291%        0.352%             1.00038  ███████████████████
+     13  linear_attn       8  0.297%        0.356%             1.0004   ████████████████████
+     14  linear_attn       8  0.311%        0.449%             1.00043  █████████████████████
+     15  self_attn         7  0.431%        0.943%             1.00042  █████████████████████████████
+     16  linear_attn       8  0.297%        0.379%             1.0004   ████████████████████
+     17  linear_attn       8  0.279%        0.353%             1.00042  ███████████████████
+     18  linear_attn       8  0.275%        0.338%             1.00045  ██████████████████
+     19  self_attn         7  0.351%        0.595%             1.00046  ████████████████████████
+     20  linear_attn       8  0.258%        0.340%             1.00051  █████████████████
+     21  linear_attn       8  0.264%        0.366%             1.00052  ██████████████████
+     22  linear_attn       8  0.259%        0.364%             1.00069  █████████████████
+     23  self_attn         7  0.327%        0.507%             1.00044  ██████████████████████
+
+──────────────────────────────────────────────────────────────────────────────────────────
+DRIFT BY COMPONENT TYPE
+──────────────────────────────────────────────────────────────────────────────────────────
+
+  LINEAR_ATTN (90 modules)
+  Gated DeltaNet linear attention (18 layers). Efficient local pattern recognition with O(n) complexity. Handles token-level patterns, format compliance, and local syntactic structure.
+    Avg relative change: 0.3000%
+    Max relative change: 0.6449%
+    Avg cosine sim:      1.000375
+    Min cosine sim:      0.999979
+
+  MLP (72 modules)
+  Feed-forward networks (24 layers, one per layer). Stores factual knowledge and learned transformations. Acts as the model's 'memory' for patterns learned during training.
+    Avg relative change: 0.3274%
+    Max relative change: 0.4491%
+    Avg cosine sim:      1.000489
+    Min cosine sim:      1.000380
+
+  SELF_ATTN (24 modules)
+  Standard self-attention (6 layers at positions 3,7,11,15,19,23). Handles complex reasoning, long-range dependencies, and relational understanding between distant tokens. Most impactful for connecting user text to field schemas.
+    Avg relative change: 0.4159%
+    Max relative change: 0.9428%
+    Avg cosine sim:      1.000331
+    Min cosine sim:      0.999994
+
+──────────────────────────────────────────────────────────────────────────────────────────
+TOP 15 MOST DRIFTED MODULES
+──────────────────────────────────────────────────────────────────────────────────────────
+Module Path                    Attn Type    Rel Change%      Cosine Sim    L2 Dist
+-----------------------------  -----------  -------------  ------------  ---------
+layer.15.self_attn.o_proj      self_attn    0.9428%            1.00014    0.002339
+layer.11.self_attn.v_proj      self_attn    0.8007%            0.999994   0.00147
+layer.15.self_attn.v_proj      self_attn    0.7693%            0.999997   0.001474
+layer.0.linear_attn.in_proj_b  linear_attn  0.6449%            0.999979   0.000235
+layer.11.self_attn.o_proj      self_attn    0.6232%            1.00016    0.002065
+layer.19.self_attn.o_proj      self_attn    0.5953%            1.00023    0.002265
+layer.3.self_attn.o_proj       self_attn    0.5478%            1.0002     0.00206
+layer.23.self_attn.o_proj      self_attn    0.5071%            1.00026    0.002286
+layer.3.self_attn.v_proj       self_attn    0.4999%            1.00001    0.001389
+layer.19.self_attn.v_proj      self_attn    0.4882%            1.00002    0.001454
+layer.0.linear_attn.out_proj   linear_attn  0.4732%            1.0002     0.002158
+layer.0.linear_attn.in_proj_a  linear_attn  0.4555%            0.999991   0.000354
+layer.14.mlp.down_proj         linear_attn  0.4491%            1.00043    0.003202
+layer.2.linear_attn.out_proj   linear_attn  0.4435%            1.00019    0.002098
+layer.1.linear_attn.out_proj   linear_attn  0.4330%            1.00019    0.00217
+
+──────────────────────────────────────────────────────────────────────────────────────────
+TOP 15 LEAST DRIFTED MODULES
+──────────────────────────────────────────────────────────────────────────────────────────
+Module Path                       Attn Type    Rel Change%      Cosine Sim
+--------------------------------  -----------  -------------  ------------
+layer.11.self_attn.k_proj         self_attn    0.1310%            1.00004
+layer.21.linear_attn.in_proj_a    linear_attn  0.1497%            1
+layer.11.self_attn.q_proj         self_attn    0.1546%            1.00126
+layer.15.self_attn.k_proj         self_attn    0.1553%            1.00014
+layer.22.linear_attn.in_proj_qkv  linear_attn  0.1618%            1.00329
+layer.19.self_attn.k_proj         self_attn    0.1649%            1.00008
+layer.20.linear_attn.in_proj_a    linear_attn  0.1699%            0.999999
+layer.21.linear_attn.in_proj_qkv  linear_attn  0.1737%            1.00214
+layer.10.linear_attn.in_proj_b    linear_attn  0.1815%            0.999999
+layer.17.linear_attn.in_proj_b    linear_attn  0.1857%            0.999999
+layer.15.self_attn.q_proj         self_attn    0.1862%            1.0013
+layer.20.linear_attn.in_proj_b    linear_attn  0.1914%            0.999999
+layer.23.self_attn.q_proj         self_attn    0.1980%            1.00104
+layer.20.linear_attn.in_proj_qkv  linear_attn  0.2026%            1.00205
+layer.22.linear_attn.in_proj_a    linear_attn  0.2054%            0.999998
+
+──────────────────────────────────────────────────────────────────────────────────────────
+INTERPRETATION
+──────────────────────────────────────────────────────────────────────────────────────────
+  Most changed component:  self_attn (avg 0.4159%)
+  Least changed component: linear_attn (avg 0.3000%)
+  Overall avg drift:       0.3256%
+  Overall avg cosine sim:  1.000414
+  → Moderate changes — healthy RL fine-tuning range

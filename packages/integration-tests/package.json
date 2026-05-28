@@ -1,0 +1,22 @@
+{
+  "name": "@form-filling-assistant/integration-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "echo 'no build needed for tests'"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.0",
+    "jsdom": "^25.0.0",
+    "typescript": "~5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@form-filling-assistant/claude-agent": "*",
+    "@form-filling-assistant/shared": "*",
+    "@huggingface/transformers": "^3.8.1"
+  }
+}

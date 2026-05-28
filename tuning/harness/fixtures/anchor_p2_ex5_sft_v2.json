@@ -1,0 +1,55 @@
+{
+  "_doc": "Anchor for experiment-hygiene smoke tests, calibrated for model label 'sft_v2'. Captured from a live run of the harness (configure_lm + FormAssistant + build_context) at calibration time. Future experiments must reproduce this output to be trusted. See CLAUDE.md > Experiment hygiene.",
+  "_anchor_id": "P2-ex5",
+  "_model": "./models/qwen35-08b-dspy-format-v2-mlx",
+  "_label": "sft_v2",
+  "_calibrated_at": "2026-05-10T23:27:11+00:00",
+  "input": {
+    "form_state": {
+      "email": "drew@test.com",
+      "program": "cs"
+    },
+    "conversation_history": [
+      {
+        "role": "assistant",
+        "content": "Welcome, Drew! Which graduate program would you like to apply to?"
+      },
+      {
+        "role": "user",
+        "content": "[system] User selected option: \"Computer Science (MS)\""
+      },
+      {
+        "role": "assistant",
+        "content": "Great choice — Computer Science (MS)! 🖥️ When would you like to start?"
+      }
+    ],
+    "user_message": "actually hold on, can we switch to the MBA instead? i changed my mind"
+  },
+  "expected": {
+    "flags": {
+      "has_new_data": true,
+      "needs_choice": true,
+      "wants_review": false,
+      "wants_save": false,
+      "wants_submit": false
+    },
+    "field_ids": [
+      "start_term",
+      "enrollment_type",
+      "prior_application"
+    ],
+    "field_values": [
+      "spring_2027",
+      "full_time",
+      "False"
+    ],
+    "question": "Which term would you like to start?",
+    "options": [
+      "Fall 2026",
+      "Spring 2027"
+    ],
+    "summary_title": "",
+    "summary_content": "",
+    "response_text_starts_with": "Of course! Let's switch to the"
+  }
+}

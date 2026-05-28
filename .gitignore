@@ -1,0 +1,55 @@
+node_modules/
+dist/
+*.js.map
+.DS_Store
+
+# Runtime persistence data from mock servers
+packages/mock-masters/data/
+packages/mock-masters-b/data/
+packages/mock-patient/data/
+packages/persistence-server/data/
+
+# E2E test logs (generated, may contain API costs)
+packages/integration-tests/e2e-logs/
+
+# Simulation training data (generated, large)
+sims/
+
+# Environment variables (API keys)
+.env
+
+# MLflow tracking data
+tuning/mlruns/
+tuning/mlflow.db
+tuning/mlartifacts/
+
+# Claude Code local settings
+.claude/
+
+# MLRUN
+python/mlruns
+
+# === Migration 2026-05-24 additions ===
+
+# Large generated training data (regenerable from sims/; see docs/gitignored-logs.md)
+tuning/data/*.jsonl
+tuning/sft/format_train*.json*
+tuning/sft/format_val*.json*
+tuning/gepa/eval_cases.jsonl
+
+# Migration-session scratchpads (kept local; not durable project docs)
+MIGRATION_TODO.md
+docs/gitignored-logs.md
+
+# tuning/rl artifacts: only .py/.ipynb/.png/.md/.sh + scrubbed .html/.txt tracked
+tuning/rl/**/*.json
+tuning/rl/**/*.jsonl
+
+# tuning/eval results: generated eval outputs (4 model-family dumps)
+tuning/eval/results/
+
+# Runtime logs — Modal stdout, DSPy/MLflow autolog, batch drivers, etc.
+# See docs/gitignored-logs.md for what each log was, with Modal URLs preserved.
+**/*.log
+python/logs1
+python/logs2

@@ -1,0 +1,64 @@
+{
+  "_doc": "Anchor for experiment-hygiene smoke tests, calibrated for model label 'sft_v2'. Captured from a live run of the harness (configure_lm + FormAssistant + build_context) at calibration time. Future experiments must reproduce this output to be trusted. See CLAUDE.md > Experiment hygiene.",
+  "_anchor_id": "P12-ex2",
+  "_model": "./models/qwen35-08b-dspy-format-v2-mlx",
+  "_label": "sft_v2",
+  "_calibrated_at": "2026-05-10T23:27:24+00:00",
+  "input": {
+    "form_state": {
+      "email": "una@test.com",
+      "program": "cs",
+      "start_term": "fall_2026",
+      "enrollment_type": "full_time",
+      "prior_application": false,
+      "full_name": "Una Lee",
+      "dob": "1989-04-12",
+      "country_citizenship": "US",
+      "country_residence": "US",
+      "phone": "+1-415-555-2200"
+    },
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "Una Lee, born April 12 1989"
+      },
+      {
+        "role": "assistant",
+        "content": "Saved. Citizenship and residence?"
+      },
+      {
+        "role": "user",
+        "content": "US for both"
+      },
+      {
+        "role": "assistant",
+        "content": "Saved. What's your phone?"
+      },
+      {
+        "role": "user",
+        "content": "+1-415-555-2200"
+      },
+      {
+        "role": "assistant",
+        "content": "Got it. What's your mailing address?"
+      }
+    ],
+    "user_message": "you already have my address, i gave it to you earlier"
+  },
+  "expected": {
+    "flags": {
+      "has_new_data": false,
+      "needs_choice": false,
+      "wants_review": false,
+      "wants_save": false,
+      "wants_submit": false
+    },
+    "field_ids": [],
+    "field_values": [],
+    "question": "",
+    "options": [],
+    "summary_title": "",
+    "summary_content": "",
+    "response_text_starts_with": "Right, got it! That wraps up t"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "_doc": "Anchor for experiment-hygiene smoke tests, calibrated for SFT v2 model. The expected output below is the verified output of the production harness (configure_lm + FormAssistant + build_context) on this input, captured from logs/session-probe-P1-ex3-r1-t0.0-1777685635.jsonl on 2026-05-02. Any new entry point that runs SFT v2 must reproduce this output before its results are trusted. See CLAUDE.md > Experiment hygiene. To create an anchor for a different model, use tuning/harness/calibrate.py.",
+  "_anchor_id": "P1-ex3",
+  "_model": "./models/qwen35-08b-dspy-format-v2-mlx",
+  "_calibrated_at": "2026-05-02T01:34:05Z",
+  "input": {
+    "form_state": {
+      "email": "newapp@test.com"
+    },
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "newapp@test.com is starting a brand-new Northfield University Graduate Application. Nothing has been filled in yet, and there's no information from any past applications to reuse. Welcome them warmly and ask which graduate program they'd like to apply to, presenting the available programs as choices they can pick from."
+      },
+      {
+        "role": "assistant",
+        "content": "Welcome aboard! 🎓 Excited to help you get started. Which graduate program would you like to apply to?"
+      }
+    ],
+    "user_message": "hey thanks! how's your day going so far"
+  },
+  "expected": {
+    "flags": {
+      "has_new_data": false,
+      "needs_choice": true,
+      "wants_review": false,
+      "wants_save": false,
+      "wants_submit": false
+    },
+    "field_ids": [],
+    "field_values": [],
+    "question": "Which program are you interested in?",
+    "options": [
+      "Computer Science (MS)",
+      "Data Science (MS)",
+      "Business Administration (MBA)",
+      "Education (MEd)",
+      "Public Health (MPH)",
+      "Mechanical Engineering (MS)",
+      "Mechanical Engineering (MS) — additional fields"
+    ],
+    "summary_title": "",
+    "summary_content": "",
+    "response_text_starts_with": "Take care! 😊 I'm doing great"
+  }
+}

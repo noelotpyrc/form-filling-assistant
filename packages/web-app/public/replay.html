@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Replay — Form-Filling Assistant</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --border: #e2e4e8;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --user-bg: #2563eb;
+      --user-text: #ffffff;
+      --assistant-bg: #f0f0f5;
+      --assistant-text: #1a1a2e;
+      --form-accent: #7c3aed;
+      --inspector-bg: #1e1e2e;
+      --inspector-text: #e0e0e0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 16px; font-weight: 600; }
+    .badge {
+      font-size: 10px;
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    .session-info { font-size: 13px; color: var(--text-muted); }
+    .spacer { flex: 1; }
+    .btn {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .btn:hover { background: #f0f0f5; }
+    .btn:disabled { opacity: 0.35; cursor: default; }
+    .turn-nav { display: flex; align-items: center; gap: 6px; }
+    .turn-label { font-size: 12px; color: var(--text-muted); min-width: 80px; text-align: center; }
+
+    /* ── Main layout ── */
+    .main-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Chat panel ── */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .message {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      cursor: pointer;
+      transition: outline 0.15s;
+    }
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--assistant-bg);
+      color: var(--assistant-text);
+      border-bottom-left-radius: 4px;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: var(--user-bg);
+      color: var(--user-text);
+      border-bottom-right-radius: 4px;
+    }
+    .message.system {
+      align-self: center;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 4px 12px;
+      cursor: default;
+    }
+    .message.highlighted {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    .sender-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.7;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .msg-meta {
+      font-size: 11px;
+      opacity: 0.6;
+      margin-top: 4px;
+    }
+    .action-badges { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .action-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .action-badge.set_fields { background: #dcfce7; color: #166534; }
+    .action-badge.ask_choice { background: #dbeafe; color: #1e40af; }
+    .action-badge.show_fields { background: #ede9fe; color: #5b21b6; }
+    .action-badge.show_preview { background: #ede9fe; color: #5b21b6; }
+    .action-badge.show_button { background: #fef3c7; color: #92400e; }
+    .action-badge.ask_user { background: #e0f2fe; color: #0369a1; }
+    .action-badge.other { background: #f3f4f6; color: #6b7280; }
+
+    .choice-buttons { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+    .choice-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--form-accent);
+      background: white;
+      color: var(--form-accent);
+      border-radius: 20px;
+      font-size: 12px;
+    }
+    .choice-btn.selected { background: var(--form-accent); color: white; }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 2;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      margin: 40px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .drop-zone.drag-over {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    /* ── Inspector panel ── */
+    .inspector-panel {
+      width: 380px;
+      background: var(--inspector-bg);
+      color: var(--inspector-text);
+      overflow-y: auto;
+      flex-shrink: 0;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+    }
+    .inspector-header {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #a78bfa;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .inspector-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    .inspector-footer {
+      flex-shrink: 0;
+      padding: 10px 14px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 11px;
+      color: #9ca3af;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+    }
+    .inspector-footer .stat strong { color: #e0e0e0; }
+
+    /* ── Turn sections ── */
+    .turn-section {
+      padding: 8px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .turn-section:hover { background: rgba(255,255,255,0.04); }
+    .turn-section.active { background: rgba(99,102,241,0.15); }
+    .turn-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .turn-heading .turn-num { color: #a78bfa; }
+    .turn-heading .turn-meta { color: #6b7280; font-weight: 400; font-size: 11px; margin-left: auto; }
+    .turn-cost { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    /* ── Collapsible sections within turn ── */
+    .collapsible { margin-top: 4px; }
+    .collapsible-header {
+      font-size: 11px;
+      color: #60a5fa;
+      cursor: pointer;
+      user-select: none;
+      padding: 2px 0;
+    }
+    .collapsible-header:hover { color: #93bbfd; }
+    .collapsible-header::before { content: '\25b8 '; }
+    .collapsible-header.open::before { content: '\25be '; }
+    .collapsible-body { display: none; padding: 4px 0 4px 10px; }
+    .collapsible-body.open { display: block; }
+
+    /* ── Candidates ── */
+    .candidate {
+      padding: 4px 6px;
+      margin: 3px 0;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+    }
+    .candidate.selected {
+      background: rgba(167, 139, 250, 0.15);
+      border-left: 3px solid #a78bfa;
+    }
+    .candidate .rank { font-weight: 700; color: #fbbf24; }
+    .candidate .intent { color: #60a5fa; font-weight: 600; }
+    .candidate .reasoning { color: #9ca3af; font-size: 11px; margin-top: 1px; }
+    .candidate .action-detail { color: #34d399; font-size: 11px; }
+
+    /* ── State delta ── */
+    .delta-line { font-size: 11px; color: #34d399; }
+    .delta-line .field-name { color: #fbbf24; }
+
+    /* ── Raw JSON ── */
+    .raw-json {
+      margin-top: 4px;
+      padding: 6px 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      font-size: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Session Replay</h1>
+    <span class="badge">REPLAY</span>
+    <span class="session-info" id="sessionInfo"></span>
+    <div class="spacer"></div>
+    <input type="file" id="filePicker" accept=".jsonl" hidden>
+    <button class="btn" id="fileBtn" onclick="document.getElementById('filePicker').click()">Load JSONL</button>
+    <div class="turn-nav" id="turnNav" style="display:none">
+      <button class="btn" id="prevBtn" onclick="prevTurn()" disabled>&#9664;</button>
+      <span class="turn-label" id="turnLabel">Turn 0/0</span>
+      <button class="btn" id="nextBtn" onclick="nextTurn()" disabled>&#9654;</button>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <div class="chat-panel" id="chatPanel">
+      <div class="messages" id="messages">
+        <div class="drop-zone" id="dropZone">
+          Drop a .jsonl session log here<br>or use the <b>Load JSONL</b> button above
+        </div>
+      </div>
+    </div>
+    <div class="inspector-panel" id="inspectorPanel" style="display:none">
+      <div class="inspector-header">Turn Inspector</div>
+      <div class="inspector-body" id="inspectorBody"></div>
+      <div class="inspector-footer" id="inspectorFooter"></div>
+    </div>
+  </div>
+
+  <script src="/js/action-parser.js"></script>
+  <script>
+    'use strict';
+
+    // ── State ──
+    var entries = [];
+    var turns = [];       // turns[i] = { turn: i, entries: [...] }
+    var currentTurn = -1;
+    var sessionMeta = {}; // from state_init
+
+    // ── Utilities ──
+    function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function truncate(s, n) { return s && s.length > n ? s.slice(0, n) + '...' : (s || ''); }
+    function formatCost(usd) { return usd != null ? '$' + usd.toFixed(4) : '--'; }
+    function formatMs(ms) { return ms != null ? (ms / 1000).toFixed(1) + 's' : '--'; }
+    function formatDuration(startTs, endTs) {
+      if (!startTs || !endTs) return '--';
+      var s = Math.round((new Date(endTs) - new Date(startTs)) / 1000);
+      var m = Math.floor(s / 60);
+      return m > 0 ? m + 'm' + (s % 60) + 's' : s + 's';
+    }
+
+    // ── File Loading ──
+    document.getElementById('filePicker').addEventListener('change', function(e) {
+      if (e.target.files[0]) loadFile(e.target.files[0]);
+    });
+
+    var dropZone = document.getElementById('dropZone');
+    document.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    document.addEventListener('dragleave', function(e) { if (!e.relatedTarget || !document.body.contains(e.relatedTarget)) dropZone.classList.remove('drag-over'); });
+    document.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      var f = e.dataTransfer.files[0];
+      if (f && f.name.endsWith('.jsonl')) loadFile(f);
+    });
+
+    function loadFile(file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          entries = e.target.result.split('\n')
+            .filter(function(l) { return l.trim(); })
+            .map(function(l) { return JSON.parse(l); });
+          if (entries.length === 0) throw new Error('Empty file');
+          groupByTurn();
+          extractMeta();
+          renderAll();
+        } catch (err) {
+          dropZone.innerHTML = '<span style="color:#ef4444">Error loading file: ' + esc(err.message) + '</span>';
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function groupByTurn() {
+      var map = {};
+      var maxTurn = 0;
+      entries.forEach(function(e) {
+        var t = e.turn != null ? e.turn : (e.type === 'state_init' ? 0 : (e.type === 'session_end' ? -1 : 0));
+        if (t === -1) return; // handle session_end separately
+        if (!map[t]) map[t] = [];
+        map[t].push(e);
+        if (t > maxTurn) maxTurn = t;
+      });
+      turns = [];
+      for (var i = 0; i <= maxTurn; i++) {
+        turns.push({ turn: i, entries: map[i] || [] });
+      }
+      // Append session_end to last turn
+      var endEntry = entries.find(function(e) { return e.type === 'session_end'; });
+      if (endEntry && turns.length > 0) {
+        turns[turns.length - 1].entries.push(endEntry);
+      }
+    }
+
+    function extractMeta() {
+      var init = entries.find(function(e) { return e.type === 'state_init'; });
+      var end = entries.find(function(e) { return e.type === 'session_end'; });
+      sessionMeta = {
+        formName: init ? init.form_name : 'Unknown',
+        formId: init ? init.form_id : '',
+        persona: init ? init.persona : '',
+        profile: init ? init.profile : '',
+        config: init ? init.session_config : {},
+        end: end || null,
+        startTs: entries[0] ? entries[0].timestamp : null,
+        endTs: entries[entries.length - 1] ? entries[entries.length - 1].timestamp : null,
+      };
+    }
+
+    // ── Render ──
+    function renderAll() {
+      document.getElementById('inspectorPanel').style.display = 'flex';
+      document.getElementById('turnNav').style.display = 'flex';
+      document.getElementById('sessionInfo').textContent =
+        sessionMeta.formName + ' \u2022 ' + sessionMeta.persona + ' \u2022 ' + sessionMeta.profile;
+      renderChat();
+      renderInspector();
+      renderSummaryStats();
+      currentTurn = -1;
+      selectTurn(0);
+    }
+
+    // ── Chat Panel ──
+    function renderChat() {
+      var messagesEl = document.getElementById('messages');
+      messagesEl.innerHTML = '';
+
+      turns.forEach(function(t) {
+        var turnIdx = t.turn;
+        var aOut = t.entries.find(function(e) { return e.type === 'llm_a_output'; });
+        var uOut = t.entries.find(function(e) { return e.type === 'llm_u_output'; });
+
+        // LLM U output first (user action) — this is the user's reaction to the
+        // previous turn's LLM A message. Renders before the current LLM A response.
+        // Turn 0 has no LLM U (greeting turn).
+        if (uOut && uOut.candidates && uOut.candidates.length > 0) {
+          var selected = uOut.candidates[uOut.selected_index || 0];
+          var div = document.createElement('div');
+          div.className = 'message user';
+          div.setAttribute('data-turn', turnIdx);
+          div.onclick = function() { selectTurn(turnIdx); };
+
+          var userText = '';
+          if (selected.actions && selected.actions.length > 0) {
+            userText = selected.actions.map(function(a) {
+              if (a.action === 'message') {
+                var msg = a.text || '';
+                if (a.file) msg += '\n\ud83d\udcc4 attached: ' + a.file;
+                return msg;
+              }
+              if (a.action === 'select_choice') return '\u2705 selects: ' + (a.label || a.value || '');
+              if (a.action === 'fill_fields') return '\u270f\ufe0f fills ' + Object.keys(a.fields || {}).length + ' fields';
+              if (a.action === 'upload_file') return '\ud83d\udcc4 uploads: ' + (a.fileKey || a.file || '');
+              if (a.action === 'click_button') return '\ud83d\udc49 clicks: ' + (a.button || '');
+              if (a.action === 'stop') return '\u23f9 stops session';
+              return a.action;
+            }).join('\n');
+          } else {
+            userText = selected.intent || 'no action';
+          }
+
+          var html = '<span class="sender-label">LLM U \u2022 Turn ' + turnIdx + ' \u2022 ' + esc(selected.intent || '') + '</span>';
+          html += esc(truncate(userText, 300));
+          html += '<div class="msg-meta">' + formatMs(uOut.duration_ms) + ' \u2022 ' + formatCost(uOut.cost_usd) + '</div>';
+          div.innerHTML = html;
+          messagesEl.appendChild(div);
+        }
+
+        // State updates from LLM U (field edits applied before sending to LLM A)
+        t.entries.filter(function(e) { return e.type === 'state_update' && e.source === 'llm_u'; }).forEach(function(su) {
+          var keys = Object.keys(su.delta || {});
+          if (keys.length > 0) {
+            var sys = document.createElement('div');
+            sys.className = 'message system';
+            sys.textContent = '\u2502 User edited ' + keys.length + ' field' + (keys.length > 1 ? 's' : '') + ': ' + keys.join(', ');
+            messagesEl.appendChild(sys);
+          }
+        });
+
+        // LLM A output (assistant response to the user's action above)
+        if (aOut) {
+          var text = ActionParser.extractText(aOut.raw_text || '');
+          var actions = aOut.parsed_actions || ActionParser.parseActions(aOut.raw_text || '');
+          var div = document.createElement('div');
+          div.className = 'message assistant';
+          div.setAttribute('data-turn', turnIdx);
+          div.onclick = function() { selectTurn(turnIdx); };
+
+          var label = 'LLM A \u2022 Turn ' + turnIdx;
+          // Mark A-only turns (e.g. button responses) so they're visually distinct
+          if (!uOut) label += ' (system)';
+          var html = '<span class="sender-label">' + label + '</span>';
+          html += esc(truncate(text, 500));
+          html += renderActionBadges(actions);
+          html += renderChoiceButtons(actions);
+          html += '<div class="msg-meta">' + formatMs(aOut.duration_ms) + ' \u2022 ' + formatCost(aOut.cost_usd) + '</div>';
+          div.innerHTML = html;
+          messagesEl.appendChild(div);
+        }
+
+        // State updates from LLM A
+        t.entries.filter(function(e) { return e.type === 'state_update' && e.source === 'llm_a'; }).forEach(function(su) {
+          var keys = Object.keys(su.delta || {});
+          if (keys.length > 0) {
+            var sys = document.createElement('div');
+            sys.className = 'message system';
+            sys.textContent = '\u2502 Set ' + keys.length + ' field' + (keys.length > 1 ? 's' : '') + ': ' + keys.join(', ');
+            messagesEl.appendChild(sys);
+          }
+        });
+
+        // Session end
+        var endEntry = t.entries.find(function(e) { return e.type === 'session_end'; });
+        if (endEntry) {
+          var sys = document.createElement('div');
+          sys.className = 'message system';
+          sys.textContent = '\u2501\u2501 Session ended: ' + endEntry.reason + ' (' + endEntry.fields_filled + ' fields filled) \u2501\u2501';
+          messagesEl.appendChild(sys);
+        }
+      });
+    }
+
+    function renderActionBadges(actions) {
+      if (!actions || actions.length === 0) return '';
+      var html = '<div class="action-badges">';
+      actions.forEach(function(a) {
+        var type = a.type || 'other';
+        var cls = ['set_fields','ask_choice','show_fields','show_preview','show_button','ask_user'].indexOf(type) >= 0 ? type : 'other';
+        var label = type;
+        if (type === 'set_fields' && a.fields) label = 'set_fields (' + a.fields.length + ')';
+        if (type === 'ask_choice' && a.options) label = 'ask_choice (' + a.options.length + ')';
+        html += '<span class="action-badge ' + cls + '">' + esc(label) + '</span>';
+      });
+      html += '</div>';
+      return html;
+    }
+
+    function renderChoiceButtons(actions) {
+      var choices = actions.filter(function(a) { return a.type === 'ask_choice'; });
+      if (choices.length === 0) return '';
+      var html = '';
+      choices.forEach(function(c) {
+        if (c.options && c.options.length > 0) {
+          html += '<div class="choice-buttons">';
+          c.options.forEach(function(o) {
+            html += '<span class="choice-btn">' + esc(o.label || o.value || o) + '</span>';
+          });
+          html += '</div>';
+        }
+      });
+      return html;
+    }
+
+    // ── Inspector Panel ──
+    function renderInspector() {
+      var body = document.getElementById('inspectorBody');
+      body.innerHTML = '';
+
+      turns.forEach(function(t, idx) {
+        var section = document.createElement('div');
+        section.className = 'turn-section';
+        section.setAttribute('data-turn', t.turn);
+        section.onclick = function(e) {
+          if (e.target.classList.contains('collapsible-header')) return;
+          selectTurn(t.turn);
+        };
+
+        var aOut = t.entries.find(function(e) { return e.type === 'llm_a_output'; });
+        var uOut = t.entries.find(function(e) { return e.type === 'llm_u_output'; });
+        var plan = t.entries.find(function(e) { return e.type === 'action_plan'; });
+        var stateUpdates = t.entries.filter(function(e) { return e.type === 'state_update'; });
+
+        // Heading
+        var heading = '<div class="turn-heading"><span class="turn-num">Turn ' + t.turn + '</span>';
+        if (uOut) heading += '<span class="turn-meta">' + esc(uOut.selected_intent || '') + '</span>';
+        heading += '</div>';
+
+        // Cost line
+        var costLine = '<div class="turn-cost">';
+        if (aOut) costLine += 'A: ' + formatMs(aOut.duration_ms) + ' ' + formatCost(aOut.cost_usd);
+        if (uOut) costLine += (aOut ? ' \u2022 ' : '') + 'U: ' + formatMs(uOut.duration_ms) + ' ' + formatCost(uOut.cost_usd);
+        costLine += '</div>';
+
+        var details = '';
+
+        // LLM U candidates
+        if (uOut && uOut.candidates) {
+          details += renderCollapsible('Candidates (' + uOut.candidates.length + ')', renderCandidates(uOut.candidates, uOut.selected_index || 0));
+        }
+
+        // Action plan
+        if (plan) {
+          var planHtml = '<div style="font-size:11px">';
+          planHtml += 'stop: <span style="color:' + (plan.stop ? '#ef4444' : '#34d399') + '">' + plan.stop + '</span>';
+          if (plan.messages && plan.messages.length > 0) planHtml += ' \u2022 msgs: ' + plan.messages.length;
+          var editKeys = Object.keys(plan.field_edits || {});
+          if (editKeys.length > 0) planHtml += ' \u2022 edits: ' + editKeys.join(', ');
+          if (plan.click_button) planHtml += ' \u2022 click: ' + esc(plan.click_button);
+          planHtml += '</div>';
+          details += renderCollapsible('Action Plan', planHtml);
+        }
+
+        // State deltas
+        if (stateUpdates.length > 0) {
+          var deltaHtml = '';
+          stateUpdates.forEach(function(su) {
+            var keys = Object.keys(su.delta || {});
+            if (keys.length > 0) {
+              deltaHtml += '<div style="font-size:11px;color:#6b7280;margin-bottom:2px">source: ' + su.source + '</div>';
+              keys.forEach(function(k) {
+                deltaHtml += '<div class="delta-line">+<span class="field-name">' + esc(k) + '</span>: ' + esc(truncate(String(su.delta[k]), 60)) + '</div>';
+              });
+            }
+          });
+          if (deltaHtml) details += renderCollapsible('State Delta', deltaHtml);
+        }
+
+        // LLM U screen view
+        var uIn = t.entries.find(function(e) { return e.type === 'llm_u_input'; });
+        if (uIn) {
+          details += renderCollapsible('Screen View', '<div class="raw-json">' + esc(uIn.screen_view || '') + '</div>');
+        }
+
+        // Raw JSON
+        details += renderCollapsible('Raw JSON', '<div class="raw-json">' + esc(JSON.stringify(t.entries, null, 2)) + '</div>');
+
+        section.innerHTML = heading + costLine + details;
+        body.appendChild(section);
+      });
+    }
+
+    function renderCollapsible(title, contentHtml) {
+      var id = 'c_' + Math.random().toString(36).slice(2, 8);
+      return '<div class="collapsible">' +
+        '<div class="collapsible-header" onclick="toggleCollapsible(\'' + id + '\', this)">' + esc(title) + '</div>' +
+        '<div class="collapsible-body" id="' + id + '">' + contentHtml + '</div>' +
+        '</div>';
+    }
+
+    function toggleCollapsible(id, headerEl) {
+      var body = document.getElementById(id);
+      body.classList.toggle('open');
+      headerEl.classList.toggle('open');
+    }
+
+    function renderCandidates(candidates, selectedIndex) {
+      var html = '';
+      candidates.forEach(function(c, i) {
+        var sel = i === selectedIndex ? ' selected' : '';
+        html += '<div class="candidate' + sel + '">';
+        html += '<span class="rank">[' + (i + 1) + ']</span> ';
+        html += '<span class="intent">' + esc(c.intent || '') + '</span>';
+        if (c.actions && c.actions.length > 0) {
+          html += ' <span class="action-detail">(' + c.actions.map(function(a) { return a.action; }).join('+') + ')</span>';
+        }
+        if (c.reasoning) {
+          html += '<div class="reasoning">' + esc(truncate(c.reasoning, 150)) + '</div>';
+        }
+        html += '</div>';
+      });
+      return html;
+    }
+
+    function renderSummaryStats() {
+      var footer = document.getElementById('inspectorFooter');
+      var m = sessionMeta;
+      var e = m.end;
+      var parts = [];
+      parts.push('<span class="stat">Turns: <strong>' + turns.length + '</strong></span>');
+      if (e) {
+        parts.push('<span class="stat">Fields: <strong>' + e.fields_filled + '</strong></span>');
+        parts.push('<span class="stat">LLM A: <strong>' + formatCost(e.total_llm_a_cost) + '</strong></span>');
+        parts.push('<span class="stat">LLM U: <strong>' + formatCost(e.total_llm_u_cost) + '</strong></span>');
+        parts.push('<span class="stat">End: <strong>' + (e.reason || '--') + '</strong></span>');
+      }
+      parts.push('<span class="stat">Duration: <strong>' + formatDuration(m.startTs, m.endTs) + '</strong></span>');
+      if (m.config) {
+        parts.push('<span class="stat">A: <strong>' + (m.config.llm_a_model || '--') + '</strong></span>');
+        parts.push('<span class="stat">U: <strong>' + (m.config.llm_u_model || '--') + '</strong></span>');
+      }
+      footer.innerHTML = parts.join('');
+    }
+
+    // ── Turn Navigation ──
+    function selectTurn(idx) {
+      if (idx < 0 || idx >= turns.length) return;
+      currentTurn = idx;
+
+      // Update nav
+      document.getElementById('turnLabel').textContent = 'Turn ' + idx + '/' + (turns.length - 1);
+      document.getElementById('prevBtn').disabled = idx <= 0;
+      document.getElementById('nextBtn').disabled = idx >= turns.length - 1;
+
+      // Highlight in chat
+      document.querySelectorAll('.message.highlighted').forEach(function(el) { el.classList.remove('highlighted'); });
+      var chatMsgs = document.querySelectorAll('.message[data-turn="' + idx + '"]');
+      chatMsgs.forEach(function(el) { el.classList.add('highlighted'); });
+      if (chatMsgs.length > 0) chatMsgs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Highlight in inspector
+      document.querySelectorAll('.turn-section.active').forEach(function(el) { el.classList.remove('active'); });
+      var inspSections = document.querySelectorAll('.turn-section[data-turn="' + idx + '"]');
+      inspSections.forEach(function(el) { el.classList.add('active'); });
+      if (inspSections.length > 0) inspSections[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function prevTurn() { selectTurn(currentTurn - 1); }
+    function nextTurn() { selectTurn(currentTurn + 1); }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (turns.length === 0) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); prevTurn(); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); nextTurn(); }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Small Model Test — Form-Filling Assistant</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --border: #e2e4e8;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --primary: #6366f1;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 16px; font-weight: 600; }
+    .badge {
+      font-size: 10px;
+      background: #fef3c7;
+      color: #92400e;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    .status { font-size: 13px; color: var(--text-muted); }
+
+    .controls {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .controls label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    .controls select, .controls input, .controls button {
+      font-size: 13px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .controls button {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .controls button:disabled { opacity: 0.4; cursor: default; }
+    .controls button.secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+    .controls button.secondary:hover { background: #f0f0f5; }
+
+    .main-container { flex: 1; display: flex; overflow: hidden; }
+
+    .output-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .test-result {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .test-result .result-header {
+      padding: 12px 16px;
+      background: #f9fafb;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .test-result .result-header .model-name { color: var(--primary); }
+    .test-result .result-header .stats { margin-left: auto; font-weight: 400; color: var(--text-muted); font-size: 12px; }
+    .test-result .result-body { padding: 16px; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin: 12px 0 4px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .output-text {
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f8f9fa;
+      padding: 10px 12px;
+      border-radius: 6px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .output-text.streaming { border-left: 3px solid var(--primary); }
+
+    .score-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .score-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .score-badge.pass { background: #dcfce7; color: #166534; }
+    .score-badge.fail { background: #fee2e2; color: #991b1b; }
+    .score-badge.partial { background: #fef3c7; color: #92400e; }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 8px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    .info-panel {
+      width: 340px;
+      background: #1e1e2e;
+      color: #e0e0e0;
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 14px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .info-panel h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #a78bfa;
+      margin: 12px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-panel h3:first-child { margin-top: 0; }
+    .info-item { color: #9ca3af; margin: 2px 0; }
+    .info-item strong { color: #e0e0e0; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Small Model Test</h1>
+    <span class="badge">RESEARCH</span>
+    <span class="status" id="status">Ready — select a model and test</span>
+  </div>
+
+  <div class="controls">
+    <label>Model</label>
+    <select id="modelSelect">
+      <option value="HuggingFaceTB/SmolLM2-360M-Instruct">SmolLM2-360M (q4f16, ~250MB)</option>
+      <option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B (q4f16, ~350MB)</option>
+      <option value="onnx-community/Qwen3-0.6B-ONNX">Qwen3-0.6B (q4f16, ~400MB)</option>
+      <option value="HuggingFaceTB/SmolLM2-135M-Instruct">SmolLM2-135M (q4f16, ~100MB)</option>
+    </select>
+    <label>Form</label>
+    <select id="formSelect">
+      <option value="masters-northfield">Northfield (Masters)</option>
+      <option value="patient-riverside">Riverside (Patient)</option>
+    </select>
+    <label>Test</label>
+    <select id="testSelect">
+      <option value="greeting">Greeting (no user msg)</option>
+      <option value="simple_answer">Simple answer ("Jane Smith")</option>
+      <option value="multi_info">Multi-info ("Jane Smith, born 1998-05-15, US citizen")</option>
+      <option value="choice_select">Choice ("Computer Science MS")</option>
+      <option value="question">Question ("What documents do I need?")</option>
+    </select>
+    <label>Backend</label>
+    <select id="backendSelect" title="Backend + quantization combo">
+      <option value="webgpu_q4f16" selected>WebGPU + q4f16</option>
+      <option value="webgpu_q4">WebGPU + q4</option>
+      <option value="wasm_q4f16">WASM + q4f16</option>
+      <option value="wasm_q4">WASM + q4</option>
+    </select>
+    <label>Prompt</label>
+    <select id="promptMode" title="Minimal = format only (~2K). Compact = format + schema (~20K). Full = production (~30K).">
+      <option value="minimal">Minimal (~2K, no schema)</option>
+      <option value="compact" selected>Compact (~20K)</option>
+      <option value="full">Full (~30K)</option>
+    </select>
+    <label>Max tokens</label>
+    <input type="number" id="maxTokens" value="1024" min="64" max="2048" style="width:70px">
+    <button id="loadBtn" onclick="loadModel()">Load Model</button>
+    <button id="runBtn" onclick="runTest()" disabled>Run Test</button>
+    <button id="runAllBtn" onclick="runAllTests()" disabled class="secondary">Run All Tests</button>
+  </div>
+
+  <div class="main-container">
+    <div class="output-panel" id="outputPanel">
+      <div style="text-align:center;color:var(--text-muted);padding:60px 20px">
+        <div style="font-size:24px;margin-bottom:12px">🧪</div>
+        <div>Load a model to begin testing</div>
+        <div style="font-size:12px;margin-top:8px">
+          Tests whether small models can follow our system prompt format:<br>
+          <code>text + ---actions--- + JSON</code>
+        </div>
+      </div>
+    </div>
+    <div class="info-panel" id="infoPanel">
+      <h3>Test Info</h3>
+      <div class="info-item">No model loaded</div>
+    </div>
+  </div>
+
+  <script src="/js/action-parser.js"></script>
+  <script src="/js/system-prompt.js"></script>
+  <script type="module">
+    // ── Import transformers.js from CDN ──
+    import { pipeline, TextStreamer, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+
+    // Disable local model check (always fetch from HF Hub)
+    env.allowLocalModels = false;
+
+    // ── State ──
+    let generator = null;
+    let loadedModelId = null;
+    let formMeta = null;
+    let testResults = [];
+
+    // ── Test cases ──
+    const TEST_CASES = {
+      greeting: {
+        label: 'Greeting (initial turn)',
+        userMessage: null, // No user message — model speaks first
+        description: 'Can the model produce a greeting with ask_choice action?',
+      },
+      simple_answer: {
+        label: 'Simple answer',
+        userMessage: 'Jane Smith',
+        description: 'Can the model extract a name and produce set_fields?',
+      },
+      multi_info: {
+        label: 'Multi-info batch',
+        userMessage: 'Jane Smith, born May 15 1998, US citizen, jane.smith@email.com',
+        description: 'Can the model extract multiple fields from one message?',
+      },
+      choice_select: {
+        label: 'Choice selection',
+        userMessage: 'Computer Science MS',
+        description: 'Can the model recognize a choice and produce set_fields?',
+      },
+      question: {
+        label: 'User question',
+        userMessage: 'What documents do I need to submit for this application?',
+        description: 'Can the model answer without hallucinating actions?',
+      },
+    };
+
+    // Expose to global scope for onclick handlers
+    window.loadModel = loadModel;
+    window.runTest = runTest;
+    window.runAllTests = runAllTests;
+
+    // ── Minimal system prompt (format instructions only, no schema) ──
+    function buildMinimalPrompt() {
+      return 'You are a form-filling assistant. Help users fill out a graduate application form.\n\n' +
+        '## Output Format\n\n' +
+        'Every response has two parts:\n' +
+        '1. **Text** — your conversational message\n' +
+        '2. **Actions** — optional structured commands after a `---actions---` delimiter\n\n' +
+        'Example:\n```\nGreat, let me save that for you!\n\n---actions---\n```json\n[\n  { "type": "set_fields", "fields": [{ "field_id": "full_name", "value": "Jane Smith" }] }\n]\n```\n```\n\n' +
+        'Action types: set_fields (save field values), ask_choice (show buttons).\n' +
+        'If no actions needed, just write text without the delimiter.\n\n' +
+        'Available fields: full_name, email, dob, phone, address, program, start_term, enrollment_status.\n' +
+        'Be conversational and auto-fill fields when the user provides information.';
+    }
+
+    // ── Compact system prompt (matches CLI test script) ──
+    function buildCompactPrompt(formMeta) {
+      var parts = [];
+      parts.push('You are a form-filling assistant that helps users complete forms through conversation. Users interact with you via a chat interface with a form panel on the right side.\n\nYou guide users through the form section by section, collecting their information conversationally. You control what appears in the form panel through structured actions.');
+      parts.push('\n## Output Format: Text + Actions\n\nEvery response you give has two parts:\n1. **Text** — your conversational message to the user (always present)\n2. **Actions** — structured commands that control the form panel (optional)\n\nWhen you need to include actions, place them AFTER your text, separated by the delimiter `---actions---`, followed by a JSON array in a fenced code block:\n\n```\nYour conversational text here...\n\n---actions---\n```json\n[\n  { "type": "set_fields", "fields": [{ "field_id": "full_name", "value": "John Smith" }] }\n]\n```\n```\n\nIf you have NO actions to emit, just write your text with no delimiter.\n\n### Available Action Types\n\n**set_fields** — Set form field values.\n```json\n{ "type": "set_fields", "fields": [{ "field_id": "full_name", "value": "John Smith" }] }\n```\n\n**ask_choice** — Render clickable option buttons in the chat.\n```json\n{ "type": "ask_choice", "question": "Which program?", "options": [{ "label": "CS (MS)", "value": "cs" }] }\n```\n\nYou can emit multiple actions in one response as a JSON array.');
+      if (formMeta) {
+        parts.push('\n## Current Form: ' + formMeta.name +
+          '\n\n### Form Instructions\n' + formMeta.instructions.greeting +
+          '\n\n**Section order:** ' + formMeta.instructions.section_order.join(' → ') +
+          '\n\n### Form Schema\n```json\n' + JSON.stringify(formMeta.schema, null, 2) + '\n```');
+      }
+      parts.push('\n## Behavior Guidelines\n- Be conversational — this is a chat, not a form.\n- Auto-fill when possible — when you know field values, fill them in automatically with set_fields.\n- Don\'t force completion — users can send partial answers.');
+      return parts.join('\n');
+    }
+
+    // ── Load form schema ──
+    async function loadFormSchema(formId) {
+      const res = await fetch('/forms/' + formId + '.json');
+      formMeta = await res.json();
+    }
+
+    // ── Load model ──
+    async function loadModel() {
+      const modelId = document.getElementById('modelSelect').value;
+      const statusEl = document.getElementById('status');
+      const loadBtn = document.getElementById('loadBtn');
+      const runBtn = document.getElementById('runBtn');
+      const runAllBtn = document.getElementById('runAllBtn');
+
+      loadBtn.disabled = true;
+      runBtn.disabled = true;
+      runAllBtn.disabled = true;
+      statusEl.textContent = 'Loading model... (this may take a while on first load)';
+
+      // Also load form schema
+      const formId = document.getElementById('formSelect').value;
+      await loadFormSchema(formId);
+
+      const infoPanel = document.getElementById('infoPanel');
+      infoPanel.innerHTML = '<h3>Loading</h3><div class="info-item">Model: <strong>' + esc(modelId) + '</strong></div>' +
+        '<div class="info-item">Form: <strong>' + esc(formId) + '</strong></div>' +
+        '<div id="loadProgress"></div>';
+
+      const startTime = Date.now();
+
+      try {
+        var backendVal = document.getElementById('backendSelect').value;
+        var parts = backendVal.split('_');
+        var device = parts[0] === 'webgpu' ? 'webgpu' : undefined;
+        var dtype = parts.slice(1).join('_'); // q4f16 or q4
+        console.log('[model-test] Loading model:', modelId, 'dtype:', dtype, 'device:', device || 'wasm (auto)');
+        generator = await pipeline('text-generation', modelId, {
+          dtype: dtype,
+          device: device,
+          progress_callback: (progress) => {
+            const progressEl = document.getElementById('loadProgress');
+            if (progress.status === 'download') {
+              progressEl.innerHTML = '<div class="info-item">Downloading: ' +
+                (progress.name || '') + ' (' + Math.round((progress.loaded || 0) / 1024 / 1024) + 'MB)</div>';
+            } else if (progress.status === 'progress') {
+              const pct = Math.round(progress.progress || 0);
+              progressEl.innerHTML = '<div class="info-item">Loading: ' + pct + '%</div>' +
+                '<div class="progress-bar"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div>';
+            } else if (progress.status === 'ready') {
+              progressEl.innerHTML = '<div class="info-item" style="color:#34d399">Ready!</div>';
+            }
+          },
+        });
+
+        loadedModelId = modelId;
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log('[model-test] Model loaded in', elapsed + 's');
+        statusEl.textContent = 'Model loaded: ' + modelId.split('/').pop() + ' (' + elapsed + 's)';
+        loadBtn.disabled = false;
+        runBtn.disabled = false;
+        runAllBtn.disabled = false;
+
+        // Build system prompt info
+        const systemPrompt = SystemPrompt.build(formMeta, null, {});
+        infoPanel.innerHTML = '<h3>Model</h3>' +
+          '<div class="info-item">ID: <strong>' + esc(modelId) + '</strong></div>' +
+          '<div class="info-item">Load time: <strong>' + elapsed + 's</strong></div>' +
+          '<div class="info-item">Quantization: <strong>' + dtype + '</strong></div>' +
+          '<div class="info-item">Backend: <strong>' + (device || 'wasm') + '</strong></div>' +
+          '<div class="info-item">Device: <strong>WebGPU</strong></div>' +
+          '<h3>System Prompt</h3>' +
+          '<div class="info-item">Form: <strong>' + esc(formMeta.name || formId) + '</strong></div>' +
+          '<div class="info-item">Prompt length: <strong>' + systemPrompt.length + ' chars</strong></div>' +
+          '<div class="info-item">Est. tokens: <strong>~' + Math.round(systemPrompt.length / 4) + '</strong></div>' +
+          '<h3>Scoring</h3>' +
+          '<div class="info-item"><strong style="color:#34d399">PASS</strong> — correct format + valid actions</div>' +
+          '<div class="info-item"><strong style="color:#92400e">PARTIAL</strong> — has text but actions malformed</div>' +
+          '<div class="info-item"><strong style="color:#991b1b">FAIL</strong> — no coherent output</div>';
+      } catch (err) {
+        console.error('[model-test] Error loading model:', err);
+        console.error('[model-test] Error stack:', err.stack);
+        statusEl.textContent = 'Error loading model: ' + err.message;
+        loadBtn.disabled = false;
+        infoPanel.innerHTML = '<h3>Error</h3><div class="info-item" style="color:#ef4444">' + esc(err.message) + '</div>';
+      }
+    }
+
+    // ── Run single test ──
+    async function runTest() {
+      const testId = document.getElementById('testSelect').value;
+      await runSingleTest(testId);
+    }
+
+    async function runSingleTest(testId) {
+      const test = TEST_CASES[testId];
+      const maxTokens = parseInt(document.getElementById('maxTokens').value) || 512;
+      const statusEl = document.getElementById('status');
+      const runBtn = document.getElementById('runBtn');
+      const runAllBtn = document.getElementById('runAllBtn');
+
+      runBtn.disabled = true;
+      runAllBtn.disabled = true;
+      statusEl.textContent = 'Running: ' + test.label + '...';
+
+      // Build system prompt
+      const promptMode = document.getElementById('promptMode').value;
+      var systemPrompt;
+      if (promptMode === 'minimal') {
+        systemPrompt = buildMinimalPrompt();
+      } else if (promptMode === 'compact') {
+        systemPrompt = buildCompactPrompt(formMeta);
+      } else {
+        systemPrompt = SystemPrompt.build(formMeta, null, {});
+      }
+      console.log('[model-test] Prompt mode:', promptMode, '| length:', systemPrompt.length, 'chars (~' + Math.round(systemPrompt.length / 4) + ' tokens)');
+
+      // Build messages array
+      const messages = [{ role: 'system', content: systemPrompt }];
+      if (test.userMessage) {
+        messages.push({ role: 'user', content: test.userMessage });
+      } else {
+        // For greeting, add a minimal trigger
+        messages.push({ role: 'user', content: 'Hi, I want to start filling out this form.' });
+      }
+      console.log('[model-test] Messages:', messages.length, 'roles:', messages.map(m => m.role).join(', '));
+      console.log('[model-test] User message:', messages[messages.length - 1].content.slice(0, 100));
+
+      // Create result card
+      const outputPanel = document.getElementById('outputPanel');
+      // Clear placeholder if present
+      if (!document.querySelector('.test-result')) {
+        outputPanel.innerHTML = '';
+      }
+
+      const resultDiv = document.createElement('div');
+      resultDiv.className = 'test-result';
+      resultDiv.innerHTML = '<div class="result-header">' +
+        '<span class="model-name">' + esc(loadedModelId.split('/').pop()) + '</span>' +
+        '<span>' + esc(test.label) + '</span>' +
+        '<span class="stats" id="stats_' + testId + '">generating...</span>' +
+        '</div>' +
+        '<div class="result-body">' +
+        '<div class="section-label">User Message</div>' +
+        '<div class="output-text">' + esc(test.userMessage || '(greeting — model speaks first)') + '</div>' +
+        '<div class="section-label">Model Output</div>' +
+        '<div class="output-text streaming" id="output_' + testId + '"></div>' +
+        '<div class="section-label">Evaluation</div>' +
+        '<div class="score-badges" id="scores_' + testId + '"></div>' +
+        '</div>';
+      outputPanel.prepend(resultDiv);
+
+      const outputEl = document.getElementById('output_' + testId);
+      const statsEl = document.getElementById('stats_' + testId);
+      const scoresEl = document.getElementById('scores_' + testId);
+
+      let fullText = '';
+      let tokenCount = 0;
+      const startTime = Date.now();
+
+      try {
+        console.log('[model-test] Calling generator with max_new_tokens:', maxTokens);
+        const output = await generator(messages, {
+          max_new_tokens: maxTokens,
+          do_sample: true,
+          temperature: 0.7,
+          return_full_text: false,
+          // Streaming callback
+          callback_function: (tokens) => {
+            tokenCount++;
+            if (tokenCount <= 3) {
+              console.log('[model-test] callback_function token #' + tokenCount + ':', typeof tokens, tokens);
+            }
+            // tokens may be a decoded string chunk or token ids
+            if (typeof tokens === 'string') {
+              fullText += tokens;
+              outputEl.textContent = fullText;
+              outputEl.scrollTop = outputEl.scrollHeight;
+            }
+          },
+        });
+
+        console.log('[model-test] Generator returned. Type:', typeof output, 'isArray:', Array.isArray(output));
+        console.log('[model-test] Raw output:', JSON.stringify(output).slice(0, 500));
+
+        // Get the generated text
+        if (output && output[0] && output[0].generated_text) {
+          const genText = output[0].generated_text;
+          console.log('[model-test] generated_text type:', typeof genText, 'isArray:', Array.isArray(genText));
+          if (typeof genText === 'string') {
+            fullText = genText;
+            console.log('[model-test] String output, length:', fullText.length);
+          } else if (Array.isArray(genText)) {
+            // Chat format: last message is the assistant response
+            console.log('[model-test] Array output, length:', genText.length, 'roles:', genText.map(m => m.role));
+            const lastMsg = genText[genText.length - 1];
+            fullText = lastMsg && lastMsg.content ? lastMsg.content : JSON.stringify(genText);
+            console.log('[model-test] Extracted from last message, length:', fullText.length);
+          }
+        } else {
+          console.log('[model-test] No output[0].generated_text found');
+          console.log('[model-test] output keys:', output ? Object.keys(output) : 'null');
+          if (output && output[0]) console.log('[model-test] output[0] keys:', Object.keys(output[0]));
+        }
+
+        console.log('[model-test] Final fullText length:', fullText.length);
+        console.log('[model-test] Final fullText (COMPLETE):', fullText);
+        console.log('[model-test] Token callback count:', tokenCount, '(max was', maxTokens + ')');
+        console.log('[model-test] Hit max tokens?', tokenCount >= maxTokens);
+        outputEl.textContent = fullText;
+        outputEl.classList.remove('streaming');
+
+        const elapsed = Date.now() - startTime;
+        const tokPerSec = tokenCount > 0 ? (tokenCount / (elapsed / 1000)).toFixed(1) : '?';
+        statsEl.textContent = (elapsed / 1000).toFixed(1) + 's · ~' + tokenCount + ' tokens · ' + tokPerSec + ' tok/s';
+
+        // Score the output
+        const scores = scoreOutput(fullText, testId);
+        scoresEl.innerHTML = scores.map(function(s) {
+          return '<span class="score-badge ' + s.grade + '">' + esc(s.label) + '</span>';
+        }).join('');
+
+        testResults.push({
+          model: loadedModelId,
+          test: testId,
+          output: fullText,
+          elapsed: elapsed,
+          tokenCount: tokenCount,
+          scores: scores,
+        });
+
+      } catch (err) {
+        console.error('[model-test] Error during generation:', err);
+        console.error('[model-test] Error stack:', err.stack);
+        outputEl.textContent = 'ERROR: ' + err.message;
+        outputEl.classList.remove('streaming');
+        statsEl.textContent = 'failed';
+        scoresEl.innerHTML = '<span class="score-badge fail">Error: ' + esc(err.message) + '</span>';
+      }
+
+      runBtn.disabled = false;
+      runAllBtn.disabled = false;
+      statusEl.textContent = 'Ready';
+    }
+
+    // ── Run all tests ──
+    async function runAllTests() {
+      for (const testId of Object.keys(TEST_CASES)) {
+        await runSingleTest(testId);
+      }
+    }
+
+    // ── Score output ──
+    function scoreOutput(text, testId) {
+      const scores = [];
+
+      // 1. Has any text at all?
+      const trimmed = text.trim();
+      if (trimmed.length < 10) {
+        scores.push({ label: 'Output: empty/too short', grade: 'fail' });
+        return scores;
+      }
+      scores.push({ label: 'Has text output', grade: 'pass' });
+
+      // 2. Contains actions delimiter?
+      const hasDelimiter = text.includes('---actions---');
+      scores.push({
+        label: hasDelimiter ? 'Has ---actions--- delimiter' : 'Missing ---actions--- delimiter',
+        grade: hasDelimiter ? 'pass' : (testId === 'question' ? 'pass' : 'fail'),
+      });
+
+      // 3. If has delimiter, can we parse actions?
+      if (hasDelimiter) {
+        const actions = ActionParser.parseActions(text);
+        if (actions.length > 0) {
+          scores.push({ label: 'Valid JSON actions (' + actions.length + ')', grade: 'pass' });
+
+          // 4. Check action types are valid
+          const validTypes = ['set_fields', 'ask_choice', 'show_fields', 'show_preview', 'show_button', 'ask_user'];
+          const allValid = actions.every(function(a) { return validTypes.includes(a.type); });
+          scores.push({
+            label: allValid ? 'All action types valid' : 'Unknown action types: ' + actions.map(function(a){return a.type}).join(', '),
+            grade: allValid ? 'pass' : 'partial',
+          });
+
+          // 5. Test-specific checks
+          if (testId === 'greeting') {
+            const hasAskChoice = actions.some(function(a) { return a.type === 'ask_choice'; });
+            scores.push({
+              label: hasAskChoice ? 'Greeting has ask_choice' : 'Greeting missing ask_choice',
+              grade: hasAskChoice ? 'pass' : 'partial',
+            });
+          }
+          if (testId === 'simple_answer' || testId === 'multi_info' || testId === 'choice_select') {
+            const hasSetFields = actions.some(function(a) { return a.type === 'set_fields'; });
+            scores.push({
+              label: hasSetFields ? 'Has set_fields action' : 'Missing set_fields',
+              grade: hasSetFields ? 'pass' : 'fail',
+            });
+          }
+        } else {
+          scores.push({ label: 'Actions JSON parse failed', grade: 'fail' });
+        }
+      }
+
+      // 6. Conversational text quality
+      const textPart = ActionParser.extractText(text);
+      if (textPart.length > 20) {
+        scores.push({ label: 'Conversational text present (' + textPart.length + ' chars)', grade: 'pass' });
+      } else {
+        scores.push({ label: 'Text too short (' + textPart.length + ' chars)', grade: 'partial' });
+      }
+
+      return scores;
+    }
+
+    // ── Utilities ──
+    function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  </script>
+</body>
+</html>

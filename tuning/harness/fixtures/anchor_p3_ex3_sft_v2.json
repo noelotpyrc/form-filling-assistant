@@ -1,0 +1,52 @@
+{
+  "_doc": "Anchor for experiment-hygiene smoke tests, calibrated for model label 'sft_v2'. Captured from a live run of the harness (configure_lm + FormAssistant + build_context) at calibration time. Future experiments must reproduce this output to be trusted. See CLAUDE.md > Experiment hygiene.",
+  "_anchor_id": "P3-ex3",
+  "_model": "./models/qwen35-08b-dspy-format-v2-mlx",
+  "_label": "sft_v2",
+  "_calibrated_at": "2026-05-10T23:27:17+00:00",
+  "input": {
+    "form_state": {
+      "email": "newapp@test.com",
+      "program": "cs",
+      "start_term": "fall_2026",
+      "enrollment_type": "full_time",
+      "prior_application": false,
+      "full_name": "Jordan Rivera"
+    },
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "[system] User selected option: \"No\""
+      },
+      {
+        "role": "assistant",
+        "content": "Program section is all set! ✅ Now let's cover your personal info. Could you share your full legal name?"
+      },
+      {
+        "role": "user",
+        "content": "my name is Jordan Rivera"
+      },
+      {
+        "role": "assistant",
+        "content": "Nice to meet you, Jordan! What's your date of birth?"
+      }
+    ],
+    "user_message": "what date format do you want? mm/dd or 4 jan 1995 style?"
+  },
+  "expected": {
+    "flags": {
+      "has_new_data": false,
+      "needs_choice": false,
+      "wants_review": false,
+      "wants_save": false,
+      "wants_submit": false
+    },
+    "field_ids": [],
+    "field_values": [],
+    "question": "",
+    "options": [],
+    "summary_title": "",
+    "summary_content": "",
+    "response_text_starts_with": "I'll put it in **YYYY-MM-DD** "
+  }
+}

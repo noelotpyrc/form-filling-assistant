@@ -1,0 +1,310 @@
+{
+  "form_id": "patient-riverside",
+  "name": "Riverside Family Medical, New Patient Intake",
+  "schema": {
+    "sections": [
+      {
+        "section_id": "personal",
+        "title": "Personal Information",
+        "fields": [
+          { "field_id": "full_name", "label": "Full Legal Name", "type": "text", "required": true, "max_length": 200 },
+          { "field_id": "preferred_name", "label": "Preferred Name", "type": "text", "required": false, "max_length": 100 },
+          { "field_id": "dob", "label": "Date of Birth", "type": "date", "required": true, "format": "YYYY-MM-DD" },
+          {
+            "field_id": "sex_at_birth", "label": "Sex Assigned at Birth", "type": "select", "required": true,
+            "options": ["male", "female", "intersex"]
+          },
+          {
+            "field_id": "gender_identity", "label": "Gender Identity", "type": "select", "required": false,
+            "options": ["man", "woman", "non_binary", "transgender_man", "transgender_woman", "other", "prefer_not_to_say"]
+          },
+          {
+            "field_id": "pronouns", "label": "Pronouns", "type": "select", "required": false,
+            "options": ["he_him", "she_her", "they_them", "other"]
+          },
+          {
+            "field_id": "marital_status", "label": "Marital Status", "type": "select", "required": false,
+            "options": ["single", "married", "divorced", "widowed", "domestic_partnership"]
+          },
+          { "field_id": "email", "label": "Email Address", "type": "email", "required": true },
+          { "field_id": "phone", "label": "Phone Number", "type": "phone", "required": true },
+          { "field_id": "address", "label": "Home Address", "type": "textarea", "required": true, "max_length": 500 },
+          { "field_id": "emergency_contact_name", "label": "Emergency Contact Name", "type": "text", "required": true, "max_length": 200 },
+          { "field_id": "emergency_contact_phone", "label": "Emergency Contact Phone", "type": "phone", "required": true },
+          { "field_id": "emergency_contact_relationship", "label": "Emergency Contact Relationship", "type": "text", "required": true, "max_length": 100 }
+        ]
+      },
+      {
+        "section_id": "insurance",
+        "title": "Insurance Information",
+        "fields": [
+          { "field_id": "has_insurance", "label": "Do you have health insurance?", "type": "boolean", "required": true },
+          {
+            "field_id": "insurance_provider", "label": "Insurance Provider", "type": "text", "required": false, "max_length": 200,
+            "condition": { "field_id": "has_insurance", "operator": "equals", "value": true }
+          },
+          {
+            "field_id": "insurance_plan", "label": "Plan Name", "type": "text", "required": false, "max_length": 200,
+            "condition": { "field_id": "has_insurance", "operator": "equals", "value": true }
+          },
+          {
+            "field_id": "insurance_member_id", "label": "Member ID", "type": "text", "required": false, "max_length": 50,
+            "condition": { "field_id": "has_insurance", "operator": "equals", "value": true }
+          },
+          {
+            "field_id": "insurance_group_number", "label": "Group Number", "type": "text", "required": false, "max_length": 50,
+            "condition": { "field_id": "has_insurance", "operator": "equals", "value": true }
+          },
+          {
+            "field_id": "insurance_phone", "label": "Insurance Phone Number", "type": "phone", "required": false,
+            "condition": { "field_id": "has_insurance", "operator": "equals", "value": true }
+          },
+          {
+            "field_id": "insurance_card", "label": "Insurance Card (front and back)", "type": "file", "required": false,
+            "accepted_types": ["jpg", "png", "pdf"], "max_size_mb": 5, "max_files": 2,
+            "condition": { "field_id": "has_insurance", "operator": "equals", "value": true }
+          },
+          {
+            "field_id": "self_pay", "label": "Self-Pay Acknowledgment", "type": "boolean", "required": false,
+            "condition": { "field_id": "has_insurance", "operator": "equals", "value": false }
+          }
+        ]
+      },
+      {
+        "section_id": "reason_for_visit",
+        "title": "Reason for Visit",
+        "fields": [
+          {
+            "field_id": "visit_reason", "label": "Primary Reason for Visit", "type": "select", "required": true,
+            "options": ["new_patient_checkup", "specific_concern", "ongoing_condition", "referral", "second_opinion"]
+          },
+          {
+            "field_id": "chief_complaint", "label": "Describe your main concern or symptoms", "type": "textarea", "required": false, "max_length": 1000,
+            "condition": { "field_id": "visit_reason", "operator": "in", "value": ["specific_concern", "ongoing_condition"] }
+          },
+          {
+            "field_id": "symptom_duration", "label": "How long have you experienced this?", "type": "text", "required": false, "max_length": 100,
+            "condition": { "field_id": "visit_reason", "operator": "in", "value": ["specific_concern", "ongoing_condition"] }
+          },
+          {
+            "field_id": "symptom_severity", "label": "Severity (1-10)", "type": "number", "required": false, "min": 1, "max": 10,
+            "condition": { "field_id": "visit_reason", "operator": "in", "value": ["specific_concern", "ongoing_condition"] }
+          },
+          {
+            "field_id": "referring_doctor", "label": "Referring Physician Name", "type": "text", "required": false, "max_length": 200,
+            "condition": { "field_id": "visit_reason", "operator": "equals", "value": "referral" }
+          },
+          {
+            "field_id": "referral_reason", "label": "Reason for Referral", "type": "textarea", "required": false, "max_length": 500,
+            "condition": { "field_id": "visit_reason", "operator": "equals", "value": "referral" }
+          },
+          { "field_id": "preferred_provider", "label": "Do you have a preferred provider at our practice?", "type": "text", "required": false, "max_length": 200 },
+          {
+            "field_id": "preferred_appointment", "label": "Preferred appointment time", "type": "select", "required": false,
+            "options": ["morning", "afternoon", "no_preference"]
+          }
+        ]
+      },
+      {
+        "section_id": "medical_history",
+        "title": "Medical History",
+        "fields": [
+          {
+            "field_id": "conditions", "label": "Have you been diagnosed with any of the following?", "type": "multi_select", "required": true,
+            "options": [
+              "diabetes_type1", "diabetes_type2", "hypertension", "heart_disease", "asthma", "copd",
+              "cancer", "arthritis", "depression", "anxiety", "thyroid_disorder", "kidney_disease",
+              "liver_disease", "stroke", "seizure_disorder", "autoimmune_disorder", "none"
+            ]
+          },
+          { "field_id": "conditions_other", "label": "Other conditions not listed", "type": "textarea", "required": false, "max_length": 500 },
+          {
+            "field_id": "surgeries", "label": "Past Surgeries", "type": "group", "required": false,
+            "min_items": 0, "max_items": 20,
+            "fields": [
+              { "field_id": "procedure", "label": "Procedure", "type": "text", "required": true, "max_length": 200 },
+              { "field_id": "year", "label": "Approximate Year", "type": "number", "required": true, "min": 1940, "max": 2026 },
+              { "field_id": "notes", "label": "Notes", "type": "text", "required": false, "max_length": 300 }
+            ]
+          },
+          { "field_id": "allergies_exist", "label": "Do you have any known allergies?", "type": "boolean", "required": true },
+          {
+            "field_id": "allergies", "label": "Allergies", "type": "group", "required": false,
+            "min_items": 1, "max_items": 20,
+            "condition": { "field_id": "allergies_exist", "operator": "equals", "value": true },
+            "fields": [
+              { "field_id": "substance", "label": "Substance", "type": "text", "required": true, "max_length": 200 },
+              { "field_id": "reaction", "label": "Reaction", "type": "text", "required": true, "max_length": 200 },
+              {
+                "field_id": "severity", "label": "Severity", "type": "select", "required": true,
+                "options": ["mild", "moderate", "severe", "life_threatening"]
+              }
+            ]
+          },
+          {
+            "field_id": "immunization_status", "label": "Are your immunizations up to date?", "type": "select", "required": true,
+            "options": ["yes", "no", "unsure"]
+          },
+          { "field_id": "last_physical_date", "label": "Date of Last Physical Exam", "type": "date", "required": false, "format": "YYYY-MM" }
+        ]
+      },
+      {
+        "section_id": "medications",
+        "title": "Current Medications",
+        "fields": [
+          { "field_id": "takes_medications", "label": "Are you currently taking any medications?", "type": "boolean", "required": true },
+          {
+            "field_id": "medications", "label": "Current Medications", "type": "group", "required": false,
+            "min_items": 1, "max_items": 30,
+            "condition": { "field_id": "takes_medications", "operator": "equals", "value": true },
+            "fields": [
+              { "field_id": "name", "label": "Medication Name", "type": "text", "required": true, "max_length": 200 },
+              { "field_id": "dosage", "label": "Dosage", "type": "text", "required": true, "max_length": 100, "hint": "e.g., \"10mg\", \"500mg twice daily\"" },
+              { "field_id": "reason", "label": "Reason for Taking", "type": "text", "required": true, "max_length": 200 },
+              { "field_id": "prescriber", "label": "Prescribing Doctor", "type": "text", "required": false, "max_length": 200 }
+            ]
+          },
+          { "field_id": "takes_supplements", "label": "Do you take any vitamins or supplements?", "type": "boolean", "required": true },
+          {
+            "field_id": "supplements", "label": "Vitamins / Supplements", "type": "group", "required": false,
+            "min_items": 1, "max_items": 20,
+            "condition": { "field_id": "takes_supplements", "operator": "equals", "value": true },
+            "fields": [
+              { "field_id": "name", "label": "Name", "type": "text", "required": true, "max_length": 200 },
+              { "field_id": "dosage", "label": "Dosage", "type": "text", "required": false, "max_length": 100 }
+            ]
+          }
+        ]
+      },
+      {
+        "section_id": "family_history",
+        "title": "Family Medical History",
+        "fields": [
+          { "field_id": "family_history_unknown", "label": "Family medical history is unknown", "type": "boolean", "required": false },
+          {
+            "field_id": "family_conditions", "label": "Do any immediate family members have the following conditions?", "type": "group", "required": true,
+            "fields": [
+              {
+                "field_id": "condition", "label": "Condition", "type": "select", "required": true,
+                "options": ["heart_disease", "diabetes", "cancer", "stroke", "hypertension", "mental_illness", "substance_abuse", "none"]
+              },
+              {
+                "field_id": "relationship", "label": "Who?", "type": "multi_select", "required": false,
+                "options": ["mother", "father", "sister", "brother", "maternal_grandmother", "maternal_grandfather", "paternal_grandmother", "paternal_grandfather"]
+              },
+              { "field_id": "notes", "label": "Details", "type": "text", "required": false, "max_length": 300, "hint": "e.g., \"Father -- diagnosed at age 50, colon cancer\"" }
+            ]
+          }
+        ]
+      },
+      {
+        "section_id": "lifestyle",
+        "title": "Lifestyle",
+        "fields": [
+          {
+            "field_id": "tobacco_use", "label": "Do you use tobacco products?", "type": "select", "required": true,
+            "options": ["never", "former", "current"]
+          },
+          {
+            "field_id": "tobacco_type", "label": "Type of tobacco", "type": "multi_select", "required": false,
+            "options": ["cigarettes", "cigars", "pipe", "chewing", "vaping"],
+            "condition": { "field_id": "tobacco_use", "operator": "equals", "value": "current" }
+          },
+          {
+            "field_id": "tobacco_frequency", "label": "How often?", "type": "text", "required": false, "max_length": 100,
+            "condition": { "field_id": "tobacco_use", "operator": "equals", "value": "current" }
+          },
+          {
+            "field_id": "tobacco_quit_date", "label": "When did you quit?", "type": "date", "required": false, "format": "YYYY-MM",
+            "condition": { "field_id": "tobacco_use", "operator": "equals", "value": "former" }
+          },
+          {
+            "field_id": "alcohol_use", "label": "Do you consume alcohol?", "type": "select", "required": true,
+            "options": ["never", "occasionally", "moderately", "heavily"]
+          },
+          {
+            "field_id": "alcohol_frequency", "label": "How many drinks per week?", "type": "number", "required": false,
+            "min": 0, "max": 100,
+            "condition": { "field_id": "alcohol_use", "operator": "in", "value": ["occasionally", "moderately", "heavily"] }
+          },
+          {
+            "field_id": "recreational_drugs", "label": "Do you use recreational drugs?", "type": "select", "required": true,
+            "options": ["never", "former", "current"]
+          },
+          {
+            "field_id": "drug_details", "label": "If current or former, please describe", "type": "textarea", "required": false, "max_length": 500,
+            "condition": { "field_id": "recreational_drugs", "operator": "in", "value": ["former", "current"] }
+          },
+          {
+            "field_id": "exercise_frequency", "label": "How often do you exercise?", "type": "select", "required": true,
+            "options": ["none", "1_2_weekly", "3_4_weekly", "5_plus_weekly", "daily"]
+          },
+          { "field_id": "diet_description", "label": "Describe your typical diet", "type": "textarea", "required": false, "max_length": 300 },
+          { "field_id": "sleep_hours", "label": "Average hours of sleep per night", "type": "number", "required": false, "min": 0, "max": 24, "decimal_places": 1 }
+        ]
+      },
+      {
+        "section_id": "consent",
+        "title": "Consent & Signature",
+        "fields": [
+          { "field_id": "consent_treatment", "label": "I consent to examination and treatment", "type": "boolean", "required": true, "hint": "Must be accepted to proceed" },
+          { "field_id": "consent_privacy", "label": "I acknowledge the privacy practices notice", "type": "boolean", "required": true, "hint": "Must be accepted to proceed" },
+          {
+            "field_id": "consent_billing", "label": "I authorize billing to my insurance", "type": "boolean", "required": false,
+            "condition": { "field_id": "has_insurance", "operator": "equals", "value": true },
+            "hint": "Required if you have insurance"
+          },
+          { "field_id": "signature_name", "label": "Typed Signature (Full Legal Name)", "type": "text", "required": true, "hint": "Must match the full legal name provided above" },
+          { "field_id": "signature_date", "label": "Date", "type": "date", "required": true, "format": "YYYY-MM-DD", "hint": "Must be today's date" }
+        ]
+      }
+    ]
+  },
+  "instructions": {
+    "greeting": "This is the new patient intake form for Riverside Family Medical. The patient needs to provide personal information, insurance details, medical history, current medications, family medical history, lifestyle information, and their reason for visiting. The form typically takes 10-15 minutes.",
+    "section_order": ["personal", "insurance", "reason_for_visit", "medical_history", "medications", "family_history", "lifestyle", "consent"],
+    "section_guidance": {
+      "personal": {
+        "intro": "Collect the patient's personal and contact information, including an emergency contact.",
+        "notes": "Sex at birth is a medical question needed for health screening — frame it clinically. Gender identity and pronouns are optional and should be offered respectfully. Emergency contact is required."
+      },
+      "insurance": {
+        "intro": "Ask about health insurance coverage.",
+        "notes": "If the patient has insurance, they'll need their member ID and group number — suggest they check their insurance card. Offer to let them upload a photo of their card. If they don't have insurance, note the self-pay option. Do NOT collect the actual insurance card numbers yourself — have them provide it or upload the card."
+      },
+      "reason_for_visit": {
+        "intro": "Understand why the patient is coming in. This helps us prepare for their appointment.",
+        "notes": "If it's a new patient checkup, this section is simple. If they have a specific concern, gently ask for details about symptoms — duration, severity. Don't push too hard on specifics — the doctor will explore further in person."
+      },
+      "medical_history": {
+        "intro": "Walk through past medical conditions, surgeries, allergies, and immunization status.",
+        "notes": "Present the conditions list conversationally — don't just dump a checklist. Group them: 'Do you have any heart or cardiovascular conditions? What about diabetes or metabolic conditions?' etc. For allergies, make sure to capture the reaction and severity — this is clinically important. If the patient is unsure about something, note 'unsure' rather than skipping."
+      },
+      "medications": {
+        "intro": "Collect current medications and supplements.",
+        "notes": "Patients often forget medications or get dosages wrong. Encourage them to check their medication bottles if possible. Separate prescription medications from over-the-counter supplements. If they upload a medication list from another provider, extract data from it."
+      },
+      "family_history": {
+        "intro": "Ask about family medical history for immediate relatives.",
+        "notes": "Some patients may not know their family history (adoption, estrangement). If so, mark it as unknown and move on — don't push. When asking, group by condition rather than by family member: 'Has anyone in your family had heart disease? Diabetes?' etc."
+      },
+      "lifestyle": {
+        "intro": "Ask about tobacco, alcohol, drug use, exercise, and sleep.",
+        "notes": "These are sensitive topics. Be matter-of-fact and non-judgmental. Frame these as 'routine questions we ask all patients.' For substance use, the patient's honesty matters for their care — reassure them that answers are confidential and used only for medical purposes."
+      },
+      "consent": {
+        "intro": "The patient needs to consent to treatment, acknowledge privacy practices, and authorize billing.",
+        "notes": "Present the consent items clearly. The typed signature must match the legal name provided earlier. If the patient has questions about privacy or consent, explain that this is standard practice and they can request a copy of the full privacy notice."
+      }
+    },
+    "general_notes": [
+      "Medical forms can be intimidating. Keep the tone warm, patient, and reassuring.",
+      "If the patient seems unsure about a medical term, explain it simply. E.g., 'Hypertension is the medical term for high blood pressure.'",
+      "For sensitive questions (substance use, mental health history), normalize the questions: 'These are routine questions we ask everyone.'",
+      "If the patient doesn't have information handy (e.g., insurance card, medication list), offer to save the draft and come back to those sections.",
+      "Be careful with medical data — confirm values like medication dosages and allergy reactions to make sure they're accurate.",
+      "If a patient mentions symptoms that sound urgent (chest pain, difficulty breathing, suicidal thoughts), note this prominently and advise them to seek immediate care rather than waiting for their appointment.",
+      "The patient may upload a medication list, previous medical records, or insurance card photos — extract relevant data from these when possible."
+    ]
+  }
+}

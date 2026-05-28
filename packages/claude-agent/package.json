@@ -1,0 +1,25 @@
+{
+  "name": "@form-filling-assistant/claude-agent",
+  "version": "1.0.0",
+  "description": "Thin wrapper around Claude Code CLI headless mode — use Claude as an LLM/agent backbone for any app",
+  "type": "module",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}

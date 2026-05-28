@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Inspector — Form-Filling Assistant</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --border: #e2e4e8;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .header .badge {
+      font-size: 11px;
+      background: #fef3c7;
+      color: #92400e;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .header .spacer { flex: 1; }
+    .header .back-link {
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .header .back-link:hover { text-decoration: underline; }
+
+    /* ── Container ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .toolbar .count {
+      font-size: 14px;
+      color: var(--text-muted);
+      flex: 1;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #f0f0f5; }
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-danger { color: var(--danger); border-color: var(--danger); }
+    .btn-danger:hover { background: #fef2f2; }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Session table ── */
+    .session-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .session-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      background: #f9fafb;
+      border-bottom: 1px solid var(--border);
+    }
+    .session-table td {
+      padding: 10px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .session-table tr:last-child td { border-bottom: none; }
+    .session-table tr:hover td { background: #f8f9ff; }
+    .session-table .mono {
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .session-table .form-tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #ede9fe;
+      color: #5b21b6;
+      font-weight: 500;
+    }
+    .session-table .entry-count {
+      font-weight: 600;
+    }
+    .session-table .actions {
+      display: flex;
+      gap: 6px;
+    }
+    .session-table .actions button {
+      font-size: 12px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .session-table .actions button:hover { background: #f0f0f5; color: var(--text); }
+    .session-table .actions button.del:hover { background: #fef2f2; color: var(--danger); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+    /* ── Detail panel (slides in below table) ── */
+    .detail-panel {
+      display: none;
+      margin-top: 20px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .detail-panel.open { display: block; }
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      background: #f9fafb;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-header h2 {
+      font-size: 15px;
+      font-weight: 600;
+      flex: 1;
+    }
+    .detail-body {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    /* ── Log entries ── */
+    .log-entry {
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-entry .entry-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .log-entry .entry-type {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .log-entry .entry-type.session_start { background: #dbeafe; color: #1e40af; }
+    .log-entry .entry-type.user_message { background: #dcfce7; color: #166534; }
+    .log-entry .entry-type.model_input { background: #fef9c3; color: #854d0e; }
+    .log-entry .entry-type.model_output { background: #ede9fe; color: #5b21b6; }
+    .log-entry .entry-type.form_state_update { background: #e0f2fe; color: #0369a1; }
+    .log-entry .entry-type.error { background: #fee2e2; color: #991b1b; }
+    .log-entry .entry-ts {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', 'Consolas', monospace;
+    }
+    .log-entry .entry-body {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .log-entry .entry-body pre {
+      margin-top: 4px;
+      padding: 8px 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      padding: 12px 18px;
+      background: #f9fafb;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .stat {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .stat strong {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Session Inspector</h1>
+    <span class="badge">DEV</span>
+    <div class="spacer"></div>
+    <a class="back-link" href="/">← Back to app</a>
+  </div>
+
+  <div class="container">
+    <div class="toolbar">
+      <span class="count" id="sessionCount">Loading…</span>
+      <button class="btn btn-primary" id="exportAllBtn" onclick="exportAll()" disabled>Export All</button>
+      <button class="btn btn-danger" id="clearAllBtn" onclick="clearAll()" disabled>Clear All</button>
+    </div>
+
+    <div id="tableArea"></div>
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-header">
+        <h2 id="detailTitle">Session</h2>
+        <button class="btn" onclick="exportSession(currentDetailId)">Export</button>
+        <button class="btn btn-danger" onclick="deleteSession(currentDetailId)">Delete</button>
+        <button class="btn" onclick="closeDetail()">Close</button>
+      </div>
+      <div class="stats-row" id="detailStats"></div>
+      <div class="detail-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <script src="/js/logger.js"></script>
+  <script>
+    'use strict';
+
+    var currentDetailId = null;
+
+    // ── Load session list ──
+
+    function refresh() {
+      Logger.listSessions().then(function (ids) {
+        ids.reverse(); // newest first
+        document.getElementById('sessionCount').textContent = ids.length + ' session' + (ids.length !== 1 ? 's' : '');
+        document.getElementById('exportAllBtn').disabled = ids.length === 0;
+        document.getElementById('clearAllBtn').disabled = ids.length === 0;
+
+        if (ids.length === 0) {
+          document.getElementById('tableArea').innerHTML =
+            '<div class="empty-state"><div class="icon">📋</div>No sessions recorded yet.<br>Use the form-filling app to generate sessions.</div>';
+          return;
+        }
+
+        // Fetch metadata for each session
+        var promises = ids.map(function (id) {
+          return Logger.getSession(id).then(function (entries) {
+            return { id: id, entries: entries };
+          });
+        });
+
+        Promise.all(promises).then(function (sessions) {
+          renderTable(sessions);
+        });
+      });
+    }
+
+    function renderTable(sessions) {
+      var html = '<table class="session-table">';
+      html += '<thead><tr>';
+      html += '<th>Session</th><th>Form</th><th>Started</th><th>Duration</th><th>Entries</th><th>Turns</th><th>Cost</th><th></th>';
+      html += '</tr></thead><tbody>';
+
+      sessions.forEach(function (s) {
+        var meta = extractMeta(s.entries);
+        html += '<tr onclick="openDetail(\'' + s.id + '\')" style="cursor:pointer">';
+        html += '<td class="mono">' + s.id.replace('sess-', '').slice(0, 20) + '</td>';
+        html += '<td>' + (meta.formName ? '<span class="form-tag">' + esc(meta.formName) + '</span>' : '<span style="color:#9ca3af">—</span>') + '</td>';
+        html += '<td>' + (meta.startedAt ? formatTime(meta.startedAt) : '—') + '</td>';
+        html += '<td>' + (meta.durationStr || '—') + '</td>';
+        html += '<td class="entry-count">' + s.entries.length + '</td>';
+        html += '<td>' + meta.turns + '</td>';
+        html += '<td>' + (meta.totalCost > 0 ? '$' + meta.totalCost.toFixed(4) : '—') + '</td>';
+        html += '<td class="actions">';
+        html += '<button onclick="event.stopPropagation(); exportSession(\'' + s.id + '\')">Export</button>';
+        html += '<button class="del" onclick="event.stopPropagation(); deleteSession(\'' + s.id + '\')">Delete</button>';
+        html += '</td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('tableArea').innerHTML = html;
+    }
+
+    function extractMeta(entries) {
+      var meta = { formName: null, formId: null, startedAt: null, endedAt: null, turns: 0, totalCost: 0, durationStr: null };
+
+      entries.forEach(function (e) {
+        if (e.type === 'session_start') {
+          meta.formName = e.form_name;
+          meta.formId = e.form_id;
+        }
+        if (e.type === 'model_output') {
+          meta.turns++;
+          if (typeof e.cost_usd === 'number') meta.totalCost += e.cost_usd;
+        }
+      });
+
+      if (entries.length > 0) {
+        meta.startedAt = entries[0].ts;
+        meta.endedAt = entries[entries.length - 1].ts;
+      }
+
+      if (meta.startedAt && meta.endedAt) {
+        var ms = new Date(meta.endedAt) - new Date(meta.startedAt);
+        if (ms < 60000) meta.durationStr = Math.round(ms / 1000) + 's';
+        else if (ms < 3600000) meta.durationStr = Math.round(ms / 60000) + 'm';
+        else meta.durationStr = (ms / 3600000).toFixed(1) + 'h';
+      }
+
+      return meta;
+    }
+
+    // ── Detail view ──
+
+    function openDetail(sessionId) {
+      currentDetailId = sessionId;
+      Logger.getSession(sessionId).then(function (entries) {
+        var meta = extractMeta(entries);
+        document.getElementById('detailTitle').textContent =
+          (meta.formName || 'Unknown form') + '  —  ' + sessionId.replace('sess-', '').slice(0, 20);
+
+        // Stats
+        var statsHtml = '';
+        statsHtml += '<span class="stat"><strong>' + entries.length + '</strong> entries</span>';
+        statsHtml += '<span class="stat"><strong>' + meta.turns + '</strong> model turns</span>';
+        if (meta.totalCost > 0) statsHtml += '<span class="stat">Cost: <strong>$' + meta.totalCost.toFixed(4) + '</strong></span>';
+        if (meta.startedAt) statsHtml += '<span class="stat">Started: <strong>' + formatTime(meta.startedAt) + '</strong></span>';
+        if (meta.durationStr) statsHtml += '<span class="stat">Duration: <strong>' + meta.durationStr + '</strong></span>';
+        document.getElementById('detailStats').innerHTML = statsHtml;
+
+        // Entries
+        var bodyHtml = '';
+        entries.forEach(function (e) {
+          bodyHtml += '<div class="log-entry">';
+          bodyHtml += '<div class="entry-header">';
+          bodyHtml += '<span class="entry-type ' + e.type + '">' + e.type + '</span>';
+          bodyHtml += '<span class="entry-ts">' + formatTimeFull(e.ts) + '</span>';
+          bodyHtml += '</div>';
+          bodyHtml += '<div class="entry-body">' + renderEntryBody(e) + '</div>';
+          bodyHtml += '</div>';
+        });
+
+        document.getElementById('detailBody').innerHTML = bodyHtml;
+        document.getElementById('detailPanel').classList.add('open');
+        document.getElementById('detailPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    function renderEntryBody(entry) {
+      switch (entry.type) {
+        case 'session_start':
+          return 'Form: <strong>' + esc(entry.form_name || '?') + '</strong> (' + esc(entry.form_id || '?') + ')';
+
+        case 'user_message':
+          var role = entry.role === 'system' ? ' <em>(system)</em>' : '';
+          return role + '<pre>' + esc(truncate(entry.message, 1000)) + '</pre>';
+
+        case 'model_input':
+          var parts = 'Prompt length: <strong>' + (entry.full_prompt_length || '?') + '</strong> chars';
+          if (entry.user_message) parts += '<pre>' + esc(truncate(entry.user_message, 500)) + '</pre>';
+          if (entry.form_state_snapshot) {
+            var keys = Object.keys(entry.form_state_snapshot);
+            parts += '<br>Form state: ' + keys.length + ' field' + (keys.length !== 1 ? 's' : '') + ' filled';
+          }
+          return parts;
+
+        case 'model_output':
+          var info = '';
+          if (entry.duration_ms) info += 'Duration: <strong>' + (entry.duration_ms / 1000).toFixed(1) + 's</strong> · ';
+          if (typeof entry.cost_usd === 'number') info += 'Cost: <strong>$' + entry.cost_usd.toFixed(4) + '</strong> · ';
+          if (entry.claude_session_id) info += 'Claude session: <span class="mono">' + esc(entry.claude_session_id.slice(0, 16)) + '…</span>';
+          if (entry.parsed_actions && entry.parsed_actions.length > 0) {
+            info += '<br>Actions: ' + entry.parsed_actions.map(function (a) { return '<strong>' + esc(a.type) + '</strong>'; }).join(', ');
+          }
+          if (entry.raw_text) info += '<pre>' + esc(truncate(entry.raw_text, 1000)) + '</pre>';
+          return info;
+
+        case 'form_state_update':
+          var src = entry.source ? ' (source: ' + esc(entry.source) + ')' : '';
+          return src + '<pre>' + esc(JSON.stringify(entry.field_updates, null, 2)) + '</pre>';
+
+        case 'error':
+          var ctx = entry.context ? ' [' + esc(entry.context) + ']' : '';
+          return '<strong style="color:var(--danger)">' + esc(entry.message) + '</strong>' + ctx;
+
+        default:
+          return '<pre>' + esc(JSON.stringify(entry, null, 2)) + '</pre>';
+      }
+    }
+
+    function closeDetail() {
+      currentDetailId = null;
+      document.getElementById('detailPanel').classList.remove('open');
+    }
+
+    // ── Export ──
+
+    function exportSession(sessionId) {
+      Logger.exportSession(sessionId).then(function (jsonl) {
+        download(jsonl, 'session-' + sessionId + '.jsonl', 'application/jsonl');
+      });
+    }
+
+    function exportAll() {
+      Logger.listSessions().then(function (ids) {
+        if (ids.length === 0) return;
+
+        var promises = ids.map(function (id) {
+          return Logger.exportSession(id);
+        });
+
+        Promise.all(promises).then(function (jsonls) {
+          // Combine with a blank line separator between sessions
+          var combined = jsonls.join('\n\n');
+          download(combined, 'all-sessions-' + new Date().toISOString().slice(0, 10) + '.jsonl', 'application/jsonl');
+        });
+      });
+    }
+
+    function download(content, filename, mimeType) {
+      var blob = new Blob([content], { type: mimeType });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ── Delete ──
+
+    function deleteSession(sessionId) {
+      if (!confirm('Delete session ' + sessionId.replace('sess-', '').slice(0, 20) + '?')) return;
+
+      Logger.deleteSession(sessionId).then(function () {
+        if (currentDetailId === sessionId) closeDetail();
+        refresh();
+      });
+    }
+
+    function clearAll() {
+      if (!confirm('Delete ALL sessions? This cannot be undone.')) return;
+      Logger.clearAll().then(function () {
+        closeDetail();
+        refresh();
+      });
+    }
+
+    // ── Helpers ──
+
+    function esc(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function truncate(str, max) {
+      if (!str) return '';
+      return str.length > max ? str.slice(0, max) + '…' : str;
+    }
+
+    function formatTime(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' +
+        d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatTimeFull(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+    }
+
+    // ── Init ──
+    refresh();
+  </script>
+</body>
+</html>

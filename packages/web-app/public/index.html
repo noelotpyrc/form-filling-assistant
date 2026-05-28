@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form-Filling Assistant</title>
+  <style>
+    :root {
+      --bg: #f7f7f8;
+      --chat-bg: #ffffff;
+      --user-bg: #2563eb;
+      --user-text: #ffffff;
+      --assistant-bg: #f0f0f5;
+      --assistant-text: #1a1a2e;
+      --tool-bg: #fef3c7;
+      --tool-border: #f59e0b;
+      --input-bg: #ffffff;
+      --input-border: #d1d5db;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1);
+      --form-accent: #7c3aed;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      padding: 12px 24px;
+      background: var(--chat-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header .badge {
+      font-size: 11px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    .header .status {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .header .status.connected::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      margin-right: 6px;
+    }
+
+    /* ── Two-column layout ── */
+    .main-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* ── Form panel (right) ── */
+    .form-panel {
+      width: 420px;
+      border-left: 1px solid var(--border);
+      background: var(--bg);
+      overflow-y: auto;
+      flex-shrink: 0;
+      transition: width 0.2s;
+    }
+    .form-panel-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 24px;
+    }
+    .form-panel-header {
+      padding: 12px 16px;
+      background: var(--chat-bg);
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    /* (Section accordion removed — now using dynamic active cards) */
+
+    /* Form fields */
+    .form-field {
+      margin-bottom: 14px;
+    }
+    .form-field.hidden { display: none; }
+    .form-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .form-field label .required { color: #dc2626; }
+    .form-field .field-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .form-field input[type="text"],
+    .form-field input[type="number"],
+    .form-field input[type="date"],
+    .form-field input[type="month"],
+    .form-field input[type="email"],
+    .form-field input[type="tel"] {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      background: white;
+    }
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      border-color: var(--form-accent);
+      box-shadow: 0 0 0 2px rgba(124,58,237,0.15);
+    }
+    .form-field select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      background: white;
+      cursor: pointer;
+    }
+    .form-field textarea {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      resize: vertical;
+      min-height: 60px;
+      background: white;
+    }
+
+    /* Boolean (radio) */
+    .bool-group {
+      display: flex;
+      gap: 16px;
+    }
+    .bool-group label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 400;
+      cursor: pointer;
+    }
+    .bool-group input[type="radio"] { cursor: pointer; }
+
+    /* Multi-select checkboxes */
+    .multi-select-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .multi-check {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 4px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 14px;
+      background: white;
+      transition: all 0.15s;
+    }
+    .multi-check:hover {
+      border-color: var(--form-accent);
+      background: #f5f3ff;
+    }
+    .multi-check.checked {
+      background: var(--form-accent);
+      color: white;
+      border-color: var(--form-accent);
+    }
+
+    /* Placeholder for file fields */
+    .field-placeholder {
+      padding: 10px;
+      background: var(--bg);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      font-style: italic;
+    }
+
+    /* Progress bar */
+    .form-progress {
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--chat-bg);
+    }
+    .progress-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-bottom: 4px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--form-accent);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* Section accordion */
+    .section-row { border-bottom: 1px solid var(--border); }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      background: var(--chat-bg);
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .section-header:hover { background: var(--assistant-bg); }
+    .section-chevron {
+      font-size: 10px;
+      color: var(--text-muted);
+      transition: transform 0.2s;
+      flex-shrink: 0;
+      width: 14px;
+      text-align: center;
+    }
+    .section-row.expanded .section-chevron { transform: rotate(90deg); }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    .section-progress {
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .section-progress.complete { color: #22c55e; }
+    .section-body {
+      padding: 4px 16px 12px;
+      background: var(--chat-bg);
+    }
+    .section-actions {
+      padding: 8px 0 4px;
+      display: flex;
+      gap: 8px;
+    }
+    @keyframes sectionHighlight {
+      0% { background: #f5f3ff; }
+      100% { background: var(--chat-bg); }
+    }
+    .section-row.just-activated .section-header {
+      animation: sectionHighlight 1.5s ease-out;
+    }
+
+    /* File field inline status */
+    .file-field-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .file-field-inline.uploaded { color: #22c55e; }
+
+    /* Per-section notes (non-schema info collected by Claude) */
+    .section-notes {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: var(--bg-secondary, #f5f5f5);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted, #888);
+    }
+    .section-notes-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .section-note-item {
+      padding: 2px 0;
+    }
+    .section-note-item .note-label {
+      color: var(--text-secondary, #666);
+    }
+
+    /* Group entry header */
+    .group-entry-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--form-accent);
+      padding: 8px 0 4px;
+      border-bottom: 1px dashed var(--border);
+      margin-bottom: 8px;
+    }
+
+    /* Section done button */
+    .send-answers-btn {
+      padding: 8px 20px;
+      background: var(--form-accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .send-answers-btn:hover { background: #6d28d9; }
+    .send-answers-btn:disabled {
+      background: #c4b5fd;
+      cursor: not-allowed;
+    }
+
+    /* Draft loaded banner */
+    .draft-banner {
+      margin: 12px 8px;
+      padding: 14px 16px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-left: 3px solid #3b82f6;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #1e40af;
+      line-height: 1.5;
+    }
+    .draft-banner strong { font-weight: 600; }
+
+    /* Field highlight animation on auto-fill */
+    @keyframes fieldHighlight {
+      0% { background: #fef3c7; }
+      100% { background: white; }
+    }
+    .field-just-set input,
+    .field-just-set select,
+    .field-just-set textarea {
+      animation: fieldHighlight 1.5s ease-out;
+    }
+
+    /* ── Chat panel styles ── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .message {
+      max-width: 85%;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: var(--user-bg);
+      color: var(--user-text);
+      padding: 10px 16px;
+      border-radius: 18px 18px 4px 18px;
+    }
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--assistant-bg);
+      color: var(--assistant-text);
+      padding: 12px 16px;
+      border-radius: 18px 18px 18px 4px;
+      word-break: break-word;
+    }
+    /* Markdown content inside assistant messages */
+    .message.assistant p { margin: 0 0 8px 0; }
+    .message.assistant p:last-child { margin-bottom: 0; }
+    .message.assistant ul, .message.assistant ol { margin: 4px 0 8px 20px; }
+    .message.assistant li { margin: 2px 0; }
+    .message.assistant strong { font-weight: 600; }
+    .message.assistant h1, .message.assistant h2, .message.assistant h3,
+    .message.assistant h4, .message.assistant h5, .message.assistant h6 {
+      margin: 8px 0 4px 0; font-size: 14px; font-weight: 600;
+    }
+    .message.assistant table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+    .message.assistant th, .message.assistant td {
+      border: 1px solid var(--border); padding: 4px 8px; text-align: left;
+    }
+    .message.assistant th { background: rgba(0,0,0,0.04); font-weight: 600; }
+    .message.assistant code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 3px; font-size: 13px; }
+    .message.assistant pre { background: rgba(0,0,0,0.06); padding: 8px; border-radius: 6px; margin: 8px 0; overflow-x: auto; }
+    .message.assistant pre code { background: none; padding: 0; }
+    .message.assistant hr { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+    .message.assistant blockquote { border-left: 3px solid var(--border); padding-left: 10px; margin: 8px 0; color: var(--text-muted); }
+
+    /* Tool calls */
+    .tool-block {
+      align-self: flex-start;
+      max-width: 85%;
+      background: var(--tool-bg);
+      border-left: 3px solid var(--tool-border);
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .tool-block .tool-header {
+      font-weight: 600;
+      color: #92400e;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tool-block .tool-header::before { content: '\25B6 '; font-size: 10px; }
+    .tool-block .tool-header.expanded::before { content: '\25BC '; }
+    .tool-block .tool-detail {
+      display: none;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #78350f;
+      font-size: 11px;
+    }
+    .tool-block .tool-detail.visible { display: block; }
+
+    /* Tool result */
+    .tool-result-block {
+      align-self: flex-start;
+      max-width: 85%;
+      background: #ecfdf5;
+      border-left: 3px solid #10b981;
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .tool-result-block .tool-header {
+      font-weight: 600;
+      color: #065f46;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tool-result-block .tool-header::before { content: '\2713 '; }
+    .tool-result-block .tool-detail {
+      display: none;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #064e3b;
+      font-size: 11px;
+    }
+    .tool-result-block .tool-detail.visible { display: block; }
+
+    /* Loading */
+    .loading {
+      align-self: flex-start;
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+    .loading .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: bounce 1.4s ease-in-out infinite;
+    }
+    .loading .dot:nth-child(2) { animation-delay: 0.16s; }
+    .loading .dot:nth-child(3) { animation-delay: 0.32s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-8px); opacity: 1; }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 12px 20px;
+      background: var(--chat-bg);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .input-container { max-width: 900px; margin: 0 auto; }
+    .file-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .file-chips:empty { display: none; margin-bottom: 0; }
+    .file-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+      padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 500;
+    }
+    .file-chip .file-icon { font-size: 14px; }
+    .file-chip .file-size { color: #6b7280; font-weight: 400; }
+    .file-chip .file-remove {
+      cursor: pointer; color: #6b7280; font-size: 14px; line-height: 1; padding: 0 2px; border-radius: 50%;
+    }
+    .file-chip .file-remove:hover { color: #dc2626; background: #fee2e2; }
+    .file-chip.uploading { opacity: 0.6; border-style: dashed; }
+
+    .input-row { display: flex; gap: 8px; }
+    .attach-btn {
+      padding: 8px 10px; background: transparent; border: 1px solid var(--input-border);
+      border-radius: 10px; font-size: 18px; cursor: pointer; color: var(--text-muted);
+      align-self: flex-end; line-height: 1; transition: all 0.15s;
+    }
+    .attach-btn:hover { background: var(--assistant-bg); color: var(--text); border-color: #9ca3af; }
+    .attach-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .input-row textarea {
+      flex: 1; padding: 8px 12px; border: 1px solid var(--input-border); border-radius: 10px;
+      font-size: 14px; font-family: inherit; resize: none; outline: none;
+      min-height: 40px; max-height: 120px; line-height: 1.4;
+    }
+    .input-row textarea:focus { border-color: var(--user-bg); box-shadow: 0 0 0 2px rgba(37,99,235,0.2); }
+    .send-btn {
+      padding: 8px 18px; background: var(--user-bg); color: white; border: none;
+      border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer;
+      white-space: nowrap; align-self: flex-end;
+    }
+    .send-btn:hover { background: #1d4ed8; }
+    .send-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* Drag-and-drop overlay */
+    .drop-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(37, 99, 235, 0.08); border: 3px dashed var(--user-bg);
+      z-index: 1000; align-items: center; justify-content: center; pointer-events: none;
+    }
+    .drop-overlay.active { display: flex; }
+    .drop-overlay-text {
+      background: white; padding: 24px 48px; border-radius: 16px;
+      font-size: 18px; font-weight: 600; color: var(--user-bg);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+
+    /* Welcome */
+    .welcome { text-align: center; padding: 60px 24px; color: var(--text-muted); }
+    .welcome h2 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    .welcome p { font-size: 14px; max-width: 500px; margin: 0 auto 16px; }
+    .welcome .examples { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+    .welcome .example {
+      background: var(--assistant-bg); padding: 8px 16px; border-radius: 8px;
+      font-size: 13px; cursor: pointer; transition: background 0.15s;
+    }
+    .welcome .example:hover { background: #e0e0ea; }
+
+    /* Form selector */
+    .form-selector { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; align-items: center; }
+    .form-card {
+      background: white; border: 2px solid var(--border); border-radius: 12px;
+      padding: 16px 24px; width: 320px; cursor: pointer; transition: all 0.15s;
+      text-align: left;
+    }
+    .form-card:hover { border-color: var(--form-accent); box-shadow: 0 2px 8px rgba(124,58,237,0.15); }
+    .form-card h3 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .form-card p { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+    /* Login form */
+    .login-form { display: flex; flex-direction: column; gap: 12px; align-items: center; margin-top: 16px; }
+    .login-form input[type="email"] {
+      width: 320px; padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px;
+      font-size: 14px; outline: none; transition: border-color 0.15s;
+    }
+    .login-form input[type="email"]:focus { border-color: var(--form-accent); }
+    .login-form button {
+      width: 320px; padding: 10px; border: none; border-radius: 8px;
+      background: var(--form-accent); color: white; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .login-form button:hover { opacity: 0.9; }
+    .login-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Choice buttons (ask_choice action) */
+    .choice-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .choice-btn {
+      background: white; border: 1px solid var(--form-accent); color: var(--form-accent);
+      padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+      transition: all 0.15s;
+    }
+    .choice-btn:hover { background: var(--form-accent); color: white; }
+
+    /* Preview card (show_preview action) */
+    .preview-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 8px; }
+    .preview-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+    .preview-section { margin-bottom: 12px; }
+    .preview-section h4 { font-size: 13px; font-weight: 600; color: var(--form-accent); margin-bottom: 6px; }
+    .preview-field { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+    .preview-field .label { color: var(--text-muted); }
+    .preview-field .value { color: var(--text); font-weight: 500; }
+
+    /* Action buttons (show_button action) */
+    .action-btn {
+      background: var(--form-accent); color: white; border: none; padding: 10px 24px;
+      border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+      margin-top: 8px; transition: opacity 0.15s;
+    }
+    .action-btn:hover { opacity: 0.9; }
+    .action-btn.save-draft { background: #059669; }
+    .action-btn.submit { background: var(--user-bg); }
+
+    /* Error / Cost */
+    .error-msg {
+      align-self: center; background: #fef2f2; color: #991b1b;
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; border: 1px solid #fecaca;
+    }
+    .cost-info { align-self: center; font-size: 11px; color: var(--text-muted); padding: 4px 12px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Form-Filling Assistant</h1>
+    <span class="badge">Powered by Claude</span>
+    <span class="status connected" id="status">Ready</span>
+  </div>
+
+  <div class="main-container">
+    <!-- ── Chat panel (left) ── -->
+    <div class="chat-panel">
+      <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+          <h2>Welcome!</h2>
+          <p>I help you fill out forms through conversation. Enter your email to get started.</p>
+          <div class="login-form" id="loginForm">
+            <input type="email" id="loginEmail" placeholder="you@example.com"
+              onkeydown="if(event.key==='Enter')handleLogin()">
+            <button onclick="handleLogin()">Continue</button>
+          </div>
+          <div class="form-selector" id="formSelector" style="display:none">
+            <!-- Populated dynamically from /forms/*.json (dev fallback) -->
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-container">
+          <div class="file-chips" id="fileChips"></div>
+          <div class="input-row">
+            <button class="attach-btn" id="attachBtn" onclick="triggerFileInput()" title="Attach file">&#x1F4CE;</button>
+            <textarea id="input" placeholder="Type a message..." rows="1"
+              onkeydown="handleKeydown(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+        <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect(event)" multiple>
+      </div>
+    </div>
+
+    <!-- ── Form panel (right) ── -->
+    <div class="form-panel" id="formPanel">
+      <div class="form-panel-empty" id="formEmpty">
+        Start a conversation to load a form.<br>Fields will appear here as Claude guides you.
+      </div>
+      <div id="formContent" style="display:none">
+        <div class="form-panel-header" id="formTitle">Form</div>
+        <div class="form-progress" id="formOverallProgress"></div>
+        <div id="sectionAccordion">
+          <!-- Dynamically generated section rows -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag-and-drop overlay -->
+  <div class="drop-overlay" id="dropOverlay">
+    <div class="drop-overlay-text">Drop file to attach</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+  <script src="/js/validation.js"></script>
+  <script src="/js/vault.js"></script>
+  <script src="/js/system-prompt.js"></script>
+  <script src="/js/action-parser.js"></script>
+  <script src="/js/chat-provider.js"></script>
+  <script src="/js/file-processor.js"></script>
+  <script src="/js/logger.js"></script>
+  <script>
+    // ── Markdown rendering ──
+    // Configure marked: disable raw HTML passthrough for safety
+    marked.use({ breaks: true });
+
+    function renderMarkdown(text) {
+      if (!text) return '';
+      return marked.parse(text);
+    }
+
+    // ── State ──
+    let currentUserEmail = null;
+    let pendingFormMeta = null; // Form meta loaded during init, used after login
+    let isStreaming = false;
+    let pendingFiles = [];
+    let sentFiles = []; // Files that were sent in the last message (kept for Claude to assign to file fields)
+    let currentFormMeta = null; // The loaded form JSON
+
+    // Claude CLI session ID for multi-turn (round-tripped via done events)
+    let claudeSessionId = null;
+
+    // Local session ID for logging (generated in browser)
+    let logSessionId = null;
+
+    // Chat provider instance
+    // Backend selection: ?backend=local (or persisted in localStorage) routes
+    // chat through the local SFT harness instead of Claude. Default = Claude.
+    const __urlBackend = new URLSearchParams(window.location.search).get('backend');
+    if (__urlBackend) localStorage.setItem('chat_backend', __urlBackend);
+    const __backend = localStorage.getItem('chat_backend') || 'claude';
+    const chatProvider = (__backend === 'local')
+      ? new ChatProvider.LocalSFTProvider('/api/generate-local')
+      : new ChatProvider.CLIProxyProvider('/api/generate');
+    console.log('[chat] backend =', __backend, chatProvider);
+
+    // Conversation history (only consumed by LocalSFTProvider; CLI provider
+    // gets multi-turn state via Claude's --resume mechanism).
+    const conversationHistory = [];
+
+    // Form state
+    let formSchema = null;
+    let formInstructions = null;
+    let formValues = {};
+    let groupValues = {};
+    let sectionNotes = {};       // { sectionId: [{ label, value }] } — non-schema info per section
+    let lastActiveSection = null; // tracks which section Claude is currently working on
+
+    // Available forms (loaded from /forms/)
+    const AVAILABLE_FORMS = [
+      { id: 'masters-northfield', file: 'masters-northfield.json' },
+      { id: 'masters-westbrook', file: 'masters-westbrook.json' },
+      { id: 'patient-riverside', file: 'patient-riverside.json' },
+    ];
+
+    // ── DOM refs ──
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    const attachBtn = document.getElementById('attachBtn');
+    const statusEl = document.getElementById('status');
+    const welcomeEl = document.getElementById('welcome');
+    const fileChipsEl = document.getElementById('fileChips');
+    const fileInputEl = document.getElementById('fileInput');
+    const dropOverlay = document.getElementById('dropOverlay');
+    const formPanel = document.getElementById('formPanel');
+    const formEmpty = document.getElementById('formEmpty');
+    const formContent = document.getElementById('formContent');
+    const formTitle = document.getElementById('formTitle');
+    const sectionAccordion = document.getElementById('sectionAccordion');
+    const formSelector = document.getElementById('formSelector');
+
+    // ── Generate a local session ID ──
+    function generateSessionId() {
+      return 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    }
+
+    // ── Initialize: check config, auto-select form or show selector ──
+    async function init() {
+      logSessionId = generateSessionId();
+
+      try {
+        const configRes = await fetch('/api/config');
+        const config = await configRes.json();
+        if (config.preselectedForm) {
+          const formEntry = AVAILABLE_FORMS.find(f => f.id === config.preselectedForm);
+          if (formEntry) {
+            const res = await fetch(`/forms/${formEntry.file}`);
+            pendingFormMeta = await res.json();
+            // Show login screen — form will start after login
+            return;
+          }
+          console.warn('Unknown form ID:', config.preselectedForm);
+        }
+      } catch (err) {
+        console.warn('Could not fetch config, falling back to form selector:', err);
+      }
+
+      // No --form flag: show login, then form selector after login
+      loadFormSelector();
+    }
+
+    async function handleLogin() {
+      const emailInput = document.getElementById('loginEmail');
+      const email = emailInput.value.trim();
+      if (!email) { emailInput.focus(); return; }
+
+      currentUserEmail = email;
+
+      if (pendingFormMeta) {
+        // --form flag: go straight to form after login
+        await startFormWithDraftCheck(pendingFormMeta);
+      } else {
+        // Dev mode: show form selector
+        document.getElementById('loginForm').style.display = 'none';
+        formSelector.style.display = '';
+      }
+    }
+
+    async function loadFormSelector() {
+      for (const form of AVAILABLE_FORMS) {
+        try {
+          const res = await fetch(`/forms/${form.file}`);
+          const meta = await res.json();
+          const card = document.createElement('div');
+          card.className = 'form-card';
+          card.innerHTML = `<h3>${meta.name}</h3><p>${meta.instructions.greeting.split('.')[0]}.</p>`;
+          card.onclick = () => startFormWithDraftCheck(meta);
+          formSelector.appendChild(card);
+        } catch (err) {
+          console.warn('Failed to load form:', form.file, err);
+        }
+      }
+    }
+
+    /**
+     * Build a natural-language summary of what the user has previously
+     * provided. Walks the schema to recover human labels for filled fields,
+     * keeping the kickoff message free of technical terms (no field_id,
+     * no schema references, no ask_choice, etc.).
+     *
+     * The model is a form-filling assistant talking to an applicant — it
+     * should reason about "the program they chose" and "their email", not
+     * "field_id program" and "set_fields actions".
+     */
+    function summarizeFilledForGreeting(schema, formState) {
+      if (!schema || !formState) return '';
+      const labelByField = {};
+      const sections = (schema.sections || schema.schema?.sections || []);
+      for (const section of sections) {
+        for (const f of (section.fields || [])) {
+          if (f.field_id && f.label) labelByField[f.field_id] = f.label;
+          // Group sub-fields use dotted ids: e.g. degrees.0.institution
+          for (const sub of (f.fields || [])) {
+            if (sub.field_id && sub.label) {
+              labelByField[`${f.field_id}.${sub.field_id}`] = sub.label;
+            }
+          }
+        }
+      }
+      const parts = [];
+      for (const [k, v] of Object.entries(formState)) {
+        if (v === undefined || v === null || v === '') continue;
+        // Try direct match first; otherwise the dotted/dashed group form.
+        let label = labelByField[k];
+        if (!label) {
+          // degrees-0-institution → degrees.institution lookup attempt
+          const generic = k.replace(/[-.]\d+[-.]/, '.');
+          label = labelByField[generic] || k;
+        }
+        // Render value naturally (booleans → yes/no, arrays → comma-list).
+        let val;
+        if (v === true) val = 'yes';
+        else if (v === false) val = 'no';
+        else if (Array.isArray(v)) val = v.join(', ');
+        else val = String(v);
+        parts.push(`${label}: ${val}`);
+      }
+      return parts.join('; ');
+    }
+
+    async function startFormWithDraftCheck(meta) {
+      // Check for saved draft
+      let draftData = null;
+      try {
+        const res = await fetch(`http://localhost:3005/api/drafts/${encodeURIComponent(currentUserEmail)}`);
+        if (res.ok) {
+          const draft = await res.json();
+          if (draft.form_id === meta.form_id && draft.data) {
+            draftData = draft.data;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not check for saved draft:', err);
+      }
+
+      // Kickoff messages are written in the assistant's natural voice — no
+      // technical terms (no "draft", "vault", "schema", "set_fields", etc.).
+      // The model is a form-filling assistant; it should reason about what
+      // the applicant has done, not about the underlying storage system.
+      if (draftData) {
+        // Returning applicant — restore their answers and brief the model on
+        // what's already been provided so it doesn't have to ask again.
+        formValues = draftData;
+        const summary = summarizeFilledForGreeting(meta.schema, draftData);
+        selectForm(meta, {
+          autoStart: true,
+          preserveValues: true,
+          message:
+            `${currentUserEmail} is continuing their ${meta.name} from a previous visit. ` +
+            `They've already provided: ${summary}. ` +
+            `Welcome them back warmly, give them a brief overview of what's been completed and what still needs to be filled in, ` +
+            `then ask where they'd like to pick up.`
+        });
+      } else {
+        // Brand-new applicant — be explicit so the model doesn't invent
+        // checks against systems that don't exist (no vault, no past
+        // applications). Nudges toward presenting the first question with
+        // selectable options.
+        selectForm(meta, {
+          autoStart: true,
+          message:
+            `${currentUserEmail} is starting a brand-new ${meta.name}. ` +
+            `Nothing has been filled in yet, and there's no information from any past applications to reuse. ` +
+            `Welcome them warmly and ask which graduate program they'd like to apply to, presenting the available programs as choices they can pick from.`
+        });
+      }
+    }
+
+    async function selectForm(meta, options) {
+      options = options || {};
+      currentFormMeta = meta;
+      formSchema = meta.schema;
+      formInstructions = meta.instructions;
+
+      // Set up form panel
+      formTitle.textContent = meta.name;
+      formEmpty.style.display = 'none';
+      formContent.style.display = 'block';
+
+      // Reset state, then restore draft if provided
+      if (!options.preserveValues) {
+        formValues = {};
+        groupValues = {};
+      }
+      // Always pre-fill email from login
+      if (currentUserEmail) formValues.email = currentUserEmail;
+      sectionNotes = {};
+      lastActiveSection = null;
+      buildSectionAccordion();
+
+      // Reset Claude session for new form
+      claudeSessionId = null;
+      logSessionId = generateSessionId();
+
+      // Log session start
+      Logger.sessionStart(logSessionId, meta.form_id, meta.name);
+
+      // Hide welcome and start chat
+      if (welcomeEl) welcomeEl.style.display = 'none';
+      var msg = options.message || `I'd like to fill out the ${meta.name} form. Please help me get started.`;
+      sendMessage(msg, { hidden: !!options.autoStart });
+    }
+
+    init();
+
+    // ── Section Accordion ──
+
+    function buildSectionAccordion() {
+      sectionAccordion.innerHTML = '';
+      if (!formSchema) return;
+
+      for (var s = 0; s < formSchema.sections.length; s++) {
+        var section = formSchema.sections[s];
+        var row = document.createElement('div');
+        row.className = 'section-row';
+        row.dataset.sectionId = section.section_id;
+
+        var header = document.createElement('div');
+        header.className = 'section-header';
+        header.innerHTML =
+          '<span class="section-chevron">&#9654;</span>' +
+          '<span class="section-title">' + section.title + '</span>' +
+          '<span class="section-progress">0 fields</span>';
+        header.onclick = (function (sid) {
+          return function () { toggleSection(sid); };
+        })(section.section_id);
+        row.appendChild(header);
+
+        var body = document.createElement('div');
+        body.className = 'section-body';
+        body.style.display = 'none';
+
+        var actions = document.createElement('div');
+        actions.className = 'section-actions';
+        actions.style.display = 'none';
+        var btn = document.createElement('button');
+        btn.className = 'send-answers-btn';
+        btn.textContent = 'Save';
+        btn.onclick = (function (sid) {
+          return function () { sendSectionAnswers(sid); };
+        })(section.section_id);
+        actions.appendChild(btn);
+        body.appendChild(actions);
+
+        row.appendChild(body);
+        sectionAccordion.appendChild(row);
+      }
+
+      updateSectionProgress();
+    }
+
+    function toggleSection(sectionId) {
+      var row = sectionAccordion.querySelector('.section-row[data-section-id="' + sectionId + '"]');
+      if (!row) return;
+      if (row.classList.contains('expanded')) {
+        collapseSection(sectionId);
+      } else {
+        expandSection(sectionId);
+      }
+    }
+
+    function expandSection(sectionId, opts) {
+      opts = opts || {};
+      var row = sectionAccordion.querySelector('.section-row[data-section-id="' + sectionId + '"]');
+      if (!row) return;
+      row.classList.add('expanded');
+      var body = row.querySelector('.section-body');
+      body.style.display = '';
+
+      // Ensure all fields for this section are rendered
+      ensureSectionFieldsRendered(sectionId);
+
+      // Show the Send answers button
+      var sa = row.querySelector('.section-actions');
+      if (sa) sa.style.display = '';
+
+      if (opts.highlight) {
+        row.classList.add('just-activated');
+        setTimeout(function () { row.classList.remove('just-activated'); }, 1500);
+      }
+      if (opts.scrollTo !== false) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    /**
+     * Check if a field is already rendered as an editable control.
+     */
+    function isFieldRendered(sectionBody, compositeId) {
+      return !!document.getElementById('field-' + compositeId);
+    }
+
+    /**
+     * Render all fields for a section if not already rendered.
+     * Called when user manually expands a section, so they always see the full form.
+     * Skips fields that are already displayed as editable controls OR read-only summaries.
+     */
+    function ensureSectionFieldsRendered(sectionId) {
+      if (!formSchema) return;
+      var section = formSchema.sections.find(function (s) { return s.section_id === sectionId; });
+      if (!section) return;
+
+      var row = sectionAccordion.querySelector('.section-row[data-section-id="' + sectionId + '"]');
+      if (!row) return;
+      var sectionBody = row.querySelector('.section-body');
+      var actionsDiv = sectionBody.querySelector('.section-actions');
+
+      for (var f = 0; f < section.fields.length; f++) {
+        var field = section.fields[f];
+
+        if (field.type === 'file') {
+          var fileCompositeId = field.field_id;
+          if (!document.getElementById('file-' + fileCompositeId)) {
+            var fileEl = document.createElement('div');
+            fileEl.className = 'file-field-inline';
+            fileEl.id = 'file-' + fileCompositeId;
+            var uploaded = formValues[fileCompositeId] != null;
+            fileEl.innerHTML = uploaded
+              ? '<span class="fv-check">&#10003;</span> ' + field.label + ': ' + (formValues[fileCompositeId]?.filename || 'uploaded')
+              : '&#128206; ' + field.label + ': use chat to upload';
+            if (uploaded) fileEl.classList.add('uploaded');
+            sectionBody.insertBefore(fileEl, actionsDiv);
+          }
+          continue;
+        }
+
+        if (field.type === 'group' && field.fields) {
+          // Render at least one entry (index 0), plus any additional entries in groupValues
+          var entryCount = 1;
+          if (groupValues[field.field_id]) {
+            var keys = Object.keys(groupValues[field.field_id]);
+            for (var k = 0; k < keys.length; k++) {
+              var idx = parseInt(keys[k]);
+              if (idx + 1 > entryCount) entryCount = idx + 1;
+            }
+          }
+          for (var e = 0; e < entryCount; e++) {
+            var prefix = field.field_id + '-' + e + '-';
+            var groupHeaderId = 'group-header-' + field.field_id + '-' + e;
+            if (!document.getElementById(groupHeaderId)) {
+              var gh = document.createElement('div');
+              gh.className = 'group-entry-header';
+              gh.id = groupHeaderId;
+              gh.textContent = field.label + ' #' + (e + 1);
+              sectionBody.insertBefore(gh, actionsDiv);
+            }
+            var subs = field.fields.filter(function (sf) { return sf.type !== 'file'; });
+            for (var j = 0; j < subs.length; j++) {
+              var subField = subs[j];
+              var compositeId = prefix + subField.field_id;
+              if (isFieldRendered(sectionBody, compositeId)) continue;
+              var fieldEl = renderField(subField, sectionId, prefix);
+              sectionBody.insertBefore(fieldEl, actionsDiv);
+            }
+          }
+          continue;
+        }
+
+        // Regular field
+        if (isFieldRendered(sectionBody, field.field_id)) continue;
+        var fieldEl = renderField(field, sectionId, '');
+        sectionBody.insertBefore(fieldEl, actionsDiv);
+      }
+
+      // Render any notes for this section
+      if (sectionNotes[sectionId] && sectionNotes[sectionId].length > 0) {
+        renderSectionNotes(sectionId);
+      }
+
+      evaluateConditions();
+    }
+
+    function collapseSection(sectionId) {
+      var row = sectionAccordion.querySelector('.section-row[data-section-id="' + sectionId + '"]');
+      if (!row) return;
+      row.classList.remove('expanded');
+      row.querySelector('.section-body').style.display = 'none';
+    }
+
+    function updateSectionProgress() {
+      if (!formSchema) return;
+      var totalAll = 0, filledAll = 0;
+
+      for (var s = 0; s < formSchema.sections.length; s++) {
+        var section = formSchema.sections[s];
+        var row = sectionAccordion.querySelector('.section-row[data-section-id="' + section.section_id + '"]');
+        if (!row) continue;
+
+        var sTotal = 0, sFilled = 0;
+
+        for (var f = 0; f < section.fields.length; f++) {
+          var field = section.fields[f];
+
+          // Check condition visibility
+          if (field.condition) {
+            var actual = formValues[field.condition.field_id];
+            if (!evalCondition(field.condition, actual)) continue;
+          }
+
+          if (field.type === 'group') {
+            var entries = groupValues[field.field_id] || {};
+            var entryKeys = Object.keys(entries);
+            if (entryKeys.length > 0) {
+              for (var e = 0; e < entryKeys.length; e++) {
+                var subVals = entries[entryKeys[e]];
+                for (var sf = 0; sf < (field.fields || []).length; sf++) {
+                  var sub = field.fields[sf];
+                  if (sub.type === 'file') continue;
+                  if (sub.required) {
+                    sTotal++;
+                    if (subVals[sub.field_id] != null && subVals[sub.field_id] !== '') sFilled++;
+                  }
+                }
+              }
+            } else if (field.required) {
+              var reqSubs = (field.fields || []).filter(function (sf) { return sf.required && sf.type !== 'file'; }).length;
+              sTotal += (field.min_items || 1) * reqSubs;
+            }
+            continue;
+          }
+
+          if (field.type === 'file') {
+            if (field.required) sTotal++;
+            if (formValues[field.field_id] != null) sFilled++;
+            continue;
+          }
+
+          if (field.required) sTotal++;
+          if (formValues[field.field_id] != null && formValues[field.field_id] !== '') sFilled++;
+        }
+
+        var progressEl = row.querySelector('.section-progress');
+        if (progressEl) {
+          if (sTotal === 0) {
+            progressEl.textContent = sFilled > 0 ? sFilled + ' filled' : '';
+            progressEl.classList.remove('complete');
+          } else {
+            progressEl.textContent = sFilled + '/' + sTotal + ' fields';
+            progressEl.classList.toggle('complete', sFilled >= sTotal);
+          }
+        }
+        totalAll += sTotal;
+        filledAll += sFilled;
+      }
+
+      var overallEl = document.getElementById('formOverallProgress');
+      if (overallEl) {
+        var pct = totalAll > 0 ? Math.round((filledAll / totalAll) * 100) : 0;
+        overallEl.innerHTML =
+          '<div class="progress-bar-track"><div class="progress-bar-fill" style="width: ' + Math.min(pct, 100) + '%"></div></div>' +
+          '<span>' + filledAll + '/' + totalAll + ' required fields (' + pct + '%)</span>';
+      }
+    }
+
+    function evalCondition(cond, actual) {
+      switch (cond.operator) {
+        case 'equals': return actual === cond.value;
+        case 'not_equals': return actual !== cond.value;
+        case 'in': return Array.isArray(cond.value) && cond.value.indexOf(actual) !== -1;
+        case 'not_in': return !Array.isArray(cond.value) || cond.value.indexOf(actual) === -1;
+        default: return actual === cond.value;
+      }
+    }
+
+    // ── File Upload ──
+    function triggerFileInput() { fileInputEl.click(); }
+
+    function handleFileSelect(e) {
+      const files = Array.from(e.target.files || []);
+      for (const file of files) addPendingFile(file);
+      fileInputEl.value = '';
+    }
+
+    function addPendingFile(file) {
+      const entry = { file, filename: file.name, uploading: true, processed: null };
+      pendingFiles.push(entry);
+      renderFileChips();
+      processFile(entry);
+    }
+
+    async function processFile(entry) {
+      try {
+        entry.processed = await FileProcessor.process(entry.file);
+        entry.uploading = false;
+        renderFileChips();
+      } catch (err) {
+        console.error('FileProcessor error:', err);
+        // Still mark as ready — file will be sent as filename-only fallback
+        entry.uploading = false;
+        renderFileChips();
+      }
+    }
+
+    /**
+     * Assign a file to a file-type form field. Called by handleSetFields when
+     * Claude identifies a document and sets a file field.
+     * Looks up the file in sentFiles by filename match, stores metadata in formValues,
+     * and updates the file status element in the section UI.
+     */
+    function assignFileToField(compositeId, filename, fieldLabel) {
+      // Find the file in sentFiles
+      var entry = null;
+      for (var i = 0; i < sentFiles.length; i++) {
+        if (sentFiles[i].filename === filename) {
+          entry = sentFiles[i];
+          break;
+        }
+      }
+
+      if (entry) {
+        formValues[compositeId] = {
+          filename: entry.filename,
+          mimeType: entry.processed ? entry.processed.mimeType : entry.file.type,
+          sizeBytes: entry.file.size,
+        };
+      } else {
+        // File not in sentFiles (maybe from vault or manual assignment) — store filename only
+        formValues[compositeId] = { filename: filename };
+      }
+
+      updateSectionProgress();
+      var fileEl = document.getElementById('file-' + compositeId);
+      if (fileEl) {
+        fileEl.innerHTML = '<span class="fv-check">&#10003;</span> ' + (fieldLabel || compositeId) + ': ' + filename;
+        fileEl.classList.add('uploaded');
+      }
+    }
+
+    function removePendingFile(entry) {
+      pendingFiles = pendingFiles.filter(f => f !== entry);
+      renderFileChips();
+    }
+
+    function renderFileChips() {
+      fileChipsEl.innerHTML = '';
+      for (const entry of pendingFiles) {
+        const chip = document.createElement('div');
+        chip.className = 'file-chip' + (entry.uploading ? ' uploading' : '');
+        const hasText = entry.processed && entry.processed.extractedText;
+        const statusText = entry.uploading ? 'processing...' : formatBytes(entry.file.size);
+        chip.innerHTML = `
+          <span class="file-icon">${entry.uploading ? '\u23F3' : '\uD83D\uDCC4'}</span>
+          <span>${entry.filename}</span>
+          <span class="file-size">${statusText}</span>
+        `;
+        if (!entry.uploading) {
+          const remove = document.createElement('span');
+          remove.className = 'file-remove';
+          remove.textContent = '\u2715';
+          remove.onclick = () => removePendingFile(entry);
+          chip.appendChild(remove);
+        }
+        fileChipsEl.appendChild(chip);
+      }
+      updateSendEnabled();
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ── Drag-and-drop ──
+    let dragCounter = 0;
+    document.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; if (dragCounter === 1) dropOverlay.classList.add('active'); });
+    document.addEventListener('dragleave', (e) => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); }});
+    document.addEventListener('dragover', (e) => e.preventDefault());
+    document.addEventListener('drop', (e) => {
+      e.preventDefault(); dragCounter = 0; dropOverlay.classList.remove('active');
+      for (const file of Array.from(e.dataTransfer?.files || [])) addPendingFile(file);
+    });
+
+    // ══════════════════════════════════════════════════
+    //  FORM PANEL — Claude-driven dynamic rendering
+    // ══════════════════════════════════════════════════
+
+    // Schema lookup helpers
+    function findFieldInSchema(fieldId) {
+      if (!formSchema) return null;
+      for (const section of formSchema.sections) {
+        for (const field of section.fields) {
+          if (field.field_id === fieldId) return { field, section };
+          if (field.type === 'group' && field.fields) {
+            for (const sub of field.fields) {
+              if (sub.field_id === fieldId) return { field: sub, section, parentGroup: field };
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function findSectionForField(fieldId) {
+      if (!formSchema) return null;
+      for (const section of formSchema.sections) {
+        for (const field of section.fields) {
+          if (field.field_id === fieldId) return section;
+        }
+      }
+      return null;
+    }
+
+    // Composite ID for group sub-fields: "degrees-0-institution"
+    function makeCompositeId(groupId, entryIndex, subFieldId) {
+      return `${groupId}-${entryIndex}-${subFieldId}`;
+    }
+
+    function parseCompositeId(compositeId) {
+      const match = compositeId.match(/^(.+)-(\d+)-(.+)$/);
+      if (match) return { groupId: match[1], entryIndex: parseInt(match[2]), subFieldId: match[3] };
+      return null;
+    }
+
+    // ── Render a single field control ──
+    function renderField(field, sectionId, fieldIdPrefix) {
+      const compositeId = fieldIdPrefix ? `${fieldIdPrefix}${field.field_id}` : field.field_id;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'form-field';
+      wrapper.id = `field-${compositeId}`;
+      wrapper.dataset.fieldId = compositeId;
+      wrapper.dataset.sectionId = sectionId;
+
+      // Handle conditional visibility
+      if (field.condition) {
+        const condFieldId = fieldIdPrefix
+          ? `${fieldIdPrefix}${field.condition.field_id}`
+          : field.condition.field_id;
+        wrapper.dataset.conditionField = condFieldId;
+        wrapper.dataset.conditionOp = field.condition.operator;
+        wrapper.dataset.conditionValue = JSON.stringify(field.condition.value);
+        wrapper.classList.add('hidden');
+      }
+
+      // Label
+      const label = document.createElement('label');
+      label.setAttribute('for', `input-${compositeId}`);
+      label.innerHTML = field.label + (field.required ? ' <span class="required">*</span>' : '');
+      wrapper.appendChild(label);
+
+      // Hint
+      if (field.hint) {
+        const hint = document.createElement('div');
+        hint.className = 'field-hint';
+        hint.textContent = field.hint;
+        wrapper.appendChild(hint);
+      }
+
+      // Control
+      switch (field.type) {
+        case 'text':
+        case 'email':
+        case 'phone': {
+          const input = document.createElement('input');
+          input.type = field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text';
+          input.id = `input-${compositeId}`;
+          if (field.max_length) input.maxLength = field.max_length;
+          if (field.hint) input.placeholder = field.hint;
+          input.onchange = () => onFieldChange(compositeId, input.value);
+          input.oninput = () => onFieldChange(compositeId, input.value);
+          // Pre-fill if value exists
+          if (formValues[compositeId] != null) input.value = formValues[compositeId];
+          wrapper.appendChild(input);
+          break;
+        }
+
+        case 'textarea': {
+          const ta = document.createElement('textarea');
+          ta.id = `input-${compositeId}`;
+          if (field.max_length) ta.maxLength = field.max_length;
+          if (field.hint) ta.placeholder = field.hint;
+          ta.onchange = () => onFieldChange(compositeId, ta.value);
+          ta.oninput = () => onFieldChange(compositeId, ta.value);
+          if (formValues[compositeId] != null) ta.value = formValues[compositeId];
+          wrapper.appendChild(ta);
+          break;
+        }
+
+        case 'number': {
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.id = `input-${compositeId}`;
+          if (field.min != null) input.min = field.min;
+          if (field.max != null) input.max = field.max;
+          if (field.decimal_places != null) input.step = Math.pow(10, -field.decimal_places);
+          input.onchange = () => onFieldChange(compositeId, input.value ? Number(input.value) : '');
+          if (formValues[compositeId] != null) input.value = formValues[compositeId];
+          wrapper.appendChild(input);
+          break;
+        }
+
+        case 'date': {
+          const input = document.createElement('input');
+          input.type = field.format === 'YYYY-MM' ? 'month' : 'date';
+          input.id = `input-${compositeId}`;
+          input.onchange = () => onFieldChange(compositeId, input.value);
+          if (formValues[compositeId] != null) input.value = formValues[compositeId];
+          wrapper.appendChild(input);
+          break;
+        }
+
+        case 'select': {
+          const select = document.createElement('select');
+          select.id = `input-${compositeId}`;
+          select.innerHTML = '<option value="">-- Select --</option>';
+          for (const opt of (field.options || [])) {
+            const option = document.createElement('option');
+            if (typeof opt === 'string') {
+              option.value = opt;
+              option.textContent = opt;
+            } else {
+              option.value = opt.value;
+              option.textContent = opt.label;
+            }
+            select.appendChild(option);
+          }
+          select.onchange = () => onFieldChange(compositeId, select.value);
+          if (formValues[compositeId] != null) select.value = formValues[compositeId];
+          wrapper.appendChild(select);
+          break;
+        }
+
+        case 'multi_select': {
+          const group = document.createElement('div');
+          group.className = 'multi-select-group';
+          group.id = `input-${compositeId}`;
+          const existing = formValues[compositeId];
+          const selected = new Set(Array.isArray(existing) ? existing : []);
+          for (const opt of (field.options || [])) {
+            const val = typeof opt === 'string' ? opt : opt.value;
+            const lbl = typeof opt === 'string' ? opt : opt.label;
+            const chip = document.createElement('div');
+            chip.className = 'multi-check' + (selected.has(val) ? ' checked' : '');
+            chip.textContent = lbl;
+            chip.dataset.value = val;
+            chip.onclick = () => {
+              if (selected.has(val)) {
+                selected.delete(val);
+                chip.classList.remove('checked');
+              } else {
+                selected.add(val);
+                chip.classList.add('checked');
+              }
+              onFieldChange(compositeId, Array.from(selected));
+            };
+            group.appendChild(chip);
+          }
+          wrapper.appendChild(group);
+          break;
+        }
+
+        case 'boolean': {
+          const group = document.createElement('div');
+          group.className = 'bool-group';
+          group.id = `input-${compositeId}`;
+          for (const val of [true, false]) {
+            const lbl = document.createElement('label');
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = `bool-${compositeId}`;
+            radio.value = val;
+            radio.onchange = () => onFieldChange(compositeId, val);
+            if (formValues[compositeId] === val) radio.checked = true;
+            lbl.appendChild(radio);
+            lbl.appendChild(document.createTextNode(val ? ' Yes' : ' No'));
+            group.appendChild(lbl);
+          }
+          wrapper.appendChild(group);
+          break;
+        }
+
+        case 'file': {
+          const ph = document.createElement('div');
+          ph.className = 'field-placeholder';
+          ph.textContent = 'File uploads are handled through the chat (use the \uD83D\uDCCE button).';
+          wrapper.appendChild(ph);
+          break;
+        }
+
+        default: {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = `input-${compositeId}`;
+          input.onchange = () => onFieldChange(compositeId, input.value);
+          if (formValues[compositeId] != null) input.value = formValues[compositeId];
+          wrapper.appendChild(input);
+        }
+      }
+
+      return wrapper;
+    }
+
+    // ── Field change handler ──
+    function onFieldChange(compositeId, value) {
+      if (value === '' || value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
+        delete formValues[compositeId];
+      } else {
+        formValues[compositeId] = value;
+      }
+
+      // Also track group values separately
+      const parsed = parseCompositeId(compositeId);
+      if (parsed) {
+        if (!groupValues[parsed.groupId]) groupValues[parsed.groupId] = {};
+        if (!groupValues[parsed.groupId][parsed.entryIndex]) groupValues[parsed.groupId][parsed.entryIndex] = {};
+        if (value === '' || value === null || value === undefined) {
+          delete groupValues[parsed.groupId][parsed.entryIndex][parsed.subFieldId];
+        } else {
+          groupValues[parsed.groupId][parsed.entryIndex][parsed.subFieldId] = value;
+        }
+      }
+
+      evaluateConditions();
+      updateSectionProgress();
+    }
+
+    // ── Condition evaluation (reused) ──
+    function evaluateConditions() {
+      const conditionalFields = document.querySelectorAll('.form-field[data-condition-field]');
+      for (const wrapper of conditionalFields) {
+        const depField = wrapper.dataset.conditionField;
+        const op = wrapper.dataset.conditionOp;
+        const expected = JSON.parse(wrapper.dataset.conditionValue);
+        const actual = formValues[depField];
+
+        let visible = false;
+        switch (op) {
+          case 'equals':
+            visible = actual === expected;
+            break;
+          case 'not_equals':
+            visible = actual !== expected;
+            break;
+          case 'in':
+            visible = Array.isArray(expected) && expected.includes(actual);
+            break;
+          case 'not_in':
+            visible = !Array.isArray(expected) || !expected.includes(actual);
+            break;
+          default:
+            visible = actual === expected;
+        }
+
+        if (visible) {
+          wrapper.classList.remove('hidden');
+        } else {
+          wrapper.classList.add('hidden');
+          const fieldId = wrapper.dataset.fieldId;
+          delete formValues[fieldId];
+        }
+      }
+    }
+
+    // ── Handle show_fields action — focus a section in the side panel ──
+    // Collapses all other sections, then expands the target one.
+    function handleShowFields(action) {
+      if (!action || !formSchema) return;
+
+      var sectionRef = action.section || '';
+      if (!sectionRef) return;
+
+      // Match by section_id or title
+      var matched = formSchema.sections.find(function (s) {
+        return s.section_id === sectionRef || s.title === sectionRef;
+      });
+      if (!matched) return;
+
+      // Collapse all other sections to focus attention
+      for (var i = 0; i < formSchema.sections.length; i++) {
+        var sid = formSchema.sections[i].section_id;
+        if (sid !== matched.section_id) collapseSection(sid);
+      }
+
+      lastActiveSection = matched.section_id;
+      expandSection(matched.section_id, { scroll: true });
+    }
+
+    // ── Collapse a section from its "Done" button ──
+    // Values are already in formValues and included in form_state_snapshot
+    // on every model turn, so no chat message needed.
+    function sendSectionAnswers(sectionId) {
+      collapseSection(sectionId);
+    }
+
+    // ── Handle set_fields tool — auto-fill values and update summaries ──
+    function handleSetFields(fields) {
+      if (!Array.isArray(fields) || !formSchema) return;
+
+      for (const { field_id, value } of fields) {
+        // Parse dot-notation for group sub-fields
+        const dotMatch = field_id.match(/^(.+)\.(\d+)\.(.+)$/);
+        const compositeId = dotMatch
+          ? makeCompositeId(dotMatch[1], parseInt(dotMatch[2]), dotMatch[3])
+          : field_id;
+
+        // Validate field_id exists in schema
+        const lookupId = dotMatch ? dotMatch[1] : field_id;
+        const schemaResult = findFieldInSchema(lookupId);
+
+        if (!schemaResult) {
+          // Non-schema field → store as per-section note
+          const targetSection = lastActiveSection || (formSchema.sections[0] && formSchema.sections[0].section_id);
+          if (targetSection) {
+            addSectionNote(targetSection, field_id, value);
+          }
+          continue;
+        }
+
+        // Track which section Claude is working on
+        lastActiveSection = schemaResult.section.section_id;
+
+        // Check if this is a file-type field — route through assignFileToField
+        const targetField = dotMatch
+          ? schemaResult.field?.fields?.find(sf => sf.field_id === dotMatch[3])
+          : schemaResult.field;
+        if (targetField && targetField.type === 'file') {
+          // value can be a filename string or { filename: "..." } object
+          const fname = typeof value === 'string' ? value : (value && value.filename ? value.filename : null);
+          if (fname) {
+            assignFileToField(compositeId, fname, targetField.label);
+          }
+          continue;
+        }
+
+        // Store the value
+        formValues[compositeId] = value;
+
+        if (dotMatch) {
+          const [, groupId, indexStr, subFieldId] = dotMatch;
+          const idx = parseInt(indexStr);
+          if (!groupValues[groupId]) groupValues[groupId] = {};
+          if (!groupValues[groupId][idx]) groupValues[groupId][idx] = {};
+          groupValues[groupId][idx][subFieldId] = value;
+        }
+
+        // If the field is visible as an editable control, update the DOM
+        if (document.getElementById(`field-${compositeId}`)) {
+          setFieldDOMValue(compositeId, value);
+          highlightField(compositeId);
+        }
+        // Otherwise, just stored — will be pre-filled when show_fields renders later
+      }
+
+      evaluateConditions();
+      updateSectionProgress();
+    }
+
+    /**
+     * Add a note (non-schema info) to a section and render it.
+     */
+    function addSectionNote(sectionId, label, value) {
+      if (!sectionNotes[sectionId]) sectionNotes[sectionId] = [];
+
+      // Update existing note with same label, or add new
+      var existing = sectionNotes[sectionId].find(function (n) { return n.label === label; });
+      if (existing) {
+        existing.value = value;
+      } else {
+        sectionNotes[sectionId].push({ label: label, value: value });
+      }
+
+      renderSectionNotes(sectionId);
+    }
+
+    /**
+     * Render the notes block for a section.
+     */
+    function renderSectionNotes(sectionId) {
+      var row = sectionAccordion.querySelector('.section-row[data-section-id="' + sectionId + '"]');
+      if (!row) return;
+      var body = row.querySelector('.section-body');
+      var notes = sectionNotes[sectionId];
+      if (!notes || notes.length === 0) return;
+
+      // Find or create the notes container
+      var notesEl = body.querySelector('.section-notes');
+      if (!notesEl) {
+        notesEl = document.createElement('div');
+        notesEl.className = 'section-notes';
+        // Insert before the actions div
+        var actionsDiv = body.querySelector('.section-actions');
+        body.insertBefore(notesEl, actionsDiv);
+      }
+
+      // Format label: "prior_application_year" → "Prior Application Year"
+      function formatLabel(s) {
+        return s.replace(/[_.]/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+      }
+
+      notesEl.innerHTML = '<div class="section-notes-title">Additional Info</div>' +
+        notes.map(function (n) {
+          var displayVal = typeof n.value === 'boolean' ? (n.value ? 'Yes' : 'No') : String(n.value);
+          return '<div class="section-note-item"><span class="note-label">' + formatLabel(n.label) + ':</span> ' + displayVal + '</div>';
+        }).join('');
+    }
+
+    function setFieldDOMValue(compositeId, value) {
+      const el = document.getElementById(`input-${compositeId}`);
+      if (!el) return;
+
+      const tagName = el.tagName.toLowerCase();
+      if (tagName === 'input' || tagName === 'textarea') {
+        el.value = value ?? '';
+      } else if (tagName === 'select') {
+        el.value = value ?? '';
+      } else if (el.classList.contains('bool-group')) {
+        const radios = el.querySelectorAll('input[type="radio"]');
+        for (const r of radios) {
+          r.checked = (r.value === 'true' && value === true) || (r.value === 'false' && value === false);
+        }
+      } else if (el.classList.contains('multi-select-group')) {
+        const vals = Array.isArray(value) ? value : [value];
+        for (const chip of el.querySelectorAll('.multi-check')) {
+          if (vals.includes(chip.dataset.value)) {
+            chip.classList.add('checked');
+          } else {
+            chip.classList.remove('checked');
+          }
+        }
+      }
+    }
+
+    function highlightField(compositeId) {
+      const wrapper = document.getElementById(`field-${compositeId}`);
+      if (wrapper) {
+        wrapper.classList.add('field-just-set');
+        setTimeout(() => wrapper.classList.remove('field-just-set'), 1500);
+      }
+    }
+
+    // ══════════════════════════════════════════════════
+    //  CHAT — Send message via browser-side chat provider
+    // ══════════════════════════════════════════════════
+
+    async function sendMessage(overrideText, options) {
+      options = options || {};
+      let text = overrideText ?? inputEl.value.trim();
+      if (!text && pendingFiles.length === 0) return;
+      if (isStreaming) return;
+
+      if (pendingFiles.some(f => f.uploading)) {
+        showError('Please wait for file uploads to complete.');
+        return;
+      }
+
+      if (welcomeEl) welcomeEl.style.display = 'none';
+
+      const readyFiles = pendingFiles.filter(f => !f.uploading);
+      let messageText = text || '';
+
+      // Prepend file content to the prompt
+      for (const f of readyFiles) {
+        let fileBlock;
+        if (f.processed && f.processed.extractedText) {
+          // Send extracted text — model gets actual file content
+          fileBlock = `[File: ${f.filename}]\n${f.processed.extractedText}\n[End of ${f.filename}]`;
+        } else {
+          // Fallback: filename only (image files, failed extraction, etc.)
+          fileBlock = `[Attached file: "${f.filename}" (${formatBytes(f.file.size)})]`;
+        }
+        messageText = messageText ? `${fileBlock}\n\n${messageText}` : fileBlock;
+      }
+
+      if (!options.hidden) {
+        const displayText = text || readyFiles.map(f => `Attached: ${f.filename}`).join(', ');
+        addMessage('user', displayText);
+      }
+
+      // Keep file metadata so Claude can assign files to form fields later
+      if (readyFiles.length > 0) {
+        sentFiles = sentFiles.concat(readyFiles);
+      }
+      pendingFiles = [];
+      renderFileChips();
+      if (!overrideText) { inputEl.value = ''; autoResize(inputEl); }
+
+      // Log user message
+      Logger.userMessage(logSessionId, messageText, options.hidden ? 'system' : 'user');
+
+      await doGenerate(messageText);
+    }
+
+    /**
+     * Build system prompt, call chat provider, stream text, parse actions.
+     * Used by both sendMessage() and sendSystemEvent().
+     */
+    async function doGenerate(userMessage) {
+      const loadingEl = showLoading();
+      setStreaming(true);
+
+      // Build system prompt in browser
+      const vaultSummary = window.Vault ? await window.Vault.buildSummary() : 'No vault available.';
+      const systemPrompt = SystemPrompt.build(currentFormMeta, vaultSummary, formValues);
+      const fullPrompt = systemPrompt + '\n\n---\n\nUser message: ' + userMessage;
+
+      // Log model input
+      Logger.modelInput(logSessionId, {
+        fullPromptLength: fullPrompt.length,
+        userMessage: userMessage,
+        formStateSnapshot: Object.keys(formValues).length > 0 ? Object.assign({}, formValues) : null,
+      });
+
+      let fullTextResponse = '';
+      let actionsDelimiterSeen = false;
+      let currentAssistantEl = null;
+      let loadingRemoved = false;
+
+      function removeLoading() {
+        if (!loadingRemoved) { loadingEl.remove(); loadingRemoved = true; }
+      }
+
+      // For LocalSFTProvider: build structured per-turn context. The Claude
+      // path ignores this argument and continues to use fullPrompt.
+      const structuredCtx = chatProvider.requiresStructuredContext ? {
+        session_id: logSessionId,
+        user_message: userMessage,
+        form_state: Object.assign({}, formValues),
+        form_schema: currentFormMeta || {},
+        conversation_history: conversationHistory.slice(),  // pass a copy
+      } : undefined;
+
+      try {
+        const ctrl = chatProvider.generate(fullPrompt, claudeSessionId, structuredCtx);
+
+        await new Promise(function (resolve, reject) {
+          ctrl.onText = function (chunk) {
+            removeLoading();
+            fullTextResponse += chunk;
+
+            // Stream text to UI, but stop once we see the actions delimiter
+            if (!actionsDelimiterSeen) {
+              if (ActionParser.containsActionsDelimiter(fullTextResponse)) {
+                actionsDelimiterSeen = true;
+                // Show the text portion before the delimiter
+                const textOnly = ActionParser.extractText(fullTextResponse);
+                if (!currentAssistantEl) currentAssistantEl = addMessage('assistant', '');
+                currentAssistantEl.textContent = textOnly;
+              } else {
+                if (!currentAssistantEl) currentAssistantEl = addMessage('assistant', '');
+                currentAssistantEl.textContent = fullTextResponse;
+              }
+              scrollToBottom();
+            }
+          };
+
+          ctrl.onDone = function (info) {
+            removeLoading();
+
+            // Capture Claude CLI session ID for multi-turn
+            if (info.sessionId) claudeSessionId = info.sessionId;
+
+            // Render final text as markdown (replaces plain-text streaming content)
+            if (currentAssistantEl) {
+              const finalText = ActionParser.extractText(fullTextResponse);
+              currentAssistantEl.innerHTML = renderMarkdown(finalText);
+            }
+
+            // Parse and execute actions
+            const actions = ActionParser.parseActions(fullTextResponse);
+            for (const action of actions) {
+              handleAction(action);
+              // Log form state updates from set_fields
+              if (action.type === 'set_fields' && Array.isArray(action.fields)) {
+                const updates = {};
+                for (const f of action.fields) updates[f.field_id] = f.value;
+                Logger.formStateUpdate(logSessionId, updates, 'model');
+              }
+            }
+
+            // Show cost
+            if (info.costUsd > 0) {
+              const costEl = document.createElement('div');
+              costEl.className = 'cost-info';
+              costEl.textContent = `Turn cost: $${info.costUsd.toFixed(4)} \u00B7 ${(info.durationMs / 1000).toFixed(1)}s`;
+              messagesEl.appendChild(costEl);
+              scrollToBottom();
+            }
+
+            // Log model output
+            Logger.modelOutput(logSessionId, {
+              rawText: fullTextResponse,
+              parsedActions: actions,
+              durationMs: info.durationMs,
+              costUsd: info.costUsd,
+              claudeSessionId: info.sessionId,
+            });
+
+            // Track conversation history for the local-backend path. The
+            // Claude path uses --resume so it doesn't need this client-side
+            // record, but maintaining it unconditionally is harmless.
+            conversationHistory.push({ role: 'user', content: userMessage });
+            const assistantText = ActionParser.extractText(fullTextResponse);
+            if (assistantText) conversationHistory.push({ role: 'assistant', content: assistantText });
+
+            resolve();
+          };
+
+          ctrl.onError = function (err) {
+            removeLoading();
+            showError(err.message);
+            Logger.error(logSessionId, err.message, 'chat_provider');
+            resolve(); // resolve (not reject) to continue
+          };
+        });
+      } catch (err) {
+        removeLoading();
+        showError(err.message);
+        Logger.error(logSessionId, err.message, 'send_message');
+      }
+
+      setStreaming(false);
+    }
+
+    // ── Handle model actions ──
+    function handleAction(action) {
+      switch (action.type) {
+        case 'set_fields': {
+          if (action.fields) handleSetFields(action.fields);
+          break;
+        }
+        case 'show_fields': {
+          handleShowFields(action);
+          break;
+        }
+        case 'ask_choice': {
+          renderAskChoice(action);
+          break;
+        }
+        case 'show_preview': {
+          renderShowPreview(action);
+          break;
+        }
+        case 'show_button': {
+          renderShowButton(action);
+          break;
+        }
+        default:
+          console.warn('[action] Unknown action type:', action.type);
+      }
+    }
+
+    // ── Render ask_choice options in chat ──
+    function renderAskChoice(action) {
+      const container = document.createElement('div');
+      container.className = 'choice-buttons';
+      if (action.question) {
+        const q = document.createElement('div');
+        q.style.cssText = 'width:100%; font-size:13px; color:var(--text-muted); margin-bottom:4px;';
+        q.textContent = action.question;
+        container.appendChild(q);
+      }
+      for (const opt of (action.options || [])) {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = opt.label;
+        btn.onclick = () => {
+          // Send system event with the choice
+          sendSystemEvent(`User selected option: "${opt.label}"`);
+          // Disable all choice buttons
+          container.querySelectorAll('.choice-btn').forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
+          btn.style.opacity = '1'; btn.style.background = 'var(--form-accent)'; btn.style.color = 'white';
+        };
+        container.appendChild(btn);
+      }
+      messagesEl.appendChild(container);
+      scrollToBottom();
+    }
+
+    // ── Render show_preview card in chat ──
+    function renderShowPreview(action) {
+      const card = document.createElement('div');
+      card.className = 'preview-card';
+      if (action.title) {
+        const h3 = document.createElement('h3');
+        h3.textContent = action.title;
+        card.appendChild(h3);
+      }
+      for (const section of (action.sections || [])) {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'preview-section';
+        const h4 = document.createElement('h4');
+        h4.textContent = section.title;
+        sectionDiv.appendChild(h4);
+        for (const field of (section.fields || [])) {
+          const row = document.createElement('div');
+          row.className = 'preview-field';
+          row.innerHTML = `<span class="label">${field.label}</span><span class="value">${field.value}</span>`;
+          sectionDiv.appendChild(row);
+        }
+        card.appendChild(sectionDiv);
+      }
+      messagesEl.appendChild(card);
+      scrollToBottom();
+    }
+
+    // ── Render show_button (save_draft / submit) ──
+    function renderShowButton(action) {
+      const btn = document.createElement('button');
+      btn.className = 'action-btn';
+      if (action.button === 'save_draft') {
+        btn.className += ' save-draft';
+        btn.textContent = 'Save Draft';
+        btn.onclick = () => handleSaveDraft(btn);
+      } else if (action.button === 'submit') {
+        btn.className += ' submit';
+        btn.textContent = 'Submit Application';
+        btn.onclick = () => handleSubmit(btn);
+      }
+      messagesEl.appendChild(btn);
+      scrollToBottom();
+    }
+
+    // ── Save draft to persistence server ──
+    async function handleSaveDraft(btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      try {
+        const email = currentUserEmail || formValues.email || 'unknown';
+        const formId = currentFormMeta?.form_id || 'unknown';
+        const res = await fetch('http://localhost:3005/api/drafts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, form_id: formId, data: formValues }),
+        });
+        if (res.ok) {
+          btn.textContent = 'Draft Saved!';
+          sendSystemEvent('Draft saved successfully.');
+        } else {
+          btn.textContent = 'Save Failed';
+          sendSystemEvent('Save failed: server returned an error.');
+        }
+      } catch (err) {
+        btn.textContent = 'Save Failed';
+        sendSystemEvent(`Save failed: ${err.message}`);
+      }
+    }
+
+    // ── Submit to persistence server ──
+    async function handleSubmit(btn) {
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      try {
+        const email = currentUserEmail || formValues.email || 'unknown';
+        const formId = currentFormMeta?.form_id || 'unknown';
+        const res = await fetch('http://localhost:3005/api/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, form_id: formId, data: formValues }),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          btn.textContent = 'Submitted!';
+          sendSystemEvent(`Submission saved. Reference: ${result.reference_number}`);
+        } else {
+          btn.textContent = 'Submit Failed';
+          sendSystemEvent('Submission failed: server returned an error.');
+        }
+      } catch (err) {
+        btn.textContent = 'Submit Failed';
+        sendSystemEvent(`Submission failed: ${err.message}`);
+      }
+    }
+
+    // ── Send a system event back to the model ──
+    async function sendSystemEvent(message) {
+      // Display system event in chat
+      const el = document.createElement('div');
+      el.className = 'cost-info';
+      el.textContent = `[system] ${message}`;
+      messagesEl.appendChild(el);
+      scrollToBottom();
+
+      // Log system message
+      Logger.userMessage(logSessionId, message, 'system');
+
+      // Send as a [system]-prefixed message through the same generate flow
+      await doGenerate(`[system] ${message}`);
+    }
+
+    // ── UI helpers ──
+    function addMessage(role, text) {
+      const el = document.createElement('div');
+      el.className = `message ${role}`;
+      el.textContent = text;
+      messagesEl.appendChild(el);
+      scrollToBottom();
+      return el;
+    }
+    function showLoading() {
+      const el = document.createElement('div');
+      el.className = 'loading';
+      el.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+      messagesEl.appendChild(el);
+      scrollToBottom();
+      return el;
+    }
+    function showError(msg) {
+      const el = document.createElement('div');
+      el.className = 'error-msg';
+      el.textContent = `Error: ${msg}`;
+      messagesEl.appendChild(el);
+      scrollToBottom();
+    }
+    function setStreaming(streaming) {
+      isStreaming = streaming;
+      sendBtn.disabled = streaming;
+      attachBtn.disabled = streaming;
+      statusEl.textContent = streaming ? 'Thinking...' : 'Ready';
+      inputEl.disabled = streaming;
+      if (!streaming) inputEl.focus();
+    }
+    function updateSendEnabled() {
+      const uploading = pendingFiles.some(f => f.uploading);
+      sendBtn.disabled = isStreaming || uploading;
+    }
+    function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+    function toggleDetail(headerEl) {
+      headerEl.classList.toggle('expanded');
+      headerEl.nextElementSibling?.classList.toggle('visible');
+    }
+    function cleanToolName(name) { return name ? name.replace('mcp__form-filling-assistant__', '') : name; }
+    function useExample(el) { inputEl.value = el.textContent; inputEl.focus(); autoResize(inputEl); }
+    function handleKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+    function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+  </script>
+</body>
+</html>
