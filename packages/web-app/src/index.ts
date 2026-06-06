@@ -30,6 +30,8 @@ const PROJECT_ROOT = path.resolve(
 
 const agent = new ClaudeAgent({
   cwd: PROJECT_ROOT,
+  model: process.env.LLM_MODEL ?? 'haiku',
+  fallbackModel: process.env.LLM_FALLBACK ?? 'sonnet',
   dangerouslySkipPermissions: true,
 });
 
