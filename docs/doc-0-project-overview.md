@@ -86,3 +86,10 @@ LLM U  ←─ adapter ─→  LLM A (via web app server, same as App 2)
 | Doc 8 | Architecture — Web App |
 | Doc 9 | Scenario simulator — synthetic data generation |
 | Doc 10 | File handling architecture |
+| Doc 11 | Small-model research — methods & feasibility |
+| Doc 12 | Tuning journal — master experiment log |
+| Doc 13 | SFT v1 diagnosis (superseded by Doc 12 Exp 9) |
+| Doc 14 | Training-data quality issues |
+| Doc 15 | Real-app issues (R1–R13, harness testing) |
+| Doc 16 | Small-model capability catalog (CAN/CANNOT) |
+| Doc 17 | Tuning status map — current state anchor |
