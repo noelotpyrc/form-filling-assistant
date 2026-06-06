@@ -85,6 +85,7 @@ interface SimConfig {
   sampling?: SamplingMode;
   effort?: string;
   splitPrompt?: boolean;
+  maxTurns?: number;
 }
 
 /**
@@ -253,7 +254,10 @@ async function runSimulation(config: SimConfig): Promise<{
   let turnNumber = 0;
   let llmACost = 0;
   let llmUCost = 0;
-  const llmUModel = config.llmUModel || 'sonnet';
+  const llmUModel = config.llmUModel || 'haiku';
+  const llmAModel = process.env.LLM_MODEL || 'haiku';
+  const fallbackModel = process.env.LLM_FALLBACK || 'sonnet';
+  const maxTurns = config.maxTurns ?? MAX_TURNS;
   const splitPrompt = config.splitPrompt || false;
   const logger = new SessionLogger();
 
@@ -268,7 +272,7 @@ async function runSimulation(config: SimConfig): Promise<{
     persona_data: persona.data,
     profile: config.profile,
     session_config: {
-      llm_a_model: 'sonnet', // LLM A always uses the server's default model
+      llm_a_model: llmAModel,
       llm_u_model: llmUModel,
       seed: config.seed,
       sampling: config.sampling || 'greedy',
@@ -287,6 +291,8 @@ async function runSimulation(config: SimConfig): Promise<{
   }
   const llmAAgent = new ClaudeAgent({
     cwd: ROOT,
+    model: llmAModel,
+    fallbackModel,
     dangerouslySkipPermissions: true,
     tools: '',       // LLM A outputs text+actions, no MCP tool calls
     maxTurns: 1,
@@ -328,6 +334,7 @@ async function runSimulation(config: SimConfig): Promise<{
   const llmUSystemPrompt = buildLlmUPrompt({ persona, profileName: config.profile });
   const llmUAgent = new ClaudeAgent({
     model: llmUModel,
+    fallbackModel,
     systemPrompt: llmUSystemPrompt,
     dangerouslySkipPermissions: true,
     tools: '',       // No external tools — LLM U only produces JSON candidates
@@ -521,7 +528,7 @@ async function runSimulation(config: SimConfig): Promise<{
     });
   }
 
-  while (turnNumber < MAX_TURNS) {
+  while (turnNumber < maxTurns) {
     // Render what the user sees
     const lastText = ActionParser.extractText(llmAResult.text);
     const lastActions = ActionParser.parseActions(llmAResult.text) as ParsedAction[];
@@ -745,8 +752,8 @@ async function runSimulation(config: SimConfig): Promise<{
     console.log();
   }
 
-  if (turnNumber >= MAX_TURNS) {
-    console.log(`⚠ Hit max turn limit (${MAX_TURNS})\n`);
+  if (turnNumber >= maxTurns) {
+    console.log(`⚠ Hit max turn limit (${maxTurns})\n`);
     logSessionEnd('max_turns');
   }
 
@@ -792,6 +799,7 @@ function parseArgs(): SimConfig[] {
   let sampling: SamplingMode | undefined;
   let effort: string | undefined;
   let splitPrompt = false;
+  let maxTurns: number | undefined;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -822,12 +830,15 @@ function parseArgs(): SimConfig[] {
       case '--split-prompt':
         splitPrompt = true;
         break;
+      case '--max-turns':
+        maxTurns = parseInt(args[++i], 10);
+        break;
     }
   }
 
   // If all specified, single run
   if (form && persona && profile) {
-    configs.push({ form, persona, profile, seed, llmUModel, sampling, effort, splitPrompt });
+    configs.push({ form, persona, profile, seed, llmUModel, sampling, effort, splitPrompt, maxTurns });
     return configs;
   }
 
@@ -850,6 +861,7 @@ function parseArgs(): SimConfig[] {
             sampling,
             effort,
             splitPrompt,
+            maxTurns,
           });
         }
       }

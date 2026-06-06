@@ -207,7 +207,9 @@ External tools disabled (`tools: ''`) since LLM A outputs text+actions, not MCP 
 
 **LLM U** — a persistent `ClaudeAgent` interactive session (`runInteractive()`). System prompt (persona + behavior profile + action catalog + output format rules) is set once on the constructor and lives in session memory. Each turn, the rendered screen view is sent via `session.send()`; LLM U responds with ranked candidates as JSON. External tools disabled (`tools: ''`).
 
-Both use persistent processes to avoid CLI re-spawn overhead on every turn. Previously, each turn spawned a new `claude` CLI process (LLM A via the web-app server, LLM U via `agent.run()` with `--resume`), adding 5–20s of startup/session-hydration latency per turn. With `runInteractive()`, turn 2+ latency dropped to 5–7s for LLM U (sonnet, default) and 4–8s for LLM A (sonnet). The web-app server is no longer needed for CLI simulation.
+Both use persistent processes to avoid CLI re-spawn overhead on every turn. Previously, each turn spawned a new `claude` CLI process (LLM A via the web-app server, LLM U via `agent.run()` with `--resume`), adding 5–20s of startup/session-hydration latency per turn. With `runInteractive()`, turn 2+ latency dropped to 5–7s for LLM U and 4–8s for LLM A. The web-app server is no longer needed for CLI simulation.
+
+**Model defaults:** both LLM A and LLM U default to `haiku` with a `sonnet` fallback. Override LLM A via the `LLM_MODEL` / `LLM_FALLBACK` env vars (shared with the web app) and LLM U via `--llm-u-model`. The actual LLM A model is recorded in each session log's `state_init.session_config.llm_a_model`.
 
 LLM U output per turn:
 
@@ -453,7 +455,7 @@ These are direct ports of `view-renderer.ts` and `user-action.ts`, including gro
 
 1. ~~**LLM U latency**~~ **FIXED** — LLM U now resumes the same session across turns via `--resume` (same pattern as LLM A). First turn is cold start; subsequent turns reuse the session. The `/api/generate-json` endpoint accepts a `resume` param and returns `sessionId` for the next call. Added streaming output mode as an alternative to `--json-schema` to reduce latency (structured output blocks until complete; streaming returns tokens incrementally).
 2. ~~**Candidate sampling**~~ **FIXED** — Added sampling mode dropdown (greedy / weighted / uniform). Greedy always picks rank-1. Weighted uses 70/20/10 distribution across top 3 candidates. Uniform picks randomly. The debug panel shows which candidate was selected and why.
-3. ~~**Turn limit / auto-stop**~~ **FIXED** — MAX_TURNS = 30 safety limit added. Sessions auto-stop when the limit is reached.
+3. ~~**Turn limit / auto-stop**~~ **FIXED** — MAX_TURNS = 30 safety limit added (override per run with `--max-turns N`). Sessions auto-stop when the limit is reached.
 4. ~~**Multi-action handling**~~ **FIXED** — `processActions()` in sim-adapters.js handles all action combos in a single pass. Produces an execution plan with `{ stop, fieldEdits, messages, clickButton }`. The sim loop applies field edits silently, sends combined messages to LLM A, and handles button clicks via a special 2-turn flow. Tested with 40+ unit tests in `sim-action-processor.test.ts`.
 5. ~~**LLM U speed**~~ **FIXED** — Switched both LLM A and LLM U from per-turn CLI spawning (`agent.run()` + `--resume`) to persistent interactive sessions (`agent.runInteractive()`). A single CLI process stays alive for the entire simulation, eliminating 5–20s of process spawn + session hydration overhead per turn. LLM U (haiku) now runs in 2–7s/turn, LLM A (sonnet) in 4–8s/turn. Also disabled external tools (`tools: ''`) for both agents since neither uses MCP tool calls. The web-app server is no longer needed for simulation.
 6. ~~**LLM A never uses `show_fields`**~~ **FIXED** — Added two proactive actions to LLM U's action catalog: `review_progress` ("show me what's been filled / what's left") and `inspect_section` ("show me the Education section"). These give LLM U reasons to ask for form visibility, which naturally triggers LLM A to respond with `show_fields` or `show_preview`. Especially relevant for the returning-user scenario where reviewing a saved draft is natural.
@@ -554,6 +556,9 @@ npm run e2e:sim -- --runs 3
 
 # Reproducible run with seed
 npm run e2e:sim -- --form northfield --persona jane --profile impatient --seed 42
+
+# Bound the session length (default cap is MAX_TURNS = 30) — useful for quick smoke runs
+npm run e2e:sim -- --form northfield --persona jane --profile impatient --max-turns 5
 
 # Use a different model for LLM U
 npm run e2e:sim -- --form northfield --persona jane --profile impatient --llm-u-model sonnet
