@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doc 18.1 — Turn Logic (v2 pipeline)</title>
+<style>
+  :root{
+    --code:#2563eb; --model:#7c3aed; --state:#b45309; --term:#0f766e;
+    --bg:#fbfbfd; --panel:#fff; --ink:#1a1a22; --mut:#5b6170; --line:#e3e5ec;
+    --hl:#fff7d6; --accent:#2563eb;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:14px}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:0;max-width:1180px;margin:0 auto}
+  /* sidebar */
+  nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;
+    padding:20px 14px;border-right:1px solid var(--line);font-size:13px}
+  nav.toc h4{margin:14px 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+  nav.toc a{display:block;padding:3px 8px;border-radius:6px;color:var(--ink)}
+  nav.toc a:hover{background:#eef1f7;text-decoration:none}
+  main{padding:26px 34px 120px;min-width:0}
+  header.doc{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:8px}
+  header.doc h1{margin:0 0 6px;font-size:24px}
+  .sub{color:var(--mut);font-size:13.5px;margin:2px 0}
+  section{padding:22px 0;border-bottom:1px solid var(--line)}
+  section:target{animation:flash 1.4s ease}
+  h2{font-size:19px;margin:0 0 10px;scroll-margin-top:14px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  p{margin:8px 0}
+  code{font-family:var(--mono);font-size:.9em;background:#eef1f7;padding:1px 5px;border-radius:5px}
+  pre{background:#0f1222;color:#e6e8f0;padding:14px 16px;border-radius:10px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.5}
+  pre .c{color:#7c8499}.pre .k{color:#9cdcfe}
+  /* tags */
+  .tag{display:inline-block;font:600 10.5px/1.4 var(--sans);letter-spacing:.04em;
+    text-transform:uppercase;padding:2px 7px;border-radius:999px;color:#fff;vertical-align:middle}
+  .tag.code{background:var(--code)} .tag.model{background:var(--model)}
+  .tag.state{background:var(--state)} .tag.term{background:var(--term)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mut);margin-top:8px}
+  /* flowchart */
+  .flow{display:flex;flex-direction:column;align-items:center;gap:0;margin:14px 0}
+  .node{width:min(540px,100%);background:var(--panel);border:1.5px solid var(--line);
+    border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 1px 2px rgba(20,20,40,.04)}
+  .node .num{font:700 13px var(--mono);width:26px;height:26px;display:grid;place-items:center;
+    border-radius:7px;background:#eef1f7;color:var(--ink);flex:none}
+  .node.codeN{border-left:5px solid var(--code)} .node.modelN{border-left:5px solid var(--model)}
+  .node .nm{font-weight:600} .node .dt{color:var(--mut);font-size:12.5px;margin-left:auto;text-align:right}
+  .node.io{background:#11151f;color:#fff;border:none;justify-content:center;font-weight:600;border-radius:999px;width:min(360px,90%)}
+  .arrow{height:22px;width:2px;background:var(--line);position:relative}
+  .arrow:after{content:"";position:absolute;bottom:0;left:-4px;border:5px solid transparent;border-top-color:var(--line)}
+  .branch{width:min(540px,100%);text-align:right;font-size:12px;color:var(--state);margin:2px 0 0;padding-right:6px}
+  .sidebox{width:min(540px,100%);margin:6px 0;border:1px dashed var(--state);border-radius:10px;
+    padding:8px 12px;font-size:12.5px;color:#7a5410;background:#fff9ef}
+  /* steps & scenarios */
+  .appears{margin-top:8px;font-size:12.5px;color:var(--mut)}
+  .appears a{font-family:var(--mono);font-size:12px;background:#eef1f7;padding:1px 6px;border-radius:5px;margin-right:4px;display:inline-block}
+  .scn{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
+  .scn:target{animation:flash 1.4s ease}
+  .scn h3{margin:0 0 2px;font-size:15px}
+  .scn .setup{color:var(--mut);font-size:12.5px;margin:0 0 10px}
+  .scn .setup b{color:var(--state)}
+  .step{display:grid;grid-template-columns:54px 104px 1fr;gap:10px;align-items:start;
+    padding:5px 6px;border-radius:7px;scroll-margin-top:14px}
+  .step:target{background:var(--hl)}
+  .step:hover{background:#f6f8fc}
+  .stepid{font-family:var(--mono);font-size:11.5px;font-weight:700;color:#444;align-self:center}
+  .stagetag{font:600 10px/1.5 var(--sans);text-transform:uppercase;letter-spacing:.03em;
+    text-align:center;padding:2px 0;border-radius:6px;color:#fff;align-self:center}
+  .stagetag.code{background:var(--code)} .stagetag.model{background:var(--model)}
+  .stagetag.state{background:var(--state)} .stagetag.term{background:var(--term)} .stagetag.skip{background:#94a3b8}
+  .out{margin-top:8px;font-size:12.5px;color:var(--term);font-weight:600}
+  .risk{display:inline-block;font:700 10px/1.4 var(--sans);background:#fde2e2;color:#b42318;padding:1px 6px;border-radius:5px;margin-left:6px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:#f4f6fb;font-size:12.5px}
+  .pill{font-family:var(--mono);font-size:11.5px;background:#eef1f7;padding:1px 6px;border-radius:5px}
+  .note{background:#f4f6fb;border-left:4px solid var(--accent);padding:8px 12px;border-radius:6px;font-size:13.5px;margin:10px 0}
+  @keyframes flash{0%{background:var(--hl)}100%{background:transparent}}
+  @media(max-width:820px){.wrap{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}main{padding:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="toc">
+  <h4>Pipeline</h4>
+  <a href="#flow">Flowchart</a>
+  <a href="#concepts">State &amp; concepts</a>
+  <a href="#stage-0">[0] Pre-step</a>
+  <a href="#stage-1">[1] Extract</a>
+  <a href="#stage-2">[2] Validate</a>
+  <a href="#stage-3">[3] Compose · responsive</a>
+  <a href="#stage-4">[4] Update state</a>
+  <a href="#stage-5">[5] Compose · agenda</a>
+  <a href="#stage-6">[6] Respond</a>
+  <h4>Scenarios</h4>
+  <a href="#s1">S1 Volunteered data</a>
+  <a href="#s2">S2 Elliptical answer</a>
+  <a href="#s3">S3 Typed-not-clicked</a>
+  <a href="#s4">S4 Button click event</a>
+  <a href="#s5">S5 Ambiguous select</a>
+  <a href="#s6">S6 Asks about a field</a>
+  <a href="#s7">S7 Deflection</a>
+  <a href="#s8">S8 Chitchat</a>
+  <a href="#s9">S9 Trap chitchat</a>
+  <a href="#s10">S10 Correction</a>
+  <a href="#s11">S11 Bulk paste</a>
+  <a href="#s12">S12 Save request</a>
+  <a href="#s13">S13 Premature submit</a>
+  <a href="#s14">S14 Terminal</a>
+  <a href="#s15">S15 Validation error</a>
+  <a href="#s16">S16 Bulk bare values</a>
+  <h4>Closing</h4>
+  <a href="#rules">Design rules &amp; risks</a>
+</nav>
+
+<main>
+<header class="doc">
+  <h1>Doc 18.1 — Turn Logic (v2 pipeline)</h1>
+  <p class="sub">Companion to <b>doc-18 §3</b>. The full per-turn routing spec for the v2 harness — the contract <b>M1</b> implements. Read doc-18 for <i>why</i> this shape; read here for <i>how a turn flows</i>.</p>
+  <p class="sub">Each pipeline step has its own section; each scenario step has an ID (e.g. <span class="pill">S5.2</span>) so step sections and scenarios cross-link. Click any ID to jump.</p>
+  <div class="legend">
+    <span><span class="tag code">code</span> deterministic, unit-testable, no model</span>
+    <span><span class="tag model">model</span> a learned call (the only risk surface)</span>
+    <span><span class="tag state">state</span> persistent across turns</span>
+    <span><span class="tag term">term</span> end of flow</span>
+  </div>
+</header>
+
+<!-- ===================== FLOWCHART ===================== -->
+<section id="flow">
+  <h2>High-level flow</h2>
+  <p>One turn, top to bottom. A plain user message runs every step; a <code>[system]</code> event is handled in step&nbsp;0 and <b>skips extract + validate</b>. The three <span class="tag state">state</span> objects on the right are read and written across steps.</p>
+  <div class="flow">
+    <div class="node io">INPUT — user message <span style="opacity:.6;margin:0 6px">|</span> <code style="background:#222;color:#9cf">[system]</code> event</div>
+    <div class="arrow"></div>
+    <a class="node codeN" href="#stage-0"><span class="num">0</span><span class="nm">Pre-step</span><span class="dt"><span class="tag code">code</span> events + lexical intents</span></a>
+    <div class="branch">↳ system event → skip&nbsp;1&nbsp;&amp;&nbsp;2 →&nbsp;step&nbsp;3</div>
+    <div class="arrow"></div>
+    <a class="node modelN" href="#stage-1"><span class="num">1</span><span class="nm">Extract</span><span class="dt"><span class="tag model">model</span> → field/value pairs</span></a>
+    <div class="arrow"></div>
+    <a class="node codeN" href="#stage-2"><span class="num">2</span><span class="nm">Validate</span><span class="dt"><span class="tag code">code</span> schema · coerce · match</span></a>
+    <div class="arrow"></div>
+    <a class="node codeN" href="#stage-3"><span class="num">3</span><span class="nm">Compose · responsive</span><span class="dt"><span class="tag code">code</span> actions the message caused</span></a>
+    <div class="arrow"></div>
+    <a class="node codeN" href="#stage-4"><span class="num">4</span><span class="nm">Update state</span><span class="dt"><span class="tag code">code</span> apply · clear pending · requeue</span></a>
+    <div class="arrow"></div>
+    <a class="node codeN" href="#stage-5"><span class="num">5</span><span class="nm">Compose · agenda</span><span class="dt"><span class="tag code">code</span> the next proactive move</span></a>
+    <div class="arrow"></div>
+    <a class="node modelN" href="#stage-6"><span class="num">6</span><span class="nm">Respond</span><span class="dt"><span class="tag model">model</span> verbalize (never decides)</span></a>
+    <div class="arrow"></div>
+    <div class="node io" style="background:var(--term)">OUTPUT — text + <code style="background:#063;color:#cfd">---actions---</code></div>
+    <div class="sidebox" style="margin-top:14px"><b>State (carried across turns):</b>
+      <code>form_state</code> filled fields ·
+      <code>pending</code> the question left open ·
+      <code>queue</code> unfilled required fields in schema order.</div>
+  </div>
+  <p class="note"><b>Two channels.</b> A turn's actions merge a <b>responsive</b> channel (steps 0–3: what the user caused) and a <b>proactive</b> channel (step 5: the agenda's next move). Step 6 verbalizes the merged result, so text and actions can never disagree.</p>
+</section>
+
+<!-- ===================== CONCEPTS ===================== -->
+<section id="concepts">
+  <h2>State &amp; concepts</h2>
+
+  <h3 id="state">State objects</h3>
+  <table>
+    <tr><th>Name</th><th>What it holds</th><th>Written by</th></tr>
+    <tr><td><span class="pill">form_state</span></td><td>Field values filled so far — mirrors the web app's form panel.</td><td>Step 4 (applies <code>set_fields</code>).</td></tr>
+    <tr><td><span class="pill">pending</span></td><td>The single question the assistant is currently waiting on (a field or a choice + its options), or <code>confirm_submit</code> at the end. <b>Harness-only state — never injected into a model prompt.</b> It is read in exactly three deterministic places: the <a href="#binding">binding cascade</a> (rule 2), the <a href="#stage-5">agenda guards</a>, and the on-screen buttons. (The last asked question is already the most-recent history entry the extractor sees, so a separate "pending" input would be redundant.)</td><td>Steps 3 &amp; 5 set it (a question was emitted); step 4 clears it (its field got filled).</td></tr>
+    <tr><td><span class="pill">queue</span></td><td>Unfilled <i>required</i> fields, in schema order, conditionals respected (e.g. <code>prior_application_year</code> only when <code>prior_application=true</code>).</td><td>Step 4 recomputes it after every state change.</td></tr>
+  </table>
+
+  <h3 id="validator-categories">Validator outcomes</h3>
+  <p>Step 2 turns each raw pair into exactly one outcome. The extractor emits three pair forms — <code>{field, value}</code> (attributed), <code>{field, ""}</code> (field, no value), <code>{null, value}</code> (value, unplaced — runs the <a href="#binding">binding cascade</a>). Routing in step 3 is fully determined by the outcomes — no model decides it.</p>
+  <table>
+    <tr><th>Outcome</th><th>When</th><th>Becomes</th></tr>
+    <tr><td><span class="pill">VALID_SET</span></td><td>Value present, resolves to a legal typed value.</td><td><code>set_fields</code></td></tr>
+    <tr><td><span class="pill">CORRECTION</span></td><td>VALID_SET on a field that's <i>already filled</i>.</td><td><code>set_fields</code> overwrite + confirm in text</td></tr>
+    <tr><td><span class="pill">CHOICE_NEEDED</span></td><td>Select/boolean with empty, ambiguous, or no-match value. Options come <b>from the schema</b>.</td><td><code>ask_choice</code></td></tr>
+    <tr><td><span class="pill">CLARIFY</span></td><td>Empty value on a free field, or a coercion failure.</td><td>text ask (a directive)</td></tr>
+    <tr><td><span class="pill">DROPPED</span></td><td><code>field_id</code> not in the schema (hallucinated).</td><td>discarded + logged</td></tr>
+  </table>
+  <p><code>has_new_data</code> is <b>derived</b> = any VALID_SET or CORRECTION survived. It is never predicted by a model.</p>
+
+  <h3 id="binding">Binding cascade (where <code>pending</code> lives)</h3>
+  <p>The extractor's third output form, <code>{field_id: null, value: X}</code>, means <b>"I see a value but can't place it"</b> — symmetric to the empty-value signal (<code>field</code> but no value). Binding an <i>unplaced</i> value to a field is done <b>by code, after extraction</b>, so <code>pending</code> never biases the model. Each unplaced value runs this cascade:</p>
+  <table>
+    <tr><th>#</th><th>Rule</th><th>Example</th></tr>
+    <tr><td>1</td><td>The model already attributed it confidently (by format / option-vocab) → done; <code>pending</code> not consulted.</td><td><code>maria.g@gmail.com</code> → email</td></tr>
+    <tr><td>2</td><td>Else if <code>pending</code> exists and its type matches the value → bind to <code>pending</code>.</td><td>pending=dob; bare date → dob (<a href="#s2-2">S2.2</a>)</td></tr>
+    <tr><td>3</td><td>Else if exactly one unfilled field of that type exists → bind there.</td><td>lone date, only <code>dob</code> empty → dob</td></tr>
+    <tr><td>4</td><td>Else → <span class="pill">CLARIFY</span> (ask which field).</td><td>bare <code>"1999"</code> → "birth year or prior application?" (<a href="#s16-2">S16.2</a>)</td></tr>
+  </table>
+  <p>This is why a deflection can't force-fill <code>pending</code> (no unplaced value is produced — <a href="#s7">S7</a>) and a bulk answer's confidently-typed values bind regardless of what was asked (rule 1, <a href="#s16">S16</a>). The residual model job is honest uncertainty (emit <code>null</code>), not "satisfy the pending field."</p>
+
+  <h3 id="directives">Directives</h3>
+  <p>A <b>directive</b> is a code-authored instruction handed to the responder (step 6). Directives are how deterministic decisions reach the prose without the model re-deciding them. Types:</p>
+  <table>
+    <tr><th>Directive</th><th>Raised by</th><th>Tells the responder to…</th></tr>
+    <tr><td><span class="pill">ack</span></td><td>step 0 — save/submit click or a <code>[system]</code> confirmation</td><td>acknowledge the completed action ("Draft saved.")</td></tr>
+    <tr><td><span class="pill">fix</span></td><td>step 0 — <code>[system] Validation error</code> (carries field + server message)</td><td>explain the rejection and ask for a corrected value (see <a href="#s15">S15</a>)</td></tr>
+    <tr><td><span class="pill">missing-fields</span></td><td>step 3 — premature submit (carries the code-computed gap list)</td><td>say what's still required before submitting (see <a href="#s13">S13</a>)</td></tr>
+    <tr><td><span class="pill">ask-for-target</span></td><td>step 5 — agenda targets a free-text field</td><td>ask for that field in prose (no action to render)</td></tr>
+  </table>
+  <p>The responder <i>always</i> also receives the merged action list, so it can stitch both channels ("Saved your email — next, what's your date of birth?").</p>
+
+  <h3 id="risks">The model-risk surface</h3>
+  <p>Only steps 1 and 6 are model calls; everything else is testable code. Two extractor behaviors are the residual risk — both degrade benignly:</p>
+  <ul>
+    <li><b>Risk A — restraint</b> <span class="risk">stage 1</span>: emit <code>[]</code> on chitchat, including turns that <i>mention</i> extractable-looking entities (cities, names, years). Validation can't catch a plausible-but-wrong fill; only training prevents it. (v1's R13 / doc-16 CANNOT #4.) Wrong <code>[]</code> → a missed fill the agenda re-asks for.</li>
+    <li><b>Risk B — honest uncertainty</b> <span class="risk">stage 1</span>: attribute a value to a field only when confident; otherwise emit <code>{null, value}</code> and let the <a href="#binding">binding cascade</a> place it. The old framing — "don't get seduced by <code>pending</code>" — is gone now that <code>pending</code> isn't a model input; what's left is ordinary attribution accuracy. A <i>confident</i> mis-attribution → visible in the form panel, fixed by a <a href="#s10">correction</a> turn.</li>
+  </ul>
+  <p class="note"><b>Eval must measure over-attribution</b> — the rate at which the model fills a field (especially via a wrong confident attribution) when the turn didn't warrant it. That number tells us whether the <code>null</code>-when-unsure behavior is actually being learned. (doc-18 §6)</p>
+</section>
+
+<!-- ===================== STAGE 0 ===================== -->
+<section id="stage-0">
+  <h2><span class="tag code">0</span> &nbsp;Pre-step</h2>
+  <p>Before any model call, handle the two things code can settle on its own.</p>
+  <h3>A. <code>[system]</code> events — handle, then skip steps 1 &amp; 2</h3>
+  <table>
+    <tr><th>Event</th><th>Handling</th></tr>
+    <tr><td><code>User selected option: "X"</code></td><td>Resolve <code>X</code> against the open <span class="pill">pending</span> choice → a responsive <code>set_fields</code>. Zero model calls. (<a href="#s4-0">S4.0</a>)</td></tr>
+    <tr><td><code>User clicked: Save Draft / Submit</code></td><td><span class="pill">ack</span> directive — the client already did the action; the assistant just confirms.</td></tr>
+    <tr><td><code>Validation error: …</code></td><td><span class="pill">fix</span> directive (field + message) + <b>re-pend the errored field</b> + <b>hold the agenda</b>. (<a href="#s15-0">S15.0</a>)</td></tr>
+  </table>
+  <h3>B. Lexical intents — additive, message still flows to step 1</h3>
+  <p>A plain message is scanned for <code>wants_save</code> / <code>wants_submit</code> / <code>wants_review</code> phrases. <b>Additive</b>: "save this — oh and my phone is 555-0142" both sets a flag <i>and</i> carries data, so it continues into extraction. (<a href="#s12-0">S12.0</a>, <a href="#s13-0">S13.0</a>)</p>
+  <div class="appears"><b>Appears in:</b>
+    <a href="#s4-0">S4.0</a><a href="#s12-0">S12.0</a><a href="#s13-0">S13.0</a><a href="#s15-0">S15.0</a></div>
+</section>
+
+<!-- ===================== STAGE 1 ===================== -->
+<section id="stage-1">
+  <h2><span class="tag model">1</span> &nbsp;Extract</h2>
+  <p>The only model call that <i>reads</i> input. Context = schema + <code>form_state</code> + recent history + the user message. <b>No "pending" line</b> — the last asked question is already the most-recent (least-truncated) history entry, so a dedicated pending input would be redundant, and feeding it as an <i>expectation</i> would bias the model toward over-attribution.</p>
+  <p>Output = a JSON list of pairs in three forms:</p>
+  <ul>
+    <li><code>{field_id, value}</code> — a value the model can <b>confidently attribute</b> by format or option-vocabulary (<a href="#s1-1">S1.1</a>);</li>
+    <li><code>{field_id, ""}</code> — a field <b>engaged with no value</b> → choice/clarify in step 2 (<a href="#s6-1">S6.1</a>);</li>
+    <li><code>{null, value}</code> — a <b>value it can't place</b> → the <a href="#binding">binding cascade</a> in step 2 resolves it (<a href="#s2-1">S2.1</a>, <a href="#s16-1">S16.1</a>);</li>
+    <li>and the <b>empty list</b> <code>[]</code> — restraint, "no field data here" (<a href="#s8-1">S8.1</a>, <a href="#s9-1">S9.1</a>).</li>
+  </ul>
+  <p>So the model's whole job is content extraction + honest uncertainty; <i>placement</i> of unplaced values is code. This step carries both model risks: <span class="risk">A restraint</span> and <span class="risk">B honest uncertainty</span> (see <a href="#risks">risk surface</a>).</p>
+  <div class="appears"><b>Appears in:</b>
+    <a href="#s1-1">S1.1</a><a href="#s2-1">S2.1</a><a href="#s6-1">S6.1</a><a href="#s7-1">S7.1</a><a href="#s8-1">S8.1</a><a href="#s9-1">S9.1</a><a href="#s11-1">S11.1</a><a href="#s16-1">S16.1</a></div>
+</section>
+
+<!-- ===================== STAGE 2 ===================== -->
+<section id="stage-2">
+  <h2><span class="tag code">2</span> &nbsp;Validate</h2>
+  <p>Turn raw pairs into typed <a href="#validator-categories">outcomes</a>. First, an unplaced <code>{null, value}</code> pair runs the <a href="#binding">binding cascade</a> — which either attaches a <code>field_id</code> or routes straight to <span class="pill">CLARIFY</span>. Then, per attributed pair: schema membership (else <span class="pill">DROPPED</span>) → empty-value branch (<span class="pill">CHOICE_NEEDED</span> for select/bool, <span class="pill">CLARIFY</span> for free) → present-value branch (coerce / option-match → <span class="pill">VALID_SET</span>, or ambiguous/no-match → <span class="pill">CHOICE_NEEDED</span>). A value targeting an already-filled field becomes a <span class="pill">CORRECTION</span>.</p>
+  <p>Three guarantees live here: <code>pending</code>-binding is deterministic (not a model bias — <a href="#s2-2">S2.2</a>), option lists always come from the schema (kills hallucinated options, R3 — <a href="#s6-2">S6.2</a>), and a hallucinated <code>field_id</code> can never reach an action (<a href="#s9-2">S9.2</a>).</p>
+  <div class="appears"><b>Appears in:</b>
+    <a href="#s1-2">S1.2</a><a href="#s2-2">S2.2</a><a href="#s3-2">S3.2</a><a href="#s5-2">S5.2</a><a href="#s6-2">S6.2</a><a href="#s9-2">S9.2</a><a href="#s10-2">S10.2</a><a href="#s16-2">S16.2</a></div>
+</section>
+
+<!-- ===================== STAGE 3 ===================== -->
+<section id="stage-3">
+  <h2><span class="tag code">3</span> &nbsp;Compose · responsive</h2>
+  <p>Build the actions the user's message caused, from step-2 outcomes + step-0 intents:</p>
+  <table>
+    <tr><th>Action</th><th>Source</th></tr>
+    <tr><td><code>set_fields</code></td><td>VALID_SET ∪ CORRECTION ∪ pre-step option resolution</td></tr>
+    <tr><td><code>ask_choice</code></td><td>the <i>first</i> CHOICE_NEEDED (<b>≤1 per turn</b>; the rest are queued)</td></tr>
+    <tr><td><code>show_preview</code></td><td><code>wants_review</code></td></tr>
+    <tr><td><code>show_button(save_draft)</code></td><td><code>wants_save</code></td></tr>
+    <tr><td>submit</td><td><code>wants_submit</code> <b>+ a code completeness check</b>: complete → <code>show_preview</code> + <code>show_button(submit)</code>; incomplete → no button, raise a <span class="pill">missing-fields</span> directive (<a href="#s13-3">S13.3</a>)</td></tr>
+  </table>
+  <div class="appears"><b>Appears in:</b>
+    <a href="#s5-3">S5.3</a><a href="#s6-3">S6.3</a><a href="#s10-3">S10.3</a><a href="#s12-3">S12.3</a><a href="#s13-3">S13.3</a></div>
+</section>
+
+<!-- ===================== STAGE 4 ===================== -->
+<section id="stage-4">
+  <h2><span class="tag code">4</span> &nbsp;Update state</h2>
+  <p>Commit effects <b>before</b> the agenda runs — the proactive channel must see post-update state. Three operations: apply <code>set_fields</code> to <span class="pill">form_state</span>; if the open <span class="pill">pending</span> field was filled, clear it; recompute the <span class="pill">queue</span>.</p>
+  <p>This ordering is why "answer the last question" and "advance to the next" compose cleanly in one turn (<a href="#s2-4">S2.4</a>), and why a bulk paste's many fills produce one big requeue (<a href="#s11-4">S11.4</a>). When the queue empties here, step 5 goes terminal (<a href="#s14-4">S14.4</a>).</p>
+  <div class="appears"><b>Appears in:</b>
+    <a href="#s2-4">S2.4</a><a href="#s7-4">S7.4</a><a href="#s11-4">S11.4</a><a href="#s14-4">S14.4</a></div>
+</section>
+
+<!-- ===================== STAGE 5 ===================== -->
+<section id="stage-5">
+  <h2><span class="tag code">5</span> &nbsp;Compose · agenda (proactive)</h2>
+  <p>Decide the assistant's next move from post-update state. <b>Guards skip a new agenda action when:</b></p>
+  <ul>
+    <li>a responsive <code>ask_choice</code> was already emitted (≤1 per turn — the displaced target stays queued) (<a href="#s5-5">S5.5</a>);</li>
+    <li><code>wants_save</code> fired — the user is pausing, don't push (<a href="#s12-5">S12.5</a>);</li>
+    <li><span class="pill">pending</span> is still open/unanswered (chitchat, deflection) → re-assert in <b>text only</b>, never re-emit an on-screen choice (<a href="#s8-5">S8.5</a>);</li>
+    <li><span class="pill">pending</span> is <code>confirm_submit</code>, or the agenda is <b>held</b> by a fix directive (<a href="#s15-5">S15.5</a>).</li>
+  </ul>
+  <p>Otherwise <code>next_target</code> = head of queue: a select/boolean → <code>ask_choice</code> from schema options (<a href="#s2-5">S2.5</a>); a free field → an <span class="pill">ask-for-target</span> directive (<a href="#s1-5">S1.5</a>). Either way, <span class="pill">pending</span> = that target.</p>
+  <p class="note"><b>Terminal is the agenda running out of work.</b> Empty queue → <code>show_preview</code> + <code>show_button(submit)</code>, <code>pending = confirm_submit</code>, emitted once (<a href="#s14-5">S14.5</a>). The submit flow — which had <b>zero</b> v1 training examples — isn't learned at all; it's a deterministic consequence of state.</p>
+  <div class="appears"><b>Appears in:</b>
+    <a href="#s1-5">S1.5</a><a href="#s2-5">S2.5</a><a href="#s5-5">S5.5</a><a href="#s8-5">S8.5</a><a href="#s12-5">S12.5</a><a href="#s14-5">S14.5</a><a href="#s15-5">S15.5</a></div>
+</section>
+
+<!-- ===================== STAGE 6 ===================== -->
+<section id="stage-6">
+  <h2><span class="tag model">6</span> &nbsp;Respond</h2>
+  <p>The only model call that <i>writes</i> output. Input = context + message + the <b>merged action list</b> + any <a href="#directives">directives</a>. Output = <code>response_text</code>, serialized by code with the actions into the canonical <code>text + ---actions---</code>.</p>
+  <p>Because the responder <i>sees</i> what actions fired, the v1 failures vanish structurally: it can't claim it did something the actions don't show (R5 text-action disconnect), and it's grounded to real state rather than free-associating (R11). It verbalizes; it never decides — every action and every directive was settled by code or step 1 already. (<a href="#s1-6">S1.6</a> stitches both channels; <a href="#s13-6">S13.6</a> a missing-fields directive; <a href="#s15-6">S15.6</a> a fix directive.)</p>
+  <div class="appears"><b>Appears in:</b>
+    <a href="#s1-6">S1.6</a><a href="#s13-6">S13.6</a><a href="#s15-6">S15.6</a></div>
+</section>
+
+<!-- ===================== SCENARIOS ===================== -->
+<section id="scenarios">
+  <h2>Scenarios</h2>
+  <p>Each step is tagged with the pipeline step it executes; click a step's stage tag to jump to that step's section, or link a step directly by its ID. Fields are from the Northfield schema.</p>
+
+  <!-- S1 -->
+  <div class="scn" id="s1">
+    <h3>S1 — Volunteered data (multi-field)</h3>
+    <p class="setup">Before: empty form · <b>pending</b>: none. User: <i>"I'm Maria Garcia, my email's maria.g@gmail.com"</i></p>
+    <div class="step" id="s1-0"><a class="stepid" href="#s1-0">S1.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Plain message, no intent phrases → continue.</div></div>
+    <div class="step" id="s1-1"><a class="stepid" href="#s1-1">S1.1</a><a class="stagetag model" href="#stage-1">Extract</a><div><code>[{full_name:"Maria Garcia"}, {email:"maria.g@gmail.com"}]</code></div></div>
+    <div class="step" id="s1-2"><a class="stepid" href="#s1-2">S1.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Both ids valid; email format ok → 2× <span class="pill">VALID_SET</span>.</div></div>
+    <div class="step" id="s1-3"><a class="stepid" href="#s1-3">S1.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(full_name, email)</code>.</div></div>
+    <div class="step" id="s1-4"><a class="stepid" href="#s1-4">S1.4</a><a class="stagetag code" href="#stage-4">Update</a><div>Apply both; no pending to clear; requeue → next required is <code>dob</code> (date, free field).</div></div>
+    <div class="step" id="s1-5"><a class="stepid" href="#s1-5">S1.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Target <code>dob</code> is free → <span class="pill">ask-for-target</span> directive (no action); <b>pending = dob</b>.</div></div>
+    <div class="step" id="s1-6"><a class="stepid" href="#s1-6">S1.6</a><a class="stagetag model" href="#stage-6">Respond</a><div>Stitches both channels: <i>"Thanks Maria! What's your date of birth?"</i></div></div>
+    <div class="out">→ set_fields + text</div>
+  </div>
+
+  <!-- S2 -->
+  <div class="scn" id="s2">
+    <h3>S2 — Elliptical answer to a pending field</h3>
+    <p class="setup">Before: full_name, email filled · <b>pending</b>: dob. User: <i>"March 12, 1999"</i></p>
+    <div class="step" id="s2-0"><a class="stepid" href="#s2-0">S2.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Plain message → continue.</div></div>
+    <div class="step" id="s2-1"><a class="stepid" href="#s2-1">S2.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>A bare date the model can't attach to a specific date field → <code>[{null, "March 12, 1999"}]</code>. (No "pending" input — it just reports an unplaced value.)</div></div>
+    <div class="step" id="s2-2"><a class="stepid" href="#s2-2">S2.2</a><a class="stagetag code" href="#stage-2">Validate</a><div><a href="#binding">Cascade</a> rule 2: <code>pending=dob</code> is a date, type matches → bind to <code>dob</code>; coerce → <code>1999-03-12</code> → <span class="pill">VALID_SET</span>. The binding is code, not model.</div></div>
+    <div class="step" id="s2-3"><a class="stepid" href="#s2-3">S2.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(dob)</code>.</div></div>
+    <div class="step" id="s2-4"><a class="stepid" href="#s2-4">S2.4</a><a class="stagetag code" href="#stage-4">Update</a><div>Apply; pending <code>dob</code> filled → <b>clear</b>; requeue → next required <code>gender</code> (select).</div></div>
+    <div class="step" id="s2-5"><a class="stepid" href="#s2-5">S2.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Target <code>gender</code> is a select → <code>ask_choice(gender, [schema opts])</code>; <b>pending = gender</b>.</div></div>
+    <div class="step" id="s2-6"><a class="stepid" href="#s2-6">S2.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"Got it. How do you identify?"</i> (buttons shown)</div></div>
+    <div class="out">→ set_fields + ask_choice + text</div>
+  </div>
+
+  <!-- S3 -->
+  <div class="scn" id="s3">
+    <h3>S3 — Typed answer to an on-screen choice</h3>
+    <p class="setup">Before: enrollment_type buttons on screen · <b>pending</b>: enrollment_type. User types instead of clicking: <i>"full time please"</i></p>
+    <div class="step" id="s3-0"><a class="stepid" href="#s3-0">S3.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Not a <code>[system]</code> click — a typed message → continue.</div></div>
+    <div class="step" id="s3-1"><a class="stepid" href="#s3-1">S3.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>"full time" is an option in <code>enrollment_type</code>'s vocabulary → <b>self-attributes</b> by content: <code>[{enrollment_type:"full time"}]</code>. No pending needed.</div></div>
+    <div class="step" id="s3-2"><a class="stepid" href="#s3-2">S3.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Option match "full time" → <code>full_time</code> (unique) → <span class="pill">VALID_SET</span>.</div></div>
+    <div class="step" id="s3-3"><a class="stepid" href="#s3-3">S3.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(enrollment_type=full_time)</code>.</div></div>
+    <div class="step" id="s3-x"><a class="stepid" href="#s3-x">S3.4–6</a><a class="stagetag code" href="#stage-4">→4·5·6</a><div>Clear pending, advance agenda, respond — as S2.4–6.</div></div>
+    <div class="out">→ set_fields + next ask. Typed answers to button prompts just work — contrast <a href="#s4">S4</a> (the clicked path).</div>
+  </div>
+
+  <!-- S4 -->
+  <div class="scn" id="s4">
+    <h3>S4 — Button click (system event)</h3>
+    <p class="setup">Before: enrollment_type buttons on screen · <b>pending</b>: enrollment_type. Input: <code>[system] User selected option: "Full-time"</code></p>
+    <div class="step" id="s4-0"><a class="stepid" href="#s4-0">S4.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Resolve "Full-time" against the pending choice → <code>set_fields(enrollment_type=full_time)</code>. <b>Skip 1 &amp; 2</b> — zero model calls for the action.</div></div>
+    <div class="step" id="s4-3"><a class="stepid" href="#s4-3">S4.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields</code> from the pre-step resolution.</div></div>
+    <div class="step" id="s4-x"><a class="stepid" href="#s4-x">S4.4–6</a><a class="stagetag code" href="#stage-4">→4·5·6</a><div>Clear pending, advance agenda, respond.</div></div>
+    <div class="out">→ set_fields + next ask, with no extract/validate at all.</div>
+  </div>
+
+  <!-- S5 -->
+  <div class="scn" id="s5">
+    <h3>S5 — Ambiguous select value</h3>
+    <p class="setup">Before: no pending. User: <i>"I'm interested in a science program"</i></p>
+    <div class="step" id="s5-0"><a class="stepid" href="#s5-0">S5.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Continue.</div></div>
+    <div class="step" id="s5-1"><a class="stepid" href="#s5-1">S5.1</a><a class="stagetag model" href="#stage-1">Extract</a><div><code>[{program:"science"}]</code>.</div></div>
+    <div class="step" id="s5-2"><a class="stepid" href="#s5-2">S5.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>"science" matches two options → <span class="pill">CHOICE_NEEDED</span> (subset: Computer Science, Data Science).</div></div>
+    <div class="step" id="s5-3"><a class="stepid" href="#s5-3">S5.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>ask_choice(program, [Computer Science, Data Science])</code> — options from schema.</div></div>
+    <div class="step" id="s5-4"><a class="stepid" href="#s5-4">S5.4</a><a class="stagetag code" href="#stage-4">Update</a><div>No fills; <b>pending = program</b>.</div></div>
+    <div class="step" id="s5-5"><a class="stepid" href="#s5-5">S5.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Guard: a responsive ask_choice was emitted → agenda <b>suppressed</b> this turn.</div></div>
+    <div class="step" id="s5-6"><a class="stepid" href="#s5-6">S5.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"We've got two science programs — which one?"</i></div></div>
+    <div class="out">→ ask_choice + text</div>
+  </div>
+
+  <!-- S6 -->
+  <div class="scn" id="s6">
+    <h3>S6 — User asks about a field (empty value)</h3>
+    <p class="setup">Before: no pending. User: <i>"what programs do you have?"</i></p>
+    <div class="step" id="s6-0"><a class="stepid" href="#s6-0">S6.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>A question, not a save/submit phrase → continue.</div></div>
+    <div class="step" id="s6-1"><a class="stepid" href="#s6-1">S6.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>Engaging a field with no value → <code>[{program:""}]</code>.</div></div>
+    <div class="step" id="s6-2"><a class="stepid" href="#s6-2">S6.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Empty value on a select → <span class="pill">CHOICE_NEEDED</span> (all 6 options).</div></div>
+    <div class="step" id="s6-3"><a class="stepid" href="#s6-3">S6.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>ask_choice(program, all 6)</code> — the model never wrote the list.</div></div>
+    <div class="step" id="s6-x"><a class="stepid" href="#s6-x">S6.4–6</a><a class="stagetag code" href="#stage-4">→4·5·6</a><div>pending = program; agenda suppressed; respond.</div></div>
+    <div class="out">→ ask_choice + text</div>
+  </div>
+
+  <!-- S7 -->
+  <div class="scn" id="s7">
+    <h3>S7 — Deflection while a field is pending</h3>
+    <p class="setup">Before: <b>pending</b>: dob. User changes the subject: <i>"actually, what programs do you offer?"</i></p>
+    <div class="step" id="s7-1"><a class="stepid" href="#s7-1">S7.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>The user named a field with no value → <code>[{program:""}]</code>. There is <b>no unplaced value</b> to bind, so dob can't be force-filled — structurally, not by the model resisting.</div></div>
+    <div class="step" id="s7-2"><a class="stepid" href="#s7-2">S7.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Empty select → <span class="pill">CHOICE_NEEDED</span> (all). The <a href="#binding">cascade</a> never runs (nothing unplaced) → <code>pending=dob</code> is untouched.</div></div>
+    <div class="step" id="s7-3"><a class="stepid" href="#s7-3">S7.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>ask_choice(program, all)</code>.</div></div>
+    <div class="step" id="s7-4"><a class="stepid" href="#s7-4">S7.4</a><a class="stagetag code" href="#stage-4">Update</a><div>No fills; <code>dob</code> still unfilled → <b>stays in queue</b>; pending switches to <code>program</code>. dob is re-asked later.</div></div>
+    <div class="out">→ ask_choice + text; dob is not lost, just deferred. (What used to be "risk B" is now the <a href="#binding">cascade</a> doing nothing.)</div>
+  </div>
+
+  <!-- S8 -->
+  <div class="scn" id="s8">
+    <h3>S8 — Chitchat <span class="risk">risk A</span></h3>
+    <p class="setup">Before: <b>pending</b>: gender (buttons on screen). User: <i>"ugh, so rainy today"</i></p>
+    <div class="step" id="s8-1"><a class="stepid" href="#s8-1">S8.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>Restraint → <code>[]</code>.</div></div>
+    <div class="step" id="s8-3"><a class="stepid" href="#s8-3">S8.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div>No outcomes → no responsive actions.</div></div>
+    <div class="step" id="s8-5"><a class="stepid" href="#s8-5">S8.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Guard: pending open &amp; unanswered → re-assert in <b>text only</b>; do <b>not</b> re-emit the on-screen choice.</div></div>
+    <div class="step" id="s8-6"><a class="stepid" href="#s8-6">S8.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"Ha, perfect weather to knock this out ☔ — whenever you're ready, pick an option above."</i></div></div>
+    <div class="out">→ text only</div>
+  </div>
+
+  <!-- S9 -->
+  <div class="scn" id="s9">
+    <h3>S9 — Trap chitchat <span class="risk">risk A</span></h3>
+    <p class="setup">Before: <b>pending</b>: gender. User: <i>"I love hiking near Denver"</i></p>
+    <div class="step" id="s9-1"><a class="stepid" href="#s9-1">S9.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>Correct output is <code>[]</code> — despite "Denver" looking like a <code>mailing_address</code> value.</div></div>
+    <div class="step" id="s9-2"><a class="stepid" href="#s9-2">S9.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Nothing to validate. <b>Note:</b> had the model wrongly emitted <code>{mailing_address:"Denver"}</code>, it would pass as <span class="pill">VALID_SET</span> — code can't catch a plausible value. This is purely a training target.</div></div>
+    <div class="step" id="s9-x"><a class="stepid" href="#s9-x">S9.3–6</a><a class="stagetag code" href="#stage-3">→ as S8</a><div>No actions; agenda re-asserts pending in text.</div></div>
+    <div class="out">→ text only (the sharpest test of <a href="#risks">risk A</a>)</div>
+  </div>
+
+  <!-- S10 -->
+  <div class="scn" id="s10">
+    <h3>S10 — Correction</h3>
+    <p class="setup">Before: email already filled · <b>pending</b>: gender. User: <i>"wait, my email is maria.garcia@gmail.com"</i></p>
+    <div class="step" id="s10-1"><a class="stepid" href="#s10-1">S10.1</a><a class="stagetag model" href="#stage-1">Extract</a><div><code>[{email:"maria.garcia@gmail.com"}]</code>.</div></div>
+    <div class="step" id="s10-2"><a class="stepid" href="#s10-2">S10.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Valid email; target already filled → <span class="pill">CORRECTION</span> (overwrite + confirm).</div></div>
+    <div class="step" id="s10-3"><a class="stepid" href="#s10-3">S10.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(email)</code> overwrite.</div></div>
+    <div class="step" id="s10-4"><a class="stepid" href="#s10-4">S10.4</a><a class="stagetag code" href="#stage-4">Update</a><div>form_state.email updated; pending <code>gender</code> unchanged (email wasn't pending).</div></div>
+    <div class="step" id="s10-5"><a class="stepid" href="#s10-5">S10.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>pending gender still open → re-assert in text.</div></div>
+    <div class="step" id="s10-6"><a class="stepid" href="#s10-6">S10.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"Updated your email. Back to: how do you identify?"</i></div></div>
+    <div class="out">→ set_fields (overwrite) + text. No new mechanism — just <span class="pill">CORRECTION</span>.</div>
+  </div>
+
+  <!-- S11 -->
+  <div class="scn" id="s11">
+    <h3>S11 — Bulk paste</h3>
+    <p class="setup">Before: only full_name filled · <b>pending</b>: dob. User: <i>"stop asking one by one — dob March 12 1999, email maria.g@gmail.com, phone 555-0142, citizenship US, start fall"</i></p>
+    <div class="step" id="s11-1"><a class="stepid" href="#s11-1">S11.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>Long input → many pairs <code>[{dob…},{email…},{phone…},{country_citizenship:"US"},{start_term:"fall"}]</code>.</div></div>
+    <div class="step" id="s11-2"><a class="stepid" href="#s11-2">S11.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Each coerced/option-matched; "fall" → <code>fall_2026</code>; unknowns dropped → mostly <span class="pill">VALID_SET</span>.</div></div>
+    <div class="step" id="s11-3"><a class="stepid" href="#s11-3">S11.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div>One <code>set_fields</code> with all valid pairs.</div></div>
+    <div class="step" id="s11-4"><a class="stepid" href="#s11-4">S11.4</a><a class="stagetag code" href="#stage-4">Update</a><div>Apply all; pending <code>dob</code> filled → clear; <b>big requeue</b> — only a few gaps remain.</div></div>
+    <div class="step" id="s11-x"><a class="stepid" href="#s11-x">S11.5–6</a><a class="stagetag code" href="#stage-5">→5·6</a><div>Agenda picks the next gap; respond: <i>"Got all that — just need your program now."</i></div></div>
+    <div class="out">→ big set_fields + next ask. No new mechanism — steps 2 &amp; 4 at scale.</div>
+  </div>
+
+  <!-- S12 -->
+  <div class="scn" id="s12">
+    <h3>S12 — Save request (lexical intent)</h3>
+    <p class="setup">Before: some fields filled · <b>pending</b>: gender. User: <i>"let's save it, I'll come back later"</i></p>
+    <div class="step" id="s12-0"><a class="stepid" href="#s12-0">S12.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Lexical → <code>wants_save</code> (additive); continue to extract.</div></div>
+    <div class="step" id="s12-1"><a class="stepid" href="#s12-1">S12.1</a><a class="stagetag model" href="#stage-1">Extract</a><div><code>[]</code> — no new data in "save it".</div></div>
+    <div class="step" id="s12-3"><a class="stepid" href="#s12-3">S12.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>show_button(save_draft)</code> from <code>wants_save</code>.</div></div>
+    <div class="step" id="s12-5"><a class="stepid" href="#s12-5">S12.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Guard: <code>wants_save</code> → agenda <b>paused</b> (don't push the next question while they're leaving).</div></div>
+    <div class="step" id="s12-6"><a class="stepid" href="#s12-6">S12.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"Sure — tap Save Draft and we'll pick up right here."</i></div></div>
+    <div class="out">→ show_button(save_draft) + text</div>
+  </div>
+
+  <!-- S13 -->
+  <div class="scn" id="s13">
+    <h3>S13 — Premature submit</h3>
+    <p class="setup">Before: required fields incomplete · <b>pending</b>: gender. User: <i>"just submit it already"</i></p>
+    <div class="step" id="s13-0"><a class="stepid" href="#s13-0">S13.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Lexical → <code>wants_submit</code>; continue.</div></div>
+    <div class="step" id="s13-1"><a class="stepid" href="#s13-1">S13.1</a><a class="stagetag model" href="#stage-1">Extract</a><div><code>[]</code>.</div></div>
+    <div class="step" id="s13-3"><a class="stepid" href="#s13-3">S13.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div>Completeness check <b>fails</b> → no submit button; raise a <span class="pill">missing-fields</span> directive with the code-computed gap list.</div></div>
+    <div class="step" id="s13-5"><a class="stepid" href="#s13-5">S13.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Resume — pending gender still open → re-assert in text.</div></div>
+    <div class="step" id="s13-6"><a class="stepid" href="#s13-6">S13.6</a><a class="stagetag model" href="#stage-6">Respond</a><div>missing-fields directive → <i>"Almost! Still need: gender, program, GPA. Let's start with gender."</i></div></div>
+    <div class="out">→ text only (no button — the gate is code, not the model)</div>
+  </div>
+
+  <!-- S14 -->
+  <div class="scn" id="s14">
+    <h3>S14 — Last field filled → terminal</h3>
+    <p class="setup">Before: every required field but <code>gender</code> filled · <b>pending</b>: gender. User answers it.</p>
+    <div class="step" id="s14-3"><a class="stepid" href="#s14-3">S14.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(gender)</code> (from a clean VALID_SET).</div></div>
+    <div class="step" id="s14-4"><a class="stepid" href="#s14-4">S14.4</a><a class="stagetag code" href="#stage-4">Update</a><div>Apply; clear pending; requeue → <b>empty</b>.</div></div>
+    <div class="step" id="s14-5"><a class="stepid" href="#s14-5">S14.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Queue empty → <b>TERMINAL</b>: <code>show_preview</code> + <code>show_button(submit)</code>; <code>pending = confirm_submit</code> (emitted once).</div></div>
+    <div class="step" id="s14-6"><a class="stepid" href="#s14-6">S14.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"That's everything! Here's a summary — review and submit when you're happy."</i></div></div>
+    <div class="out">→ set_fields + show_preview + show_button(submit) + text. The submit flow is never learned — it's state running out.</div>
+  </div>
+
+  <!-- S15 -->
+  <div class="scn" id="s15">
+    <h3>S15 — Server-side validation error</h3>
+    <p class="setup">Before: form looked complete, user submitted · <b>pending</b>: confirm_submit. Input: <code>[system] Validation error: "Fall 2026 enrollment is closed" (field: start_term)</code></p>
+    <div class="step" id="s15-0"><a class="stepid" href="#s15-0">S15.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Validation-error event → build a <span class="pill">fix</span> directive (field + server message); <b>re-pend</b> <code>start_term</code>; <b>hold the agenda</b>; <b>skip 1 &amp; 2</b>.</div></div>
+    <div class="step" id="s15-3"><a class="stepid" href="#s15-3">S15.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div>Optional <code>show_fields(start_term)</code> to focus it; no <code>set_fields</code>.</div></div>
+    <div class="step" id="s15-4"><a class="stepid" href="#s15-4">S15.4</a><a class="stagetag code" href="#stage-4">Update</a><div>No fills; <b>pending = start_term</b> (held by the fix directive — not cleared, not advanced).</div></div>
+    <div class="step" id="s15-5"><a class="stepid" href="#s15-5">S15.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Held → no new proactive action.</div></div>
+    <div class="step" id="s15-6"><a class="stepid" href="#s15-6">S15.6</a><a class="stagetag model" href="#stage-6">Respond</a><div>fix directive → <i>"Hmm — Fall 2026 just closed. Would Spring 2027 work instead?"</i></div></div>
+    <div class="out">→ (show_fields) + text. Next turn, the user's "spring" flows through the normal extract → validate → set path and binds to <code>start_term</code> via the re-pend. <span class="risk" style="background:#dcfce7;color:#166534">resolves the open question from doc review</span></div>
+  </div>
+
+  <!-- S16 -->
+  <div class="scn" id="s16">
+    <h3>S16 — Bulk bare values (no field names)</h3>
+    <p class="setup">Before: full_name filled · <b>pending</b>: dob. User dumps unlabeled values: <i>"Maria Garcia, March 12 1999, maria.g@gmail.com, 555-0142"</i></p>
+    <div class="step" id="s16-1"><a class="stepid" href="#s16-1">S16.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>Attribute by content where confident, flag the rest:<br><code>{email,"maria.g@gmail.com"}</code> (@-format) · <code>{phone,"555-0142"}</code> (phone pattern) · <code>{full_name,"Maria Garcia"}</code> (name → the one unfilled name field) · <code>{null,"March 12 1999"}</code> (a date — which date field?).</div></div>
+    <div class="step" id="s16-2"><a class="stepid" href="#s16-2">S16.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>email/phone/full_name coerce → <span class="pill">VALID_SET</span>. The unplaced date runs the <a href="#binding">cascade</a> → rule 2: <code>pending=dob</code> type-matches → bind to <code>dob</code> → <span class="pill">VALID_SET</span>.</div></div>
+    <div class="step" id="s16-3"><a class="stepid" href="#s16-3">S16.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div>One <code>set_fields(email, phone, full_name, dob)</code>. <code>pending</code> never biased the confident four.</div></div>
+    <div class="step" id="s16-x"><a class="stepid" href="#s16-x">S16.4–6</a><a class="stagetag code" href="#stage-4">→4·5·6</a><div>Apply all; clear pending; requeue; agenda asks the next gap.</div></div>
+    <div class="out">→ big set_fields + next ask. <b>The hard residue:</b> a value that fits several unfilled fields. If the user had said only <i>"1999"</i> with no pending, the model emits <code>{null,"1999"}</code> and the cascade falls to rule 4 → <span class="pill">CLARIFY</span> <i>"Is 1999 your birth year, or a previous application year?"</i> — a clarify, never a silent guess.</div>
+  </div>
+
+</section>
+
+<!-- ===================== RULES ===================== -->
+<section id="rules">
+  <h2>Design rules (collected)</h2>
+  <ol>
+    <li><b>Routing is derived, never predicted.</b> <code>has_new_data</code> = validated extraction non-empty; choice/review/save/submit come from <a href="#validator-categories">validator outcomes</a>, lexical intents, and the agenda — not a model.</li>
+    <li><b>Options always come from the schema</b> (kills R3 hallucinated options — <a href="#stage-2">step 2</a>).</li>
+    <li><b>The agenda is code, the phrasing is model.</b> "What to ask next" is a state cross-check (doc-16 CANNOT #3) and never reaches the model (<a href="#stage-5">step 5</a>).</li>
+    <li><b><code>pending</code> is harness state, not a model input.</b> The last asked question is already in history; binding an unplaced value to <code>pending</code> is done by the deterministic <a href="#binding">cascade</a>, so it can't bias extraction (<a href="#s2-2">S2.2</a>, <a href="#s7">S7</a>).</li>
+    <li><b>The model expresses uncertainty as data</b> (<code>{null, value}</code> / <code>{field, ""}</code>); <i>placement</i> is code. Unresolvable → <span class="pill">CLARIFY</span>, never a silent guess (<a href="#s16-2">S16.2</a>).</li>
+    <li><b>At most one <code>ask_choice</code> per turn; responsive beats proactive.</b> Displaced agenda targets stay queued (<a href="#s5-5">S5.5</a>).</li>
+    <li><b>Never re-emit an open <code>ask_choice</code></b> — re-assert in text only (<a href="#s8-5">S8.5</a>).</li>
+    <li><b>State updates before the agenda</b> (<a href="#stage-4">step 4</a> → <a href="#stage-5">step 5</a>).</li>
+    <li><b>Terminal is the agenda running out of work</b> — the submit flow (zero v1 training data) is not learned (<a href="#s14-5">S14.5</a>).</li>
+    <li><b>The responder verbalizes, it never decides</b> — which removes R5 and R11 by construction (<a href="#stage-6">step 6</a>).</li>
+    <li><b>A <code>[system]</code> event branch may hold the agenda</b> (validation error re-pends + holds; <a href="#s15">S15</a>).</li>
+  </ol>
+  <p class="sub" style="margin-top:18px">Related: <a href="doc-18-harness-redesign.md">doc-18</a> (architecture &amp; milestones) · doc-16 (CAN/CANNOT the step split derives from) · doc-15 (R1–R13; R3/R5/R11/R13 addressed structurally here).</p>
+</section>
+
+</main>
+</div>
+</body>
+</html>

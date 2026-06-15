@@ -93,3 +93,5 @@ LLM U  ←─ adapter ─→  LLM A (via web app server, same as App 2)
 | Doc 15 | Real-app issues (R1–R13, harness testing) |
 | Doc 16 | Small-model capability catalog (CAN/CANNOT) |
 | Doc 17 | Tuning status map — current state anchor |
+| Doc 18 | Harness redesign — small-LLM-first tuning v2 |
+| Doc 18.1 | Turn logic — extractor → composer → action routing (v2 spec, interactive HTML) |
