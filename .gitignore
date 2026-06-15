@@ -53,3 +53,6 @@ tuning/eval/results/
 **/*.log
 python/logs1
 python/logs2
+# Python
+__pycache__/
+*.pyc
