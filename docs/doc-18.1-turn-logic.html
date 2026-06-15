@@ -338,9 +338,9 @@
     <div class="step" id="s2-1"><a class="stepid" href="#s2-1">S2.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>A bare date the model can't attach to a specific date field → <code>[{null, "March 12, 1999"}]</code>. (No "pending" input — it just reports an unplaced value.)</div></div>
     <div class="step" id="s2-2"><a class="stepid" href="#s2-2">S2.2</a><a class="stagetag code" href="#stage-2">Validate</a><div><a href="#binding">Cascade</a> rule 2: <code>pending=dob</code> is a date, type matches → bind to <code>dob</code>; coerce → <code>1999-03-12</code> → <span class="pill">VALID_SET</span>. The binding is code, not model.</div></div>
     <div class="step" id="s2-3"><a class="stepid" href="#s2-3">S2.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(dob)</code>.</div></div>
-    <div class="step" id="s2-4"><a class="stepid" href="#s2-4">S2.4</a><a class="stagetag code" href="#stage-4">Update</a><div>Apply; pending <code>dob</code> filled → <b>clear</b>; requeue → next required <code>gender</code> (select).</div></div>
-    <div class="step" id="s2-5"><a class="stepid" href="#s2-5">S2.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Target <code>gender</code> is a select → <code>ask_choice(gender, [schema opts])</code>; <b>pending = gender</b>.</div></div>
-    <div class="step" id="s2-6"><a class="stepid" href="#s2-6">S2.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"Got it. How do you identify?"</i> (buttons shown)</div></div>
+    <div class="step" id="s2-4"><a class="stepid" href="#s2-4">S2.4</a><a class="stagetag code" href="#stage-4">Update</a><div>Apply; pending <code>dob</code> filled → <b>clear</b>; requeue → next required <code>country_citizenship</code> (select).</div></div>
+    <div class="step" id="s2-5"><a class="stepid" href="#s2-5">S2.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Target <code>country_citizenship</code> is a select → <code>ask_choice(country_citizenship, [schema opts])</code>; <b>pending = country_citizenship</b>.</div></div>
+    <div class="step" id="s2-6"><a class="stepid" href="#s2-6">S2.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"Got it. What's your country of citizenship?"</i> (buttons shown)</div></div>
     <div class="out">→ set_fields + ask_choice + text</div>
   </div>
 
@@ -406,7 +406,7 @@
   <!-- S8 -->
   <div class="scn" id="s8">
     <h3>S8 — Chitchat <span class="risk">risk A</span></h3>
-    <p class="setup">Before: <b>pending</b>: gender (buttons on screen). User: <i>"ugh, so rainy today"</i></p>
+    <p class="setup">Before: <b>pending</b>: country_citizenship (buttons on screen). User: <i>"ugh, so rainy today"</i></p>
     <div class="step" id="s8-1"><a class="stepid" href="#s8-1">S8.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>Restraint → <code>[]</code>.</div></div>
     <div class="step" id="s8-3"><a class="stepid" href="#s8-3">S8.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div>No outcomes → no responsive actions.</div></div>
     <div class="step" id="s8-5"><a class="stepid" href="#s8-5">S8.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Guard: pending open &amp; unanswered → re-assert in <b>text only</b>; do <b>not</b> re-emit the on-screen choice.</div></div>
@@ -417,7 +417,7 @@
   <!-- S9 -->
   <div class="scn" id="s9">
     <h3>S9 — Trap chitchat <span class="risk">risk A</span></h3>
-    <p class="setup">Before: <b>pending</b>: gender. User: <i>"I love hiking near Denver"</i></p>
+    <p class="setup">Before: <b>pending</b>: country_citizenship. User: <i>"I love hiking near Denver"</i></p>
     <div class="step" id="s9-1"><a class="stepid" href="#s9-1">S9.1</a><a class="stagetag model" href="#stage-1">Extract</a><div>Correct output is <code>[]</code> — despite "Denver" looking like a <code>mailing_address</code> value.</div></div>
     <div class="step" id="s9-2"><a class="stepid" href="#s9-2">S9.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Nothing to validate. <b>Note:</b> had the model wrongly emitted <code>{mailing_address:"Denver"}</code>, it would pass as <span class="pill">VALID_SET</span> — code can't catch a plausible value. This is purely a training target.</div></div>
     <div class="step" id="s9-x"><a class="stepid" href="#s9-x">S9.3–6</a><a class="stagetag code" href="#stage-3">→ as S8</a><div>No actions; agenda re-asserts pending in text.</div></div>
@@ -427,13 +427,13 @@
   <!-- S10 -->
   <div class="scn" id="s10">
     <h3>S10 — Correction</h3>
-    <p class="setup">Before: email already filled · <b>pending</b>: gender. User: <i>"wait, my email is maria.garcia@gmail.com"</i></p>
+    <p class="setup">Before: email already filled · <b>pending</b>: country_citizenship. User: <i>"wait, my email is maria.garcia@gmail.com"</i></p>
     <div class="step" id="s10-1"><a class="stepid" href="#s10-1">S10.1</a><a class="stagetag model" href="#stage-1">Extract</a><div><code>[{email:"maria.garcia@gmail.com"}]</code>.</div></div>
     <div class="step" id="s10-2"><a class="stepid" href="#s10-2">S10.2</a><a class="stagetag code" href="#stage-2">Validate</a><div>Valid email; target already filled → <span class="pill">CORRECTION</span> (overwrite + confirm).</div></div>
     <div class="step" id="s10-3"><a class="stepid" href="#s10-3">S10.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(email)</code> overwrite.</div></div>
-    <div class="step" id="s10-4"><a class="stepid" href="#s10-4">S10.4</a><a class="stagetag code" href="#stage-4">Update</a><div>form_state.email updated; pending <code>gender</code> unchanged (email wasn't pending).</div></div>
-    <div class="step" id="s10-5"><a class="stepid" href="#s10-5">S10.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>pending gender still open → re-assert in text.</div></div>
-    <div class="step" id="s10-6"><a class="stepid" href="#s10-6">S10.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"Updated your email. Back to: how do you identify?"</i></div></div>
+    <div class="step" id="s10-4"><a class="stepid" href="#s10-4">S10.4</a><a class="stagetag code" href="#stage-4">Update</a><div>form_state.email updated; pending <code>country_citizenship</code> unchanged (email wasn't pending).</div></div>
+    <div class="step" id="s10-5"><a class="stepid" href="#s10-5">S10.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>pending country_citizenship still open → re-assert in text.</div></div>
+    <div class="step" id="s10-6"><a class="stepid" href="#s10-6">S10.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"Updated your email. Back to: your country of citizenship?"</i></div></div>
     <div class="out">→ set_fields (overwrite) + text. No new mechanism — just <span class="pill">CORRECTION</span>.</div>
   </div>
 
@@ -452,7 +452,7 @@
   <!-- S12 -->
   <div class="scn" id="s12">
     <h3>S12 — Save request (lexical intent)</h3>
-    <p class="setup">Before: some fields filled · <b>pending</b>: gender. User: <i>"let's save it, I'll come back later"</i></p>
+    <p class="setup">Before: some fields filled · <b>pending</b>: country_citizenship. User: <i>"let's save it, I'll come back later"</i></p>
     <div class="step" id="s12-0"><a class="stepid" href="#s12-0">S12.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Lexical → <code>wants_save</code> (additive); continue to extract.</div></div>
     <div class="step" id="s12-1"><a class="stepid" href="#s12-1">S12.1</a><a class="stagetag model" href="#stage-1">Extract</a><div><code>[]</code> — no new data in "save it".</div></div>
     <div class="step" id="s12-3"><a class="stepid" href="#s12-3">S12.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>show_button(save_draft)</code> from <code>wants_save</code>.</div></div>
@@ -464,20 +464,20 @@
   <!-- S13 -->
   <div class="scn" id="s13">
     <h3>S13 — Premature submit</h3>
-    <p class="setup">Before: required fields incomplete · <b>pending</b>: gender. User: <i>"just submit it already"</i></p>
+    <p class="setup">Before: required fields incomplete · <b>pending</b>: country_citizenship. User: <i>"just submit it already"</i></p>
     <div class="step" id="s13-0"><a class="stepid" href="#s13-0">S13.0</a><a class="stagetag code" href="#stage-0">Pre-step</a><div>Lexical → <code>wants_submit</code>; continue.</div></div>
     <div class="step" id="s13-1"><a class="stepid" href="#s13-1">S13.1</a><a class="stagetag model" href="#stage-1">Extract</a><div><code>[]</code>.</div></div>
     <div class="step" id="s13-3"><a class="stepid" href="#s13-3">S13.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div>Completeness check <b>fails</b> → no submit button; raise a <span class="pill">missing-fields</span> directive with the code-computed gap list.</div></div>
-    <div class="step" id="s13-5"><a class="stepid" href="#s13-5">S13.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Resume — pending gender still open → re-assert in text.</div></div>
-    <div class="step" id="s13-6"><a class="stepid" href="#s13-6">S13.6</a><a class="stagetag model" href="#stage-6">Respond</a><div>missing-fields directive → <i>"Almost! Still need: gender, program, GPA. Let's start with gender."</i></div></div>
+    <div class="step" id="s13-5"><a class="stepid" href="#s13-5">S13.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Resume — pending country_citizenship still open → re-assert in text.</div></div>
+    <div class="step" id="s13-6"><a class="stepid" href="#s13-6">S13.6</a><a class="stagetag model" href="#stage-6">Respond</a><div>missing-fields directive → <i>"Almost! Still need: citizenship, program, mailing address. Let's start with citizenship."</i></div></div>
     <div class="out">→ text only (no button — the gate is code, not the model)</div>
   </div>
 
   <!-- S14 -->
   <div class="scn" id="s14">
     <h3>S14 — Last field filled → terminal</h3>
-    <p class="setup">Before: every required field but <code>gender</code> filled · <b>pending</b>: gender. User answers it.</p>
-    <div class="step" id="s14-3"><a class="stepid" href="#s14-3">S14.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(gender)</code> (from a clean VALID_SET).</div></div>
+    <p class="setup">Before: every required field but the last (<code>funding_interest</code>) filled · <b>pending</b>: funding_interest. User answers it.</p>
+    <div class="step" id="s14-3"><a class="stepid" href="#s14-3">S14.3</a><a class="stagetag code" href="#stage-3">Compose-R</a><div><code>set_fields(funding_interest=true)</code> (from a clean VALID_SET).</div></div>
     <div class="step" id="s14-4"><a class="stepid" href="#s14-4">S14.4</a><a class="stagetag code" href="#stage-4">Update</a><div>Apply; clear pending; requeue → <b>empty</b>.</div></div>
     <div class="step" id="s14-5"><a class="stepid" href="#s14-5">S14.5</a><a class="stagetag code" href="#stage-5">Agenda</a><div>Queue empty → <b>TERMINAL</b>: <code>show_preview</code> + <code>show_button(submit)</code>; <code>pending = confirm_submit</code> (emitted once).</div></div>
     <div class="step" id="s14-6"><a class="stepid" href="#s14-6">S14.6</a><a class="stagetag model" href="#stage-6">Respond</a><div><i>"That's everything! Here's a summary — review and submit when you're happy."</i></div></div>
