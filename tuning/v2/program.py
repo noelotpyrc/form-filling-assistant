@@ -12,6 +12,7 @@ from typing import Optional
 import re
 
 import dspy
+from dspy.utils.exceptions import AdapterParseError
 from pydantic import BaseModel
 
 from .schema import Schema
@@ -116,6 +117,16 @@ def strip_markers(text: str) -> str:
     return _MARKER.sub("", text).strip()
 
 
+def _last_raw_completion() -> str:
+    """Raw text of the most recent LM call (the call is recorded in history
+    before the adapter parses it, so this survives an AdapterParseError)."""
+    h = getattr(dspy.settings.lm, "history", [])
+    if h and h[-1].get("outputs"):
+        out = h[-1]["outputs"][0]
+        return out if isinstance(out, str) else ""
+    return ""
+
+
 def summarize_actions(schema: Schema, actions: list[dict]) -> str:
     parts = []
     for a in actions:
@@ -150,24 +161,31 @@ class FormAssistant(dspy.Module):
         if ps.handled:
             outcomes = []
         else:
-            pred = self.extract(
-                form_schema=schema_str,
-                filled_fields=context.render_filled(schema, state.form_state),
-                recent_history=hist_str,
-                user_message=user_message,
-            )
-            pairs = [{"field_id": e.field_id, "value": e.value} for e in pred.extractions]
+            try:
+                pred = self.extract(
+                    form_schema=schema_str,
+                    filled_fields=context.render_filled(schema, state.form_state),
+                    recent_history=hist_str,
+                    user_message=user_message,
+                )
+                pairs = [{"field_id": e.field_id, "value": e.value} for e in pred.extractions]
+            except AdapterParseError:
+                pairs = []   # teacher format slip -> extract nothing this turn (safe)
             outcomes = validate(pairs, state)
 
         actions, directives = compose(state, ps, outcomes)
 
-        rpred = self.respond(
-            form_schema=schema_str,
-            filled_fields=context.render_filled(schema, state.form_state),  # post-update
-            recent_history=hist_str,
-            user_message=user_message,
-            actions_taken=summarize_actions(schema, actions),
-            guidance=render_guidance(schema, directives),
-        )
-        text = strip_markers(rpred.response_text)
+        try:
+            rpred = self.respond(
+                form_schema=schema_str,
+                filled_fields=context.render_filled(schema, state.form_state),  # post-update
+                recent_history=hist_str,
+                user_message=user_message,
+                actions_taken=summarize_actions(schema, actions),
+                guidance=render_guidance(schema, directives),
+            )
+            text = strip_markers(rpred.response_text)
+        except AdapterParseError:
+            # teacher omitted the response_text marker — recover the prose it wrote
+            text = strip_markers(_last_raw_completion())
         return dspy.Prediction(text=text, actions=actions, full=serialize(text, actions))

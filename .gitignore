@@ -57,3 +57,4 @@ python/logs2
 __pycache__/
 *.pyc
 .venv/
+tuning/v2/sims/
