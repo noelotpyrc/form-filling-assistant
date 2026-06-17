@@ -9,3 +9,7 @@
 #   python3 -m venv tuning/v2/.venv
 #   tuning/v2/.venv/bin/pip install --pre -r tuning/v2/requirements.txt
 dspy==3.3.0b1
+
+# Serving (M1.5 serve.py)
+fastapi
+uvicorn

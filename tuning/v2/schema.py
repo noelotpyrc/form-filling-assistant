@@ -62,8 +62,9 @@ def _options(raw: dict) -> list[tuple]:
     return out
 
 
-def load_schema(path: str | Path = NORTHFIELD) -> Schema:
-    raw = json.load(open(path))
+def parse_schema(raw: dict) -> Schema:
+    """Build a Schema from a parsed form-JSON dict (e.g. the web app's
+    `form_schema` request field), so serve and offline use share one path."""
     fields: list[Field] = []
     for sec in raw["schema"]["sections"]:
         sid = sec.get("section_id", "")
@@ -87,3 +88,7 @@ def load_schema(path: str | Path = NORTHFIELD) -> Schema:
         fields=fields,
         by_id={f.field_id: f for f in fields},
     )
+
+
+def load_schema(path: str | Path = NORTHFIELD) -> Schema:
+    return parse_schema(json.load(open(path)))
