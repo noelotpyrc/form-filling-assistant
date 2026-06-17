@@ -108,7 +108,10 @@ def compose(state: TurnState, prestep, outcomes: list[Outcome]):
             actions.append(_show_button("submit"))
             state.pending = Pending(CONFIRM_SUBMIT)
         else:
-            directives.append(("missing_fields", [f.field_id for f in queue(state)]))
+            # can't submit yet — offer a graceful save-or-continue, don't push the next field
+            if not any(a["type"] == "show_button" for a in actions):
+                actions.append(_show_button("save_draft"))
+            directives.append(("submit_blocked", [f.field_id for f in queue(state)]))
 
     # --- step 5: agenda (proactive) ---
     a_actions, a_dirs = _agenda(state, prestep, responsive_choice, it)
@@ -118,8 +121,9 @@ def compose(state: TurnState, prestep, outcomes: list[Outcome]):
 
 
 def _agenda(state: TurnState, prestep, responsive_choice: bool, it: dict):
-    # guards
-    if prestep.hold or responsive_choice or it.get("wants_save"):
+    # guards — don't push the next field when the user is pausing (save) or just
+    # tried to submit (we offer save-or-continue instead of nagging the next field)
+    if prestep.hold or responsive_choice or it.get("wants_save") or it.get("wants_submit"):
         return [], []
     p = state.pending
     if p and p.target == CONFIRM_SUBMIT:
@@ -134,9 +138,9 @@ def _agenda(state: TurnState, prestep, responsive_choice: bool, it: dict):
 
     nxt = q[0]
     state.pending = Pending(nxt.field_id)
-    if nxt.is_choice:
+    if nxt.button_choice:
         return [_ask_choice(nxt, nxt.options)], [("ask_target", nxt.field_id)]
-    return [], [("ask_target", nxt.field_id)]           # free field -> text ask
+    return [], [("ask_target", nxt.field_id)]           # free field / large select -> text ask
 
 
 # ---- output serialization ------------------------------------------------

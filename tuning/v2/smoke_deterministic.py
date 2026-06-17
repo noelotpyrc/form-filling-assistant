@@ -58,10 +58,11 @@ def s1_volunteered():
     a, d = run_turn(s, "I'm Maria Garcia, my email's maria.g@gmail.com",
                     [{"field_id": "full_name", "value": "Maria Garcia"},
                      {"field_id": "email", "value": "maria.g@gmail.com"}])
-    check("S1 set_fields(full_name,email)", types(a) == ["set_fields"] and
+    check("S1 set_fields(full_name,email)", "set_fields" in types(a) and
           set(fids(a[0])) == {"full_name", "email"})
-    check("S1 agenda -> next required dob is pending (free field, no action)",
-          s.pending and s.pending.target == "dob", f"pending={s.pending}")
+    check("S1 agenda -> program is next (program-first section_order), shown as buttons",
+          types(a) == ["set_fields", "ask_choice"] and s.pending.target == "program",
+          f"types={types(a)} pending={s.pending}")
 
 
 def s2_elliptical():
@@ -71,8 +72,8 @@ def s2_elliptical():
           types(a)[0] == "set_fields" and a[0]["fields"][0] == {"field_id": "dob", "value": "1999-03-12"},
           str(a[0]["fields"]))
     # next REQUIRED after dob is country_citizenship (a select) — gender is optional
-    check("S2 agenda -> ask_choice for next required select",
-          types(a) == ["set_fields", "ask_choice"] and s.pending.target == "country_citizenship",
+    check("S2 agenda -> next required (program) shown as buttons",
+          types(a) == ["set_fields", "ask_choice"] and s.pending.target == "program",
           f"types={types(a)} pending={s.pending}")
 
 
@@ -127,8 +128,10 @@ def s12_save():
 def s13_premature_submit():
     s = state_with({"full_name": "M"}, pending="country_citizenship")
     a, d = run_turn(s, "just submit it already", [])
-    check("S13 premature submit -> no submit button, missing_fields directive",
-          "show_button" not in types(a) and has_dir(d, "missing_fields"))
+    check("S13 premature submit -> offers save_draft, no submit button, submit_blocked",
+          any(x["type"] == "show_button" and x["button"] == "save_draft" for x in a)
+          and not any(x["type"] == "show_button" and x["button"] == "submit" for x in a)
+          and has_dir(d, "submit_blocked"), f"types={types(a)} dirs={[x[0] for x in d]}")
 
 
 def _all_required_except(skip: str) -> dict:
@@ -177,15 +180,28 @@ def s16_bulk_bare():
 def s16b_unplaceable():
     s = state_with({})  # no pending; two text name fields unfilled
     a, d = run_turn(s, "Lee", [{"field_id": None, "value": "Lee"}])
-    check("S16b unplaceable bare value -> CLARIFY, no silent guess",
-          types(a) == [] and has_dir(d, "clarify"))
+    check("S16b unplaceable bare value -> CLARIFY, never silently set",
+          not any(x["type"] == "set_fields" for x in a) and has_dir(d, "clarify"),
+          f"types={types(a)} dirs={[x[0] for x in d]}")
+
+
+def s17_large_select_text():
+    # program-section + name filled; pending=dob; answering dob makes the next
+    # required field country_citizenship (15 options) -> asked as TEXT, not buttons
+    pre = {"program": "cs", "start_term": "fall_2026", "enrollment_type": "full_time",
+           "prior_application": False, "full_name": "Maria"}
+    s = state_with(pre, pending="dob")
+    a, d = run_turn(s, "March 12, 1999", [{"field_id": None, "value": "March 12, 1999"}])
+    check("S17 large select (15-country) asked as text, not buttons",
+          "ask_choice" not in types(a) and s.pending.target == "country_citizenship",
+          f"types={types(a)} pending={s.pending}")
 
 
 def main():
     for fn in [s1_volunteered, s2_elliptical, s4_button_event, s5_ambiguous_select,
                s6_asks_about_field, s7_deflection, s8_chitchat, s12_save,
                s13_premature_submit, s14_terminal, s15_validation_error,
-               s16_bulk_bare, s16b_unplaceable]:
+               s16_bulk_bare, s16b_unplaceable, s17_large_select_text]:
         print(f"\n{fn.__name__}")
         fn()
     passed = sum(1 for _, c, _ in _results if c)

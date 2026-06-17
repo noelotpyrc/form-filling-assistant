@@ -121,8 +121,10 @@ def _validate_pair(fid: str, value: str, state: TurnState) -> Outcome:
     set_kind = CORRECTION if state.is_filled(fid) else VALID_SET
 
     if str(value).strip() == "":  # field engaged, no value
-        if f.is_choice:
+        if f.button_choice:
             return Outcome(CHOICE_NEEDED, fid, options=f.options)
+        if f.is_choice:               # large select -> ask them to type it
+            return Outcome(CLARIFY, fid, reason="large select, ask for typed value")
         return Outcome(CLARIFY, fid, reason="empty value on free field")
 
     if f.is_choice:
@@ -130,8 +132,10 @@ def _validate_pair(fid: str, value: str, state: TurnState) -> Outcome:
         if len(hits) == 1:
             return Outcome(set_kind, fid, value=hits[0][0])
         if len(hits) >= 2:
-            return Outcome(CHOICE_NEEDED, fid, options=hits)
-        return Outcome(CHOICE_NEEDED, fid, options=f.options)  # no match -> all
+            return Outcome(CHOICE_NEEDED, fid, options=hits)   # small matched subset -> buttons ok
+        if f.button_choice:
+            return Outcome(CHOICE_NEEDED, fid, options=f.options)  # no match, small -> all buttons
+        return Outcome(CLARIFY, fid, reason="no option matched (large select)")
 
     ok, canonical = coerce(value, f)
     if ok:

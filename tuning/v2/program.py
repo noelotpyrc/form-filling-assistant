@@ -85,9 +85,15 @@ def render_guidance(schema: Schema, directives: list) -> str:
             out.append(f"Acknowledge that the user just did: {payload}.")
         elif kind == "fix":
             out.append(f"A validation error occurred ({payload}). Apologize briefly and ask for a corrected value.")
-        elif kind == "missing_fields":
-            labels = ", ".join(_label(schema, f) for f in payload)
-            out.append(f"Still required before submitting: {labels}. Ask for the first one.")
+        elif kind == "submit_blocked":
+            n = len(payload)
+            out.append(
+                f"The user wants to submit, but {n} required field(s) are still "
+                f"missing, so it can't be submitted yet. Reassure them warmly, then "
+                f"offer a gentle choice: keep going now, or save a draft and come "
+                f"back later (a Save Draft button is shown). Don't pressure or list "
+                f"every missing field."
+            )
         elif kind == "ask_target":
             out.append(f"Ask the user for: {_label(schema, payload)}.")
         elif kind == "reask_pending":

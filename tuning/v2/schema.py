@@ -15,6 +15,8 @@ NORTHFIELD = PROJECT_ROOT / "packages/web-app/public/forms/masters-northfield.js
 SCALAR_TYPES = {"text", "textarea", "date", "email", "phone", "number"}
 CHOICE_TYPES = {"select", "multi_select", "boolean"}
 SKIP_TYPES = {"group", "file"}  # v0 scope cut — deferred to v1.5 / v2.5
+CHOICE_BUTTON_MAX = 8  # selects with more options than this are asked as free text
+                       # (e.g. the 15-country fields), not rendered as buttons
 
 
 @dataclass
@@ -32,6 +34,13 @@ class Field:
     @property
     def is_choice(self) -> bool:
         return self.type in CHOICE_TYPES
+
+    @property
+    def button_choice(self) -> bool:
+        """A choice small enough to render as clickable buttons. Large selects
+        (countries) are asked as free text instead (the validator option-matches
+        whatever the user types)."""
+        return self.is_choice and len(self.options) <= CHOICE_BUTTON_MAX
 
     @property
     def is_multi(self) -> bool:
@@ -64,9 +73,18 @@ def _options(raw: dict) -> list[tuple]:
 
 def parse_schema(raw: dict) -> Schema:
     """Build a Schema from a parsed form-JSON dict (e.g. the web app's
-    `form_schema` request field), so serve and offline use share one path."""
+    `form_schema` request field), so serve and offline use share one path.
+
+    Fields are ordered by the form's declared `instructions.section_order` (the
+    same order the legacy LLM A prompt used — program first, then personal, …),
+    falling back to physical section order. This is the agenda's walk order."""
     fields: list[Field] = []
-    for sec in raw["schema"]["sections"]:
+    sections = raw["schema"]["sections"]
+    order = (raw.get("instructions") or {}).get("section_order")
+    if order:
+        rank = {sid: i for i, sid in enumerate(order)}
+        sections = sorted(sections, key=lambda s: rank.get(s.get("section_id", ""), len(order)))
+    for sec in sections:
         sid = sec.get("section_id", "")
         for f in sec["fields"]:
             if f["type"] in SKIP_TYPES:
