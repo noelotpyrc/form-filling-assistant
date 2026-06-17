@@ -56,3 +56,4 @@ python/logs2
 # Python
 __pycache__/
 *.pyc
+.venv/
