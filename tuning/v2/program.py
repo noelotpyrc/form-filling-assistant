@@ -9,6 +9,7 @@ produces the {field, ""} / {field, partial} / [] conventions reliably).
 """
 from __future__ import annotations
 from typing import Optional
+import re
 
 import dspy
 from pydantic import BaseModel
@@ -99,6 +100,16 @@ def render_guidance(schema: Schema, directives: list) -> str:
     return " ".join(out) if out else "Respond naturally."
 
 
+# The teacher sometimes emits a malformed DSPy end-marker (e.g. "[[ ## completed ]]",
+# missing the trailing ##), which the adapter fails to strip and which then leaks
+# into the user-facing reply. Belt-and-suspenders: remove any [[ ## ... ]] marker.
+_MARKER = re.compile(r"\[\[\s*##.*?\]\]")
+
+
+def strip_markers(text: str) -> str:
+    return _MARKER.sub("", text).strip()
+
+
 def summarize_actions(schema: Schema, actions: list[dict]) -> str:
     parts = []
     for a in actions:
@@ -152,5 +163,5 @@ class FormAssistant(dspy.Module):
             actions_taken=summarize_actions(schema, actions),
             guidance=render_guidance(schema, directives),
         )
-        text = rpred.response_text.strip()
+        text = strip_markers(rpred.response_text)
         return dspy.Prediction(text=text, actions=actions, full=serialize(text, actions))
