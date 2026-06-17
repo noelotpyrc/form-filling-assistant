@@ -1,0 +1,11 @@
+# v2 harness dependencies.
+#
+# DSPy 3.3.0b1 is a PRE-RELEASE, pinned deliberately: it drops the litellm
+# dependency (litellm was flagged unsafe during a security review). Our teacher
+# LM (claude_lm.ClaudeLM) shells out to the `claude` CLI and builds its own
+# response objects, so litellm is not needed.
+#
+# Setup:
+#   python3 -m venv tuning/v2/.venv
+#   tuning/v2/.venv/bin/pip install --pre -r tuning/v2/requirements.txt
+dspy==3.3.0b1
