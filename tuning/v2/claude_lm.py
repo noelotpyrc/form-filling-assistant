@@ -59,8 +59,10 @@ class ClaudeLM(dspy.BaseLM):
 
     def forward(self, prompt=None, messages=None, **kwargs):
         system, user = self._split(prompt, messages)
-        text = self._call_cli(system, user)
-        return _Resp(choices=[_Choice(message=_Msg(content=text))], model=self.model)
+        text, cost = self._call_cli(system, user)
+        # response_cost is picked up by DSPy and stored per-call in lm.history
+        return _Resp(choices=[_Choice(message=_Msg(content=text))], model=self.model,
+                     _hidden_params={"response_cost": cost})
 
     # --- helpers ---------------------------------------------------------
 
@@ -79,7 +81,7 @@ class ClaudeLM(dspy.BaseLM):
             return system, "\n\n".join(parts)
         return "", prompt or ""
 
-    def _call_cli(self, system: str, user: str) -> str:
+    def _call_cli(self, system: str, user: str) -> tuple[str, float]:
         cmd = [CLAUDE_BIN, "-p", user, "--model", self.model, "--output-format", "json"]
         if self.fallback_model:
             cmd += ["--fallback-model", self.fallback_model]
@@ -91,4 +93,4 @@ class ClaudeLM(dspy.BaseLM):
         data = json.loads(proc.stdout)
         if data.get("is_error"):
             raise RuntimeError(f"claude returned error: {str(data)[:500]}")
-        return data.get("result", "")
+        return data.get("result", ""), float(data.get("total_cost_usd") or 0.0)

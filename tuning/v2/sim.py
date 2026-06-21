@@ -59,13 +59,14 @@ SCENARIOS = {
 }
 
 
-def claude_p(system: str, user: str, timeout: int = 120) -> str:
+def claude_p(system: str, user: str, timeout: int = 120) -> tuple[str, float]:
     cmd = [CLAUDE_BIN, "-p", user, "--model", SIM_USER_MODEL,
            "--output-format", "json", "--system-prompt", system]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
         raise RuntimeError(f"LLM U claude failed rc={proc.returncode}: {proc.stderr[:300]}")
-    return json.loads(proc.stdout).get("result", "")
+    data = json.loads(proc.stdout)
+    return data.get("result", ""), float(data.get("total_cost_usd") or 0.0)
 
 
 def _parse_action(raw: str) -> dict:
@@ -109,10 +110,11 @@ Reply with ONLY a JSON object, one of:
 {{"action": "stop"}}   (only if the application is submitted/finished)"""
 
 
-def llm_u(schema, persona, style, screen, directive) -> dict:
+def llm_u(schema, persona, style, screen, directive) -> tuple[dict, float]:
     sys = U_SYS.format(persona=render_persona(schema, persona), style=style,
                        style_desc=STYLE_DESC[style], directive=DIRECTIVES[directive])
-    return _parse_action(claude_p(sys, screen))
+    text, cost = claude_p(sys, screen)
+    return _parse_action(text), cost
 
 
 def _module_of(call: dict) -> str:
@@ -131,6 +133,7 @@ def run_session(agent, lm, schema, scenario: str, seed: int, max_turns: int = 24
     transcript: list[dict] = []
     user_msg = ""          # turn 0 kickoff: assistant greets
     u_turn = 0
+    teacher_cost = u_cost = 0.0
 
     for turn in range(max_turns):
         prev = len(lm.history)
@@ -139,6 +142,7 @@ def run_session(agent, lm, schema, scenario: str, seed: int, max_turns: int = 24
             records.append({"session": seed, "scenario": scenario, "turn": turn,
                             "module": _module_of(call), "messages": call["messages"],
                             "completion": call["outputs"][0] if call.get("outputs") else ""})
+        teacher_cost += sum((c.get("cost") or 0.0) for c in lm.history[prev:])
         if user_msg:
             history.append({"role": "user", "content": user_msg})
         history.append({"role": "assistant", "content": pred.text})
@@ -149,7 +153,8 @@ def run_session(agent, lm, schema, scenario: str, seed: int, max_turns: int = 24
             break
 
         directive = policy.get(u_turn, "answer")
-        action = llm_u(schema, persona, style, render_screen(pred), directive)
+        action, ucost = llm_u(schema, persona, style, render_screen(pred), directive)
+        u_cost += ucost
         u_turn += 1
         kind = action.get("action", "message")
         if kind == "stop":
@@ -163,7 +168,9 @@ def run_session(agent, lm, schema, scenario: str, seed: int, max_turns: int = 24
 
     return {"scenario": scenario, "seed": seed, "style": style, "turns": turn + 1,
             "persona": persona, "filled": dict(state.form_state),
-            "records": records, "transcript": transcript}
+            "records": records, "transcript": transcript,
+            "cost_usd": teacher_cost + u_cost,
+            "teacher_cost": round(teacher_cost, 4), "u_cost": round(u_cost, 4)}
 
 
 def main():
@@ -186,6 +193,8 @@ def main():
     train_f = open(out / "train.jsonl", "w")
     summaries = []
     n_ext = n_resp = 0
+    run_cost = 0.0
+    n_ok = 0
     for i in range(args.sessions):
         scenario = scenarios[i % len(scenarios)]
         seed = args.seed + i
@@ -199,15 +208,22 @@ def main():
             train_f.write(json.dumps(r) + "\n")
             n_ext += r["module"] == "extractor"
             n_resp += r["module"] == "responder"
-        json.dump({k: s[k] for k in ("scenario", "seed", "style", "turns", "persona", "filled", "transcript")},
+        json.dump({k: s[k] for k in ("scenario", "seed", "style", "turns", "persona", "filled",
+                                     "transcript", "cost_usd", "teacher_cost", "u_cost")},
                   open(out / f"transcript-{seed}-{scenario}.json", "w"), indent=2)
+        run_cost += s["cost_usd"]
+        n_ok += 1
         summaries.append(f"  {scenario:10} seed={seed} turns={s['turns']:2} "
-                         f"filled={len(s['filled'])} records={len(s['records'])}")
+                         f"filled={len(s['filled'])} records={len(s['records'])} "
+                         f"${s['cost_usd']:.3f} (teacher ${s['teacher_cost']:.3f} + U ${s['u_cost']:.3f})")
     train_f.close()
 
     print("\n=== sessions ===")
     print("\n".join(summaries))
     print(f"\ntraining examples: {n_ext} extractor + {n_resp} responder = {n_ext + n_resp}")
+    avg = run_cost / n_ok if n_ok else 0.0
+    print(f"cost: ${run_cost:.2f} over {n_ok} sessions  (avg ${avg:.3f}/session)")
+    print(f"  projected — 50 sessions ≈ ${avg*50:.0f} · 500 ≈ ${avg*500:.0f} · 2000 ≈ ${avg*2000:.0f}")
     print(f"written to {out}/")
 
 
