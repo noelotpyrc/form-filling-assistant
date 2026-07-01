@@ -146,6 +146,44 @@ def summarize_actions(schema: Schema, actions: list[dict]) -> str:
 
 # ---- the program ---------------------------------------------------------
 
+# ---- teacher-side demos (LabeledFewShot fix, doc-18 §7 "optimizer upstream") --
+# A hand-labeled contrast pair teaching the extractor the {null}-when-unplaceable
+# convention (doc-18.1 risk B): a bare value whose type fits several fields, with
+# no cue, is unplaceable -> {null}; the SAME value WITH a cue is confidently
+# attributed. Fixes edge_bare_date_no_cue without making the extractor timid on
+# cued dates. Applied to the teacher for eval + M4 data-gen; NOT auto-attached,
+# so serve.py / sim.py keep their already-validated behavior until we decide.
+
+def build_extract_demos(schema: Schema) -> list:
+    sch = context.render_schema(schema)
+    empty = context.render_filled(schema, {})
+    hist = context.render_history([])
+
+    def ex(msg, pairs):
+        return dspy.Example(
+            form_schema=sch, filled_fields=empty, recent_history=hist, user_message=msg,
+            extractions=[Extraction(field_id=f, value=v) for f, v in pairs],
+        ).with_inputs("form_schema", "filled_fields", "recent_history", "user_message")
+
+    return [
+        ex("August 3, 1990.", [(None, "1990-08-03")]),          # bare, no cue -> unplaceable
+        ex("I was born on August 3, 1990.", [("dob", "1990-08-03")]),  # cue -> attributed
+    ]
+
+
+def attach_extract_demos(program: "FormAssistant", schema: Schema) -> "FormAssistant":
+    program.extract.demos = build_extract_demos(schema)
+    return program
+
+
+def build_teacher(schema: Schema) -> "FormAssistant":
+    """The canonical teacher: FormAssistant + the extract demos, rebuilt from the
+    live schema (no stale snapshot). One definition of "the teacher" for eval and
+    M4 data-gen. If a future MIPRO/GEPA run produces a compiled artifact, this is
+    the seam where a `.load(...)` would replace attach_extract_demos."""
+    return attach_extract_demos(FormAssistant(), schema)
+
+
 class FormAssistant(dspy.Module):
     def __init__(self):
         super().__init__()

@@ -195,10 +195,15 @@ suite. v1's 300-case set missed 9 of 13 real-app issues — v2 keeps both tiers:
    MLX) carries over — it's the one v1 piece that worked unambiguously.
 2. **Measure** the student vs. teacher on the frozen suite; report the gap per
    metric. This is the thesis number.
-3. **GEPA moves upstream.** Prompt optimization runs on the *teacher program*
-   before data generation (the teacher follows prompts; the student can't —
-   Exp 13). GEPA's v2 job is improving the program the student distills from,
-   not the student's prompts. GEPA-on-student is retired.
+3. **The optimizer moves upstream.** Prompt/demo optimization runs on the
+   *teacher program* before data generation (the teacher follows prompts; the
+   student can't — Exp 13); its v2 job is improving the program the student
+   distills from, not the student's prompts. Optimizer-on-student is retired.
+   First instance is done: a hand-authored **LabeledFewShot** demo pair fixed the
+   `bare_date` over-attribution (wrong-field 33.3% → 0%, §6), applied via
+   `build_teacher()`. Automated escalation (MIPROv2 / GEPA, scored on the frozen
+   eval, trained on a **disjoint** split) is reserved for when a *batch* of
+   teacher defects accumulates — not one-offs.
 4. **RL — targeted, optional.** Only if SFT plateaus on a specific measurable
    weakness; any reward must score empty-correct symmetrically with extraction
    (the Exp 7 lesson). Not scheduled until SFT v3 numbers exist.
@@ -212,19 +217,23 @@ responder call), so it is not a parallel rig. Teacher is non-deterministic, so
 each case is N-sampled. NB: these edge cases are *not* the v1 P1–P12 probe
 taxonomy — that is the Tier-2 multi-turn sweep.
 
-**Teacher baseline** (2026-06-30, `eval/baseline-teacher_v1.json`; sonnet,
-extractor-only, N=5, 545 calls, $9.18): field **F1 99.5%**, value-match
-**100%**, empty-correct **93.3%**, over-attribution **0%**, wrong-field
-**33.3%**, choice-correct **100%**; **109/109 cases stable** across 5 samples.
-The lone defect is `edge_bare_date_no_cue` — a contextless date is set to `dob`
-5/5 (reproducible over-confidence, a GEPA-on-teacher target per §7).
+**Teacher baseline.** *v1* (`eval/baseline-teacher_v1.json`; sonnet,
+extractor-only, N=5, $9.18): F1 **99.5%**, value-match **100%**, empty-correct
+**93.3%**, over-attribution **0%**, wrong-field **33.3%**, choice **100%**;
+109/109 stable. The lone defect was `edge_bare_date_no_cue` — a contextless date
+set to `dob` 5/5 (reproducible over-confidence). *v2* (`baseline-teacher_v2.json`,
+the **canonical teacher** = `build_teacher()` with the extract demos, §7): **all
+Tier-1 metrics 100%** (F1 / value / empty-correct / choice = 100; over-attribution
+& wrong-field = 0), 109/109 stable. The fix is a two-demo **LabeledFewShot**
+contrast pair (bare value → `{null}`, cued value → attributed) — bare_date 0→100%
+with no regression across the other 23 scenarios.
 
-**Success criteria** — student on the same frozen set: field **F1 ≥ 95%**,
-value-match **≥ 97%**, empty-correct **≥ 85%**, over-attribution **≤ 8%**,
-wrong-field **≤ 33%** (no regression past `bare_date`; must still pass
-`ambiguous` + `no_match`), choice-correct **≥ 95%**; plus (Tier-2 / serving,
-M3b) completes scripted multi-turn sessions end-to-end and serves at an
-acceptable per-turn latency on the local Mac.
+**Success criteria** — student on the same frozen set (teacher_v2 = 100% on all):
+field **F1 ≥ 95%**, value-match **≥ 97%**, empty-correct **≥ 85%**,
+over-attribution **≤ 8%**, wrong-field **≤ 10%** (the teacher no longer has the
+`bare_date` defect, so the student must not reintroduce it), choice-correct **≥
+95%**; plus (Tier-2 / serving, M3b) completes scripted multi-turn sessions
+end-to-end and serves at an acceptable per-turn latency on the local Mac.
 
 ---
 

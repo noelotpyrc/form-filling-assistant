@@ -21,7 +21,8 @@ every (case, sample) is one observation. We report pooled rates plus per-case
 stability (how often the N samples agree) to surface flakiness.
 
   Self-test (free, no model):  tuning/v2/.venv/bin/python -m tuning.v2.eval_score --selftest
-  Teacher baseline ($$):       tuning/v2/.venv/bin/python -m tuning.v2.eval_score --n 5 --label teacher_v1
+  Teacher baseline ($$):       tuning/v2/.venv/bin/python -m tuning.v2.eval_score --n 5 --label teacher_v2
+    (demos default ON -> the canonical teacher; add --no-demos to reproduce teacher_v1)
 """
 from __future__ import annotations
 import argparse
@@ -152,20 +153,25 @@ def run_case(agent, lm, schema, case: dict) -> dict:
             "choice_field": choice_field, "cost": cost}
 
 
-def run_baseline(n: int, label: str, eval_set: str, limit: int = 0):
+def run_baseline(n: int, label: str, eval_set: str, limit: int = 0,
+                 only: str = "", demos: bool = True):
     import dspy
     from .claude_lm import ClaudeLM
     from .schema import load_schema
-    from .program import FormAssistant
+    from .program import FormAssistant, build_teacher
 
     cases = [json.loads(l) for l in open(eval_set)]
+    if only:
+        keep = set(only.split(","))
+        cases = [c for c in cases if c["scenario"] in keep]
     if limit:
         cases = cases[:limit]
     lm = ClaudeLM()
     dspy.configure(lm=lm)
     schema = load_schema()
-    agent = FormAssistant()
-    print(f"model={lm.model}  cases={len(cases)}  n={n}  -> {len(cases)*n} extractor calls\n", flush=True)
+    agent = build_teacher(schema) if demos else FormAssistant()  # demos on = the canonical teacher
+    print(f"model={lm.model}  cases={len(cases)}  n={n}  demos={'ON' if demos else 'off'}"
+          f"  -> {len(cases)*n} extractor calls\n", flush=True)
 
     scored, raw, total_cost = [], [], 0.0
     for si in range(n):
@@ -275,11 +281,15 @@ def main():
     ap.add_argument("--label", default="teacher_v1")
     ap.add_argument("--eval-set", default=EVAL_SET)
     ap.add_argument("--limit", type=int, default=0, help="cap to first N cases (smoke)")
+    ap.add_argument("--only", default="", help="comma-separated scenarios to run (band check)")
+    ap.add_argument("--no-demos", dest="demos", action="store_false",
+                    help="ablation: run the teacher WITHOUT the extract demos (reproduces teacher_v1)")
+    ap.set_defaults(demos=True)
     args = ap.parse_args()
     if args.selftest:
         selftest()
         return
-    run_baseline(args.n, args.label, args.eval_set, args.limit)
+    run_baseline(args.n, args.label, args.eval_set, args.limit, args.only, args.demos)
 
 
 if __name__ == "__main__":
