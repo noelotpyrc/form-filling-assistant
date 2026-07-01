@@ -152,7 +152,8 @@ class FormAssistant(dspy.Module):
         self.extract = dspy.Predict(Extract)
         self.respond = dspy.Predict(Respond)
 
-    def forward(self, state: TurnState, user_message: str, history: list[dict]):
+    def forward(self, state: TurnState, user_message: str, history: list[dict],
+                with_response: bool = True):
         schema = state.schema
         schema_str = context.render_schema(schema)
         hist_str = context.render_history(history)
@@ -175,17 +176,23 @@ class FormAssistant(dspy.Module):
 
         actions, directives = compose(state, ps, outcomes)
 
-        try:
-            rpred = self.respond(
-                form_schema=schema_str,
-                filled_fields=context.render_filled(schema, state.form_state),  # post-update
-                recent_history=hist_str,
-                user_message=user_message,
-                actions_taken=summarize_actions(schema, actions),
-                guidance=render_guidance(schema, directives),
-            )
-            text = strip_markers(rpred.response_text)
-        except AdapterParseError:
-            # teacher omitted the response_text marker — recover the prose it wrote
-            text = strip_markers(_last_raw_completion())
-        return dspy.Prediction(text=text, actions=actions, full=serialize(text, actions))
+        # The responder is a second LM call; Tier-1 extractor scoring doesn't need
+        # it, so eval can skip it (with_response=False) to halve teacher cost. The
+        # extract -> validate -> compose path above is identical either way.
+        text = None
+        if with_response:
+            try:
+                rpred = self.respond(
+                    form_schema=schema_str,
+                    filled_fields=context.render_filled(schema, state.form_state),  # post-update
+                    recent_history=hist_str,
+                    user_message=user_message,
+                    actions_taken=summarize_actions(schema, actions),
+                    guidance=render_guidance(schema, directives),
+                )
+                text = strip_markers(rpred.response_text)
+            except AdapterParseError:
+                # teacher omitted the response_text marker — recover the prose it wrote
+                text = strip_markers(_last_raw_completion())
+        full = serialize(text, actions) if text is not None else None
+        return dspy.Prediction(text=text, actions=actions, full=full)

@@ -203,11 +203,28 @@ suite. v1's 300-case set missed 9 of 13 real-app issues — v2 keeps both tiers:
    weakness; any reward must score empty-correct symmetrically with extraction
    (the Exp 7 lesson). Not scheduled until SFT v3 numbers exist.
 
-**Success criteria** (concrete numbers set after the teacher baseline run):
-student reaches a stated fraction of teacher score per Tier-1 metric, completes
-scripted multi-turn sessions end-to-end, and serves under an acceptable
-per-turn latency on the local Mac. Defining these is milestone M3, not a
-retrofit after results.
+**The eval (M3a, built).** `tuning/v2/eval_set.py` — 12 correct-by-construction
+templates ×8 + 13 hand-authored **edge cases** (restraint / trap / precedence /
+compound / no-match / …) = a 109-case frozen set (`eval/eval_set.jsonl`, digest
+`eval/cases.md`). Scored by `tuning/v2/eval_score.py` through the production
+`forward()` (extract → validate → compose; `with_response=False` skips the
+responder call), so it is not a parallel rig. Teacher is non-deterministic, so
+each case is N-sampled. NB: these edge cases are *not* the v1 P1–P12 probe
+taxonomy — that is the Tier-2 multi-turn sweep.
+
+**Teacher baseline** (2026-06-30, `eval/baseline-teacher_v1.json`; sonnet,
+extractor-only, N=5, 545 calls, $9.18): field **F1 99.5%**, value-match
+**100%**, empty-correct **93.3%**, over-attribution **0%**, wrong-field
+**33.3%**, choice-correct **100%**; **109/109 cases stable** across 5 samples.
+The lone defect is `edge_bare_date_no_cue` — a contextless date is set to `dob`
+5/5 (reproducible over-confidence, a GEPA-on-teacher target per §7).
+
+**Success criteria** — student on the same frozen set: field **F1 ≥ 95%**,
+value-match **≥ 97%**, empty-correct **≥ 85%**, over-attribution **≤ 8%**,
+wrong-field **≤ 33%** (no regression past `bare_date`; must still pass
+`ambiguous` + `no_match`), choice-correct **≥ 95%**; plus (Tier-2 / serving,
+M3b) completes scripted multi-turn sessions end-to-end and serves at an
+acceptable per-turn latency on the local Mac.
 
 ---
 
@@ -219,8 +236,9 @@ retrofit after results.
 | M1 | v2 harness in **`tuning/v2/`** (new dir; v1 untouched per doc-17): program (extractor + responder signatures), deterministic shell (pre-step / validator / composer / agenda per the doc-18.1 contract), `ClaudeLM` | The 16 doc-18.1 scenario traces pass as smoke turns with the teacher |
 | M1.5 | `tuning/v2/serve.py` (FastAPI `:8200`, v1's request shape) behind the web app's `/api/generate-local` (`?backend=local`) | Manual browser drive with the teacher: fields fill live, choices/buttons/preview render, save + submit flow work end-to-end. (Same serve path M2/M4 reuse — only the LM swaps.) |
 | M2 | Sim v2: LLM U ↔ teacher-harness; pilot ~50 sessions | Manual trace review passes; per-scenario quota report |
-| M3 | Frozen eval suite + teacher baseline + anchor; success criteria numbers set | Teacher scored; anchor fixture written |
-| M4 | SFT v3 distillation + student eval | Student/teacher gap report |
+| M3a | Frozen eval suite (`eval_set.py`, 109 cases) + Tier-1 scorer (`eval_score.py`) + teacher baseline | **Done 2026-06-30** — teacher scored (F1 99.5%, over-attr 0%, wrong-field 33.3% = the `bare_date` probe); criteria set; `eval/baseline-teacher_v1.json` written |
+| M3b | Tier-2 behavioral: multi-turn probe sweep (P1–P12) + judged text rubric | Pending — success-criteria numbers for the multi-turn/serving bar |
+| M4 | SFT v3 distillation + student eval (score student on the M3a frozen set vs the criteria above) | Student/teacher gap report |
 | M5 | Iterate: GEPA-on-teacher, data scaling, targeted RL, then phase v1.5 (groups) | Driven by M4 findings |
 
 ---
