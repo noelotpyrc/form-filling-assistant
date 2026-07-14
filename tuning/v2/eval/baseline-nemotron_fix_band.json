@@ -1,0 +1,1763 @@
+{
+  "label": "nemotron_fix_band",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "n": 3,
+  "eval_set": "tuning/v2/eval/eval_set.jsonl",
+  "cost_usd": 0.0,
+  "metrics": {
+    "n_observations": 87,
+    "field_precision": 1.0,
+    "field_recall": 1.0,
+    "field_f1": 1.0,
+    "field_counts": {
+      "tp": 129,
+      "fp": 0,
+      "fn": 0
+    },
+    "value_match": 1.0,
+    "value_n": 129,
+    "empty_correct": {
+      "rate": 1.0,
+      "n": 9
+    },
+    "over_attribution": {
+      "rate": 0.0,
+      "n": 3
+    },
+    "wrong_field_assignment": {
+      "rate": 0.0,
+      "n": 6
+    },
+    "choice_correct": {
+      "rate": null,
+      "n": 0
+    },
+    "by_scenario": {
+      "bare_date": {
+        "rate": 1.0,
+        "n": 3
+      },
+      "bulk": {
+        "rate": 1.0,
+        "n": 24
+      },
+      "compound": {
+        "rate": 1.0,
+        "n": 3
+      },
+      "elliptical_dob": {
+        "rate": 1.0,
+        "n": 24
+      },
+      "freetext_select": {
+        "rate": 1.0,
+        "n": 3
+      },
+      "no_match": {
+        "rate": 1.0,
+        "n": 3
+      },
+      "select_by_label": {
+        "rate": 1.0,
+        "n": 24
+      },
+      "trap": {
+        "rate": 1.0,
+        "n": 3
+      }
+    }
+  },
+  "stability": {
+    "cases": 29,
+    "fully_agree": 29,
+    "flaky": []
+  },
+  "raw": [
+    {
+      "sample": 0,
+      "id": "select_by_label-0",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "public_health"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-1",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "engineering"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-2",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "cs"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-3",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "mba"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-4",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "education"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-5",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "engineering"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-6",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "public_health"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-7",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "mba"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-0",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Maria Reyes",
+        "email": "maria.reyes20@example.com",
+        "phone": "(675) 555-1595"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-1",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Priya Costa",
+        "email": "priya.costa9@example.com",
+        "phone": "(478) 555-5140"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-2",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Maria Ali",
+        "email": "maria.ali61@example.com",
+        "phone": "(283) 555-6692"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-3",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Yamamoto",
+        "email": "elena.yamamoto83@example.com",
+        "phone": "(732) 555-1712"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-4",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Tariq Lee",
+        "email": "tariq.lee97@example.com",
+        "phone": "(863) 555-8480"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-5",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Aisha Rossi",
+        "email": "aisha.rossi41@example.com",
+        "phone": "(328) 555-1314"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-6",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Omar Kim",
+        "email": "omar.kim25@example.com",
+        "phone": "(298) 555-3021"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-7",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Lee",
+        "email": "elena.lee20@example.com",
+        "phone": "(493) 555-1602"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-0",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1990-07-15"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-1",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-12-08"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-2",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-04-09"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-3",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-11-12"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-4",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1997-08-03"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-5",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-07-24"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-6",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-06-04"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-7",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1986-07-26"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_trap_chitchat",
+      "scenario": "trap",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_value_not_in_options",
+      "scenario": "no_match",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_answer_plus_extra",
+      "scenario": "compound",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-03-03",
+        "phone": "(415) 555-0132"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_freetext_country",
+      "scenario": "freetext_select",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "country_citizenship": "KR"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_bare_date_no_cue",
+      "scenario": "bare_date",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "select_by_label-0",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "public_health"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "select_by_label-1",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "engineering"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "select_by_label-2",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "cs"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "select_by_label-3",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "mba"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "select_by_label-4",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "education"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "select_by_label-5",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "engineering"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "select_by_label-6",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "public_health"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "select_by_label-7",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "mba"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "bulk-0",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Maria Reyes",
+        "email": "maria.reyes20@example.com",
+        "phone": "(675) 555-1595"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "bulk-1",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Priya Costa",
+        "email": "priya.costa9@example.com",
+        "phone": "(478) 555-5140"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "bulk-2",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Maria Ali",
+        "email": "maria.ali61@example.com",
+        "phone": "(283) 555-6692"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "bulk-3",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Yamamoto",
+        "email": "elena.yamamoto83@example.com",
+        "phone": "(732) 555-1712"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "bulk-4",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Tariq Lee",
+        "email": "tariq.lee97@example.com",
+        "phone": "(863) 555-8480"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "bulk-5",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Aisha Rossi",
+        "email": "aisha.rossi41@example.com",
+        "phone": "(328) 555-1314"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "bulk-6",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Omar Kim",
+        "email": "omar.kim25@example.com",
+        "phone": "(298) 555-3021"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "bulk-7",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Lee",
+        "email": "elena.lee20@example.com",
+        "phone": "(493) 555-1602"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-0",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1990-07-15"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-1",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-12-08"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-2",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-04-09"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-3",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-11-12"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-4",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1997-08-03"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-5",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-07-24"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-6",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-06-04"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-7",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1986-07-26"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "edge_trap_chitchat",
+      "scenario": "trap",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "edge_value_not_in_options",
+      "scenario": "no_match",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "edge_answer_plus_extra",
+      "scenario": "compound",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-03-03",
+        "phone": "(415) 555-0132"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "edge_freetext_country",
+      "scenario": "freetext_select",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "country_citizenship": "KR"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 1,
+      "id": "edge_bare_date_no_cue",
+      "scenario": "bare_date",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "select_by_label-0",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "public_health"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "select_by_label-1",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "engineering"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "select_by_label-2",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "cs"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "select_by_label-3",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "mba"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "select_by_label-4",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "education"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "select_by_label-5",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "engineering"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "select_by_label-6",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "public_health"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "select_by_label-7",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "mba"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "bulk-0",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Maria Reyes",
+        "email": "maria.reyes20@example.com",
+        "phone": "(675) 555-1595"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "bulk-1",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Priya Costa",
+        "email": "priya.costa9@example.com",
+        "phone": "(478) 555-5140"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "bulk-2",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Maria Ali",
+        "email": "maria.ali61@example.com",
+        "phone": "(283) 555-6692"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "bulk-3",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Yamamoto",
+        "email": "elena.yamamoto83@example.com",
+        "phone": "(732) 555-1712"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "bulk-4",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Tariq Lee",
+        "email": "tariq.lee97@example.com",
+        "phone": "(863) 555-8480"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "bulk-5",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Aisha Rossi",
+        "email": "aisha.rossi41@example.com",
+        "phone": "(328) 555-1314"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "bulk-6",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Omar Kim",
+        "email": "omar.kim25@example.com",
+        "phone": "(298) 555-3021"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "bulk-7",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Lee",
+        "email": "elena.lee20@example.com",
+        "phone": "(493) 555-1602"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-0",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1990-07-15"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-1",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-12-08"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-2",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-04-09"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-3",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-11-12"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-4",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1997-08-03"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-5",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-07-24"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-6",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-06-04"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-7",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1986-07-26"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "edge_trap_chitchat",
+      "scenario": "trap",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "edge_value_not_in_options",
+      "scenario": "no_match",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "edge_answer_plus_extra",
+      "scenario": "compound",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-03-03",
+        "phone": "(415) 555-0132"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "edge_freetext_country",
+      "scenario": "freetext_select",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "country_citizenship": "KR"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 2,
+      "id": "edge_bare_date_no_cue",
+      "scenario": "bare_date",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    }
+  ]
+}

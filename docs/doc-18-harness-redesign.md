@@ -217,18 +217,23 @@ responder call), so it is not a parallel rig. Teacher is non-deterministic, so
 each case is N-sampled. NB: these edge cases are *not* the v1 P1–P12 probe
 taxonomy — that is the Tier-2 multi-turn sweep.
 
-**Teacher baseline.** *v1* (`eval/baseline-teacher_v1.json`; sonnet,
-extractor-only, N=5, $9.18): F1 **99.5%**, value-match **100%**, empty-correct
-**93.3%**, over-attribution **0%**, wrong-field **33.3%**, choice **100%**;
-109/109 stable. The lone defect was `edge_bare_date_no_cue` — a contextless date
-set to `dob` 5/5 (reproducible over-confidence). *v2* (`baseline-teacher_v2.json`,
-the **canonical teacher** = `build_teacher()` with the extract demos, §7): **all
-Tier-1 metrics 100%** (F1 / value / empty-correct / choice = 100; over-attribution
-& wrong-field = 0), 109/109 stable. The fix is a two-demo **LabeledFewShot**
-contrast pair (bare value → `{null}`, cued value → attributed) — bare_date 0→100%
-with no regression across the other 23 scenarios.
+**Teacher baseline.** *Sonnet era (historical):* `baseline-teacher_v1.json`
+(sonnet CLI, N=5, $9.18) — F1 99.5%, wrong-field 33.3% from the
+`edge_bare_date_no_cue` over-confidence; `baseline-teacher_v2.json` — 100% via
+a LabeledFewShot demo pair. Both were later found to run through DSPy's silent
+JSONAdapter fallback (the CLI flattens demos, breaking chat markers), and the
+unpinned `sonnet` alias drifted to a model that ignores prompt-level restraint
+— the full audit trail is in `tuning/v2/M4_PLAN.md`.
 
-**Success criteria** — student on the same frozen set (teacher_v2 = 100% on all):
+**Teacher (FINAL, 2026-07-14).** `nvidia/nemotron-3-ultra-550b-a55b:free` via
+`OpenRouterLM` (native messages → demos as real turns, temperature=0, $0/call)
++ one native compound demo + the validator **bare-value guard** (clarify-don't-
+bind enforced in code, doc-18.1 "code owns placement") + human labels on the
+country selects (so `match_options` canonicalizes "South Korea"→KR in code).
+**`baseline-nemotron_v2.json`: 100% on every Tier-1 metric** (109×3, 109/109
+stable, $0). Teacher eval/iteration is now free; N=3 suffices (temp=0).
+
+**Success criteria** — student on the same frozen set (teacher = 100% on all):
 field **F1 ≥ 95%**, value-match **≥ 97%**, empty-correct **≥ 85%**,
 over-attribution **≤ 8%**, wrong-field **≤ 10%** (the teacher no longer has the
 `bare_date` defect, so the student must not reintroduce it), choice-correct **≥

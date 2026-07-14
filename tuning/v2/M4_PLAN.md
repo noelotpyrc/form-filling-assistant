@@ -16,8 +16,13 @@ P2** (canonicalize, see Parked → resolved). So:
   from P2. It can join slice 1 or a later slice; grading it still needs a
   responder eval (Tier-1 grounding / Tier-2), which we haven't built yet.
 
-## Status snapshot (2026-07-01)
-- ✅ Teacher: `build_teacher()` (LabeledFewShot demos) → `teacher_v2` = 100% on all Tier-1.
+## Status snapshot (2026-07-14)
+- ✅ Teacher **FINAL**: `nvidia/nemotron-3-ultra-550b-a55b:free` via `OpenRouterLM`
+  (native messages, temp=0, $0/call) + one native compound demo + validator
+  bare-value guard + enriched country labels → **`nemotron_v2` = 100% on all
+  Tier-1** (109×3, 109/109 stable, `eval/baseline-nemotron_v2.json`). The
+  sonnet-era `teacher_v2` baseline is historical (claude CLI path = legacy,
+  demo-incompatible).
 - ✅ Frozen eval: 109 cases (`eval/eval_set.jsonl`), scorer `eval_score.py`.
 - ✅ Student criteria (extractor, frozen set): F1 ≥ 95, value ≥ 97, empty-correct ≥ 85,
   over-attribution ≤ 8, wrong-field ≤ 10, choice ≥ 95.
@@ -118,6 +123,20 @@ actually responder calls). Root cause via live probes:
    old byte-anchor breaks by design after prompt edits) in flight.
    (Provenance nice-to-have: ClaudeLM could record the CLI's resolved
    `modelUsage` id per call.)
+
+### Teacher pivot (2026-07-13/14) — RESOLVED: nemotron via OpenRouter
+User call: teacher = `nvidia/nemotron-3-ultra-550b-a55b:free` through the new
+`OpenRouterLM` (native messages array → demos attach as real turns; temp=0;
+usage-cost capture; free-tier backoff). Audition on the frozen eval was **$0**:
+`nemotron_v1` = F1 99.1 (fp=0), native `{null}` on bare dates, 2 deterministic
+misses → fixed free: **country option labels** in the form JSON (activates
+`match_options`; `freetext_select` 0→100) and **one native compound demo**
+(`build_extract_demos`, pending-answer+extra → both pairs; `compound` 0→100).
+**`nemotron_v2` = 100% on every Tier-1 metric** (fix-band + full re-baseline
+both 100%, zero regressions). Notes: temp=0 ≠ perfect format determinism
+(occasional JSON-fallback; content-based capture handles it); free tier ≈
+20 req/min & ~1000/day (account has credits); ~7s/call. Remaining wiring:
+`datagen.py --backend` so pilot2's teacher is nemotron (LLM U stays sonnet).
 
 ## Plumbing (P) — do first; all small, free/cheap, individually verifiable
 - [ ] **P1 — build `datagen.py` (hybrid generator, design above).** Layer 1 farm (build_teacher,
