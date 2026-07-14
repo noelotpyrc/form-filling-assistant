@@ -36,13 +36,17 @@ class Extract(dspy.Signature):
     """Extract what the user's latest message implies about the form fields.
 
     Emit a list of {field_id, value} pairs, one per case below:
-    - A value you can confidently attribute to a field (by format, or by the
-      field's option labels) -> {field_id, that value}. For a partial or
+    - A value you can confidently attribute to a field (named or implied by the
+      user's words, matching a field's option labels, or of a format that only
+      one field could take) -> {field_id, that value}. For a partial or
       category term pointing at a select field (e.g. "a science program"), use
       the partial text as the value (e.g. {"program", "science"}) so the
       options can be narrowed.
     - A value you recognize but cannot place on a specific field ->
-      {field_id: null, value}.
+      {field_id: null, value}. A bare value whose type fits several fields
+      (e.g. a lone date — date of birth? a test date?) with no words tying it
+      to one of them is unplaceable: emit {field_id: null, value}; never pick
+      the field from its type alone.
     - The user asking which options exist / what to put for a SPECIFIC field,
       giving no value (e.g. "what programs do you offer?") -> {that field_id,
       ""} (empty value), to surface that field's choices.
@@ -146,42 +150,18 @@ def summarize_actions(schema: Schema, actions: list[dict]) -> str:
 
 # ---- the program ---------------------------------------------------------
 
-# ---- teacher-side demos (LabeledFewShot fix, doc-18 §7 "optimizer upstream") --
-# A hand-labeled contrast pair teaching the extractor the {null}-when-unplaceable
-# convention (doc-18.1 risk B): a bare value whose type fits several fields, with
-# no cue, is unplaceable -> {null}; the SAME value WITH a cue is confidently
-# attributed. Fixes edge_bare_date_no_cue without making the extractor timid on
-# cued dates. Applied to the teacher for eval + M4 data-gen; NOT auto-attached,
-# so serve.py / sim.py keep their already-validated behavior until we decide.
-
-def build_extract_demos(schema: Schema) -> list:
-    sch = context.render_schema(schema)
-    empty = context.render_filled(schema, {})
-    hist = context.render_history([])
-
-    def ex(msg, pairs):
-        return dspy.Example(
-            form_schema=sch, filled_fields=empty, recent_history=hist, user_message=msg,
-            extractions=[Extraction(field_id=f, value=v) for f, v in pairs],
-        ).with_inputs("form_schema", "filled_fields", "recent_history", "user_message")
-
-    return [
-        ex("August 3, 1990.", [(None, "1990-08-03")]),          # bare, no cue -> unplaceable
-        ex("I was born on August 3, 1990.", [("dob", "1990-08-03")]),  # cue -> attributed
-    ]
-
-
-def attach_extract_demos(program: "FormAssistant", schema: Schema) -> "FormAssistant":
-    program.extract.demos = build_extract_demos(schema)
-    return program
-
-
 def build_teacher(schema: Schema) -> "FormAssistant":
-    """The canonical teacher: FormAssistant + the extract demos, rebuilt from the
-    live schema (no stale snapshot). One definition of "the teacher" for eval and
-    M4 data-gen. If a future MIPRO/GEPA run produces a compiled artifact, this is
-    the seam where a `.load(...)` would replace attach_extract_demos."""
-    return attach_extract_demos(FormAssistant(), schema)
+    """The canonical teacher — a plain FormAssistant(), no demos.
+
+    Demos retired 2026-07-13: the LabeledFewShot bare-date contrast pair only ever
+    took effect semantically through the JSON fallback, and — flattened to one user
+    string by ClaudeLM._split through the CLI — it broke ChatAdapter marker
+    compliance (~85-90% malformed extract; see M4_PLAN Pilot1). The bare-value
+    policy it was meant to teach is now enforced deterministically in the validator
+    (doc-18.1 "code owns placement"), so the extractor needs no demo crutch. Kept as
+    the factory seam: a future MIPRO/GEPA compiled artifact would slot a `.load(...)`
+    here without touching callers (eval, data-gen)."""
+    return FormAssistant()
 
 
 class FormAssistant(dspy.Module):
@@ -210,7 +190,7 @@ class FormAssistant(dspy.Module):
                 pairs = [{"field_id": e.field_id, "value": e.value} for e in pred.extractions]
             except AdapterParseError:
                 pairs = []   # teacher format slip -> extract nothing this turn (safe)
-            outcomes = validate(pairs, state)
+            outcomes = validate(pairs, state, user_message)
 
         actions, directives = compose(state, ps, outcomes)
 

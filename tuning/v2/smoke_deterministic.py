@@ -18,7 +18,8 @@ _results = []
 
 def run_turn(state, message, pairs):
     ps = prestep.run(message, state)
-    outcomes = [] if ps.handled else validate(pairs, state)
+    # pass the message so validate() can apply the bare-value demotion (doc-18.1)
+    outcomes = [] if ps.handled else validate(pairs, state, message)
     actions, directives = compose(state, ps, outcomes)
     return actions, directives
 
@@ -197,11 +198,59 @@ def s17_large_select_text():
           f"types={types(a)} pending={s.pending}")
 
 
+# ---- bare-value demotion policy (doc-18.1 "code owns placement") ----------
+# A message that is ONLY a value (a lone date/number, no words) must not be bound
+# from its type alone: validate() demotes every pair to {null, value} so placement
+# runs through the binding cascade. These four cases pin the policy in the core.
+
+def s18a_bare_date_pending_binds():
+    # bare date + pending=dob: demotion -> cascade rule 2 (pending of matching type) binds dob
+    s = state_with({"full_name": "Maria"}, pending="dob")
+    a, d = run_turn(s, "August 10, 2000.", [{"field_id": "dob", "value": "2000-08-10"}])
+    check("S18a bare date + pending=dob -> demoted, cascade binds pending dob",
+          types(a)[0] == "set_fields" and a[0]["fields"][0] == {"field_id": "dob", "value": "2000-08-10"},
+          str(a[0]["fields"]) if a and a[0]["type"] == "set_fields" else str(types(a)))
+
+
+def s18b_bare_date_no_pending_clarifies():
+    # NEW POLICY: bare date + no pending. Demoted; the cascade finds the value fits
+    # several distinctive fields (dob/gre_date/english_test_date + phone digits) ->
+    # not unique -> CLARIFY. The confident {dob} attribution is overridden in code.
+    s = state_with({})
+    a, d = run_turn(s, "August 10, 2000.", [{"field_id": "dob", "value": "2000-08-10"}])
+    check("S18b bare date + no pending -> demoted, NO set, CLARIFY",
+          not any(x["type"] == "set_fields" for x in a) and has_dir(d, "clarify"),
+          f"types={types(a)} dirs={[x[0] for x in d]}")
+
+
+def s18c_cued_date_sets():
+    # regression: message has words ('I was born on ...') -> NOT bare -> guard does
+    # not fire -> the attributed dob set stands.
+    s = state_with({})
+    a, d = run_turn(s, "I was born on August 10, 2000", [{"field_id": "dob", "value": "2000-08-10"}])
+    check("S18c cued date ('I was born on ...') -> guard does not fire, dob set stands",
+          types(a)[0] == "set_fields" and a[0]["fields"][0] == {"field_id": "dob", "value": "2000-08-10"},
+          str(a[0]["fields"]) if a and a[0]["type"] == "set_fields" else str(types(a)))
+
+
+def s18d_bare_number_no_pending():
+    # bare number '1999' + no pending. Demoted. Cascade rule 3 finds NO candidate:
+    # 1999 < prior_application_year.min (2000) and out of range for every other number
+    # field, so no coercion succeeds -> not unique -> CLARIFY (not a silent set).
+    s = state_with({})
+    a, d = run_turn(s, "1999", [{"field_id": "prior_application_year", "value": "1999"}])
+    check("S18d bare number 1999 + no pending -> demoted, no set, CLARIFY (out of every number range)",
+          not any(x["type"] == "set_fields" for x in a) and has_dir(d, "clarify"),
+          f"types={types(a)} dirs={[x[0] for x in d]}")
+
+
 def main():
     for fn in [s1_volunteered, s2_elliptical, s4_button_event, s5_ambiguous_select,
                s6_asks_about_field, s7_deflection, s8_chitchat, s12_save,
                s13_premature_submit, s14_terminal, s15_validation_error,
-               s16_bulk_bare, s16b_unplaceable, s17_large_select_text]:
+               s16_bulk_bare, s16b_unplaceable, s17_large_select_text,
+               s18a_bare_date_pending_binds, s18b_bare_date_no_pending_clarifies,
+               s18c_cued_date_sets, s18d_bare_number_no_pending]:
         print(f"\n{fn.__name__}")
         fn()
     passed = sum(1 for _, c, _ in _results if c)

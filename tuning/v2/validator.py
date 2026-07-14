@@ -143,11 +143,43 @@ def _validate_pair(fid: str, value: str, state: TurnState) -> Outcome:
     return Outcome(CLARIFY, fid, reason=f"cannot coerce to {f.type}")
 
 
-def validate(pairs: list[dict], state: TurnState) -> list[Outcome]:
-    """Run the cascade on unplaced pairs, then validate every attributed pair."""
+def _is_bare_value(user_message: str) -> bool:
+    """True when the message is ONLY a value — a lone date (any _DATE_FORMATS form,
+    same parse as coerce) or a bare number — with no other words. Surrounding
+    whitespace and trailing punctuation ('.', '!', ',') are stripped first; any
+    remaining words -> not bare. doc-18.1 "code owns placement": such a value must
+    not be bound from its type alone, so we route it through the binding cascade."""
+    s = user_message.strip().rstrip(".!,").strip()
+    if not s:
+        return False
+    if re.match(r"^\d+(\.\d+)?$", s):
+        return True
+    for fmt in _DATE_FORMATS:
+        try:
+            datetime.strptime(s, fmt)
+            return True
+        except ValueError:
+            continue
+    return False
+
+
+def validate(pairs: list[dict], state: TurnState, user_message: str = "") -> list[Outcome]:
+    """Run the cascade on unplaced pairs, then validate every attributed pair.
+
+    doc-18.1 "code owns placement": when the message is bare-value-only (a lone date
+    or number, no words tying it to a field), every pair's field_id is demoted to
+    None BEFORE per-pair validation, so placement runs solely through the binding
+    cascade (pending-of-type -> unique-distinctive-type -> else CLARIFY). This
+    overrides the extractor's confident type-alone attribution in code. A nonsensical
+    {field_id, ""} engagement pair demotes to {null, ""}, which the cascade fails
+    cleanly (-> CLARIFY). `user_message` defaults to "" so pre-existing callers that
+    pass only (pairs, state) keep working unchanged."""
+    demote = _is_bare_value(user_message)
     outcomes: list[Outcome] = []
     for p in pairs:
         fid, value = p.get("field_id"), p.get("value", "")
+        if demote:
+            fid = None
         if fid is None:
             fid = _bind_unplaced(value, state)
             if fid is None:
