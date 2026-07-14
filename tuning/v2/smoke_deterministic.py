@@ -9,7 +9,7 @@ from __future__ import annotations
 from .schema import load_schema
 from .state import TurnState, Pending, CONFIRM_SUBMIT, queue
 from . import prestep
-from .validator import validate
+from .validator import validate, match_options
 from .composer import compose
 
 SCHEMA = load_schema()
@@ -198,6 +198,28 @@ def s17_large_select_text():
           f"types={types(a)} pending={s.pending}")
 
 
+# ---- large-select label enrichment (freetext_select) ----------------------
+# The country selects carry human labels (US->United States, KR->South Korea, ...)
+# so a free-typed country name option-matches to its ISO-code canonical value.
+
+def s19_freetext_country():
+    field = SCHEMA.field("country_citizenship")
+    check("S19 match_options('South Korea') -> unique KR",
+          [o[0] for o in match_options("South Korea", field)] == ["KR"],
+          str(match_options("South Korea", field)))
+    check("S19 match_options('korea') -> resolves via substring containment -> KR",
+          [o[0] for o in match_options("korea", field)] == ["KR"],
+          str(match_options("korea", field)))
+    # full turn: pending=country_citizenship, extractor attributes the country name ->
+    # validator option-matches it to the canonical ISO value KR.
+    s = state_with({"full_name": "M"}, pending="country_citizenship")
+    a, d = run_turn(s, "I'm a citizen of South Korea.",
+                    [{"field_id": "country_citizenship", "value": "South Korea"}])
+    check("S19 freetext country turn -> set_fields(country_citizenship=KR)",
+          types(a)[0] == "set_fields" and {"field_id": "country_citizenship", "value": "KR"} in a[0]["fields"],
+          str(a[0]["fields"]) if a and a[0]["type"] == "set_fields" else str(types(a)))
+
+
 # ---- bare-value demotion policy (doc-18.1 "code owns placement") ----------
 # A message that is ONLY a value (a lone date/number, no words) must not be bound
 # from its type alone: validate() demotes every pair to {null, value} so placement
@@ -249,6 +271,7 @@ def main():
                s6_asks_about_field, s7_deflection, s8_chitchat, s12_save,
                s13_premature_submit, s14_terminal, s15_validation_error,
                s16_bulk_bare, s16b_unplaceable, s17_large_select_text,
+               s19_freetext_country,
                s18a_bare_date_pending_binds, s18b_bare_date_no_pending_clarifies,
                s18c_cued_date_sets, s18d_bare_number_no_pending]:
         print(f"\n{fn.__name__}")

@@ -21,11 +21,29 @@
           },
           {
             "field_id": "country_citizenship", "label": "Country of Citizenship", "type": "select", "required": true,
-            "options": ["US", "CA", "UK", "AU", "NZ", "IN", "CN", "KR", "JP", "DE", "FR", "BR", "MX", "NG", "OTHER"]
+            "options": [
+              { "value": "US", "label": "United States" }, { "value": "CA", "label": "Canada" },
+              { "value": "UK", "label": "United Kingdom" }, { "value": "AU", "label": "Australia" },
+              { "value": "NZ", "label": "New Zealand" }, { "value": "IN", "label": "India" },
+              { "value": "CN", "label": "China" }, { "value": "KR", "label": "South Korea" },
+              { "value": "JP", "label": "Japan" }, { "value": "DE", "label": "Germany" },
+              { "value": "FR", "label": "France" }, { "value": "BR", "label": "Brazil" },
+              { "value": "MX", "label": "Mexico" }, { "value": "NG", "label": "Nigeria" },
+              { "value": "OTHER", "label": "Other" }
+            ]
           },
           {
             "field_id": "country_residence", "label": "Country of Residence", "type": "select", "required": true,
-            "options": ["US", "CA", "UK", "AU", "NZ", "IN", "CN", "KR", "JP", "DE", "FR", "BR", "MX", "NG", "OTHER"]
+            "options": [
+              { "value": "US", "label": "United States" }, { "value": "CA", "label": "Canada" },
+              { "value": "UK", "label": "United Kingdom" }, { "value": "AU", "label": "Australia" },
+              { "value": "NZ", "label": "New Zealand" }, { "value": "IN", "label": "India" },
+              { "value": "CN", "label": "China" }, { "value": "KR", "label": "South Korea" },
+              { "value": "JP", "label": "Japan" }, { "value": "DE", "label": "Germany" },
+              { "value": "FR", "label": "France" }, { "value": "BR", "label": "Brazil" },
+              { "value": "MX", "label": "Mexico" }, { "value": "NG", "label": "Nigeria" },
+              { "value": "OTHER", "label": "Other" }
+            ]
           },
           { "field_id": "email", "label": "Email Address", "type": "email", "required": true },
           { "field_id": "phone", "label": "Phone Number", "type": "phone", "required": true, "require_country_code": true },
