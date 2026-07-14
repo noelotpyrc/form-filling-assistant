@@ -1,0 +1,682 @@
+{
+  "label": "sonnet5_instr_band",
+  "model": "claude-sonnet-5",
+  "n": 3,
+  "eval_set": "tuning/v2/eval/eval_set.jsonl",
+  "cost_usd": 1.2232,
+  "metrics": {
+    "n_observations": 33,
+    "field_precision": 0.8888888888888888,
+    "field_recall": 1.0,
+    "field_f1": 0.9411764705882353,
+    "field_counts": {
+      "tp": 24,
+      "fp": 3,
+      "fn": 0
+    },
+    "value_match": 1.0,
+    "value_n": 24,
+    "empty_correct": {
+      "rate": 0.6666666666666666,
+      "n": 9
+    },
+    "over_attribution": {
+      "rate": 0.0,
+      "n": 3
+    },
+    "wrong_field_assignment": {
+      "rate": 0.5,
+      "n": 6
+    },
+    "choice_correct": {
+      "rate": null,
+      "n": 0
+    },
+    "by_scenario": {
+      "ambiguous": {
+        "rate": 1.0,
+        "n": 3
+      },
+      "bare_date": {
+        "rate": 0.0,
+        "n": 3
+      },
+      "elliptical_dob": {
+        "rate": 1.0,
+        "n": 24
+      },
+      "trap": {
+        "rate": 1.0,
+        "n": 3
+      }
+    }
+  },
+  "stability": {
+    "cases": 11,
+    "fully_agree": 11,
+    "flaky": []
+  },
+  "raw": [
+    {
+      "sample": 0,
+      "id": "elliptical_dob-0",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1990-07-15"
+      },
+      "cost": 0.0470697
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-1",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-12-08"
+      },
+      "cost": 0.16773600000000002
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-2",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-04-09"
+      },
+      "cost": 0.048640199999999995
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-3",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-11-12"
+      },
+      "cost": 0.048640199999999995
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-4",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1997-08-03"
+      },
+      "cost": 0.0661002
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-5",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-07-24"
+      },
+      "cost": 0.048640199999999995
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-6",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-06-04"
+      },
+      "cost": 0.048640199999999995
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-7",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1986-07-26"
+      },
+      "cost": 0.048640199999999995
+    },
+    {
+      "sample": 0,
+      "id": "edge_trap_chitchat",
+      "scenario": "trap",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0481392
+    },
+    {
+      "sample": 0,
+      "id": "edge_bare_ambiguous",
+      "scenario": "ambiguous",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0555252
+    },
+    {
+      "sample": 0,
+      "id": "edge_bare_date_no_cue",
+      "scenario": "bare_date",
+      "band": "unplaceable",
+      "passed": false,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": true,
+      "violation": {
+        "dob": "2000-08-10"
+      },
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-08-10"
+      },
+      "cost": 0.0484482
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-0",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1990-07-15"
+      },
+      "cost": 0.0539322
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-1",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-12-08"
+      },
+      "cost": 0.0484422
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-2",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-04-09"
+      },
+      "cost": 0.009162
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-3",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-11-12"
+      },
+      "cost": 0.009162
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-4",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1997-08-03"
+      },
+      "cost": 0.009162
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-5",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-07-24"
+      },
+      "cost": 0.0484422
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-6",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-06-04"
+      },
+      "cost": 0.052012199999999995
+    },
+    {
+      "sample": 1,
+      "id": "elliptical_dob-7",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1986-07-26"
+      },
+      "cost": 0.0484422
+    },
+    {
+      "sample": 1,
+      "id": "edge_trap_chitchat",
+      "scenario": "trap",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0483372
+    },
+    {
+      "sample": 1,
+      "id": "edge_bare_ambiguous",
+      "scenario": "ambiguous",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0153555
+    },
+    {
+      "sample": 1,
+      "id": "edge_bare_date_no_cue",
+      "scenario": "bare_date",
+      "band": "unplaceable",
+      "passed": false,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": true,
+      "violation": {
+        "dob": "2000-08-10"
+      },
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-08-10"
+      },
+      "cost": 0.0091524
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-0",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1990-07-15"
+      },
+      "cost": 0.048640199999999995
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-1",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-12-08"
+      },
+      "cost": 0.014126999999999999
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-2",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-04-09"
+      },
+      "cost": 0.009162
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-3",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-11-12"
+      },
+      "cost": 0.009162
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-4",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1997-08-03"
+      },
+      "cost": 0.011082
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-5",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-07-24"
+      },
+      "cost": 0.0091521
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-6",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-06-04"
+      },
+      "cost": 0.011492099999999998
+    },
+    {
+      "sample": 2,
+      "id": "elliptical_dob-7",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1986-07-26"
+      },
+      "cost": 0.0091521
+    },
+    {
+      "sample": 2,
+      "id": "edge_trap_chitchat",
+      "scenario": "trap",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.008809199999999998
+    },
+    {
+      "sample": 2,
+      "id": "edge_bare_ambiguous",
+      "scenario": "ambiguous",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.055477200000000004
+    },
+    {
+      "sample": 2,
+      "id": "edge_bare_date_no_cue",
+      "scenario": "bare_date",
+      "band": "unplaceable",
+      "passed": false,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": true,
+      "violation": {
+        "dob": "2000-08-10"
+      },
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-08-10"
+      },
+      "cost": 0.0091524
+    }
+  ]
+}

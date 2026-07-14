@@ -21,8 +21,11 @@ import subprocess
 import dspy
 
 CLAUDE_BIN = os.getenv("CLAUDE_BIN", "claude")
-TEACHER_MODEL = os.getenv("V2_TEACHER_MODEL", "sonnet")
-TEACHER_FALLBACK = os.getenv("V2_TEACHER_FALLBACK", "sonnet")
+# Pinned (2026-07-13): the bare "sonnet" alias drifted under us (June runs = older
+# sonnet; July = claude-sonnet-5, with different marker-format compliance). Pin the
+# resolved id so eval/sim/serve stop floating; bump deliberately, then re-baseline.
+TEACHER_MODEL = os.getenv("V2_TEACHER_MODEL", "claude-sonnet-5")
+TEACHER_FALLBACK = os.getenv("V2_TEACHER_FALLBACK", "claude-sonnet-5")
 TIMEOUT = int(os.getenv("V2_CLAUDE_TIMEOUT", "180"))
 
 
