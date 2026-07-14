@@ -139,10 +139,13 @@ both 100%, zero regressions). Notes: temp=0 ≠ perfect format determinism
 `datagen.py --backend` so pilot2's teacher is nemotron (LLM U stays sonnet).
 
 ## Plumbing (P) — do first; all small, free/cheap, individually verifiable
-- [ ] **P1 — build `datagen.py` (hybrid generator, design above).** Layer 1 farm (build_teacher,
-      snapshot logging, natural-turn capture) + Layer 2 injection (precondition sampling, behavior
-      templates, quota) + demo-strip + robust module tagging + parity anchor vs a `sim.py` record.
-      Reuse leaf helpers (`persona.py`, `claude_p`, U-prompt shape); `sim.py` untouched. *new:* `datagen.py`
+- [x] **P1 — DONE 2026-07-14.** `datagen.py` hybrid generator, gates read green on **pilot2**
+      (nemotron teacher $0 + sonnet U, `datagen_runs/pilot2/`): parity PASS (captured system
+      byte-equals offline render), coverage 74/80 with all gaps accounted (1 API 502, rest
+      json-only chains), extractor targets **0.0% malformed / 0.0% retried** (91/91), 117 pairs,
+      $1.28. Caveats → P2/H1: responder chat_malformed 46% (P2 canonicalization is load-bearing);
+      OpenRouterLM should also retry error-in-body 5xx (farm session 3 lost to an upstream 502)
+      before H1 scale.
 - [ ] **P2 — format bridge + target canonicalization.** v2 `{module, messages, completion}` → trainer's
       `{messages:[…, assistant]}`, then train/val split. **Canonicalize responder targets** (fixes the ~1/3
       malformed) by reusing the harness's `strip_markers()`, applied to *all* responder targets (uniform, no

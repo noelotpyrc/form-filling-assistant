@@ -24,11 +24,16 @@ the LM as a JSONAdapter when chat-parse fails, so one Predict can append TWO ent
 ([chat] or [chat, json-retry]); we emit ONLY the chat entry as a training row
 (the student's prompt format) and strip the teacher's few-shot demos from `messages`.
 
+Teacher backend defaults to openrouter (the canonical nemotron teacher); override
+with --backend claude / --model ID. The LLM-U (simulated user) always runs via the
+claude CLI (sim.claude_p / llm_u) regardless of the teacher backend.
+
 Run:
   selftest (free):   tuning/v2/.venv/bin/python -m tuning.v2.datagen --selftest
   parity  (free):    tuning/v2/.venv/bin/python -m tuning.v2.datagen --parity
   farm+inject ($$):  tuning/v2/.venv/bin/python -m tuning.v2.datagen --farm 5 --inject --quota 5 --run pilot
   inject only ($$):  tuning/v2/.venv/bin/python -m tuning.v2.datagen --inject --snapshots tuning/v2/datagen_runs/pilot/snapshots.jsonl
+  claude teacher:    tuning/v2/.venv/bin/python -m tuning.v2.datagen --backend claude --farm 5 --inject --run pilot
 Outputs (gitignored): tuning/v2/datagen_runs/<run>/{snapshots.jsonl,train.jsonl,report.json}
 """
 from __future__ import annotations
@@ -989,6 +994,9 @@ def main():
     ap.add_argument("--max-turns", type=int, default=24)
     ap.add_argument("--naturalize", action="store_true", help="rephrase injected messages via claude_p")
     ap.add_argument("--snapshots", default="", help="load snapshots.jsonl (when --farm 0 --inject)")
+    ap.add_argument("--backend", choices=["claude", "openrouter"], default="openrouter",
+                    help="teacher LM backend (default openrouter = canonical nemotron teacher)")
+    ap.add_argument("--model", default="", help="override the model id passed to the backend LM")
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--parity", action="store_true")
     args = ap.parse_args()
@@ -1001,11 +1009,20 @@ def main():
         return
 
     import dspy
-    lm = ClaudeLM()
+    # datagen generates training data, so it must use the canonical teacher
+    # (openrouter nemotron) by default — unlike eval_score, which keeps claude for
+    # legacy comparisons. The teacher LM only drives build_teacher; the LLM-U path
+    # (sim.claude_p / llm_u) always uses the claude CLI regardless.
+    if args.backend == "openrouter":
+        from .openrouter_lm import OpenRouterLM
+        lm = OpenRouterLM(model=args.model) if args.model else OpenRouterLM()
+    else:
+        lm = ClaudeLM(model=args.model) if args.model else ClaudeLM()
     dspy.configure(lm=lm)
     schema = load_schema()
     agent = build_teacher(schema)
     rng = random.Random(args.seed)
+    print(f"teacher backend={args.backend}  model={lm.model}", flush=True)
 
     if args.inject and not args.farm and not args.snapshots:
         ap.error("--inject with --farm 0 requires --snapshots PATH")
