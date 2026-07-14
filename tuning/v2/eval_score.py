@@ -22,7 +22,8 @@ stability (how often the N samples agree) to surface flakiness.
 
   Self-test (free, no model):  tuning/v2/.venv/bin/python -m tuning.v2.eval_score --selftest
   Teacher baseline ($$):       tuning/v2/.venv/bin/python -m tuning.v2.eval_score --n 5 --label teacher_v2
-    (demos default ON -> the canonical teacher; add --no-demos to reproduce teacher_v1)
+    (always the canonical build_teacher(schema); the extract demos were retired
+     2026-07-13 — the bare-value policy is now enforced in the validator)
 """
 from __future__ import annotations
 import argparse
@@ -153,12 +154,11 @@ def run_case(agent, lm, schema, case: dict) -> dict:
             "choice_field": choice_field, "cost": cost}
 
 
-def run_baseline(n: int, label: str, eval_set: str, limit: int = 0,
-                 only: str = "", demos: bool = True):
+def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = "",
+                 backend: str = "claude", model: str = ""):
     import dspy
-    from .claude_lm import ClaudeLM
     from .schema import load_schema
-    from .program import FormAssistant, build_teacher
+    from .program import build_teacher
 
     cases = [json.loads(l) for l in open(eval_set)]
     if only:
@@ -166,11 +166,16 @@ def run_baseline(n: int, label: str, eval_set: str, limit: int = 0,
         cases = [c for c in cases if c["scenario"] in keep]
     if limit:
         cases = cases[:limit]
-    lm = ClaudeLM()
+    if backend == "openrouter":
+        from .openrouter_lm import OpenRouterLM
+        lm = OpenRouterLM(model=model) if model else OpenRouterLM()
+    else:
+        from .claude_lm import ClaudeLM
+        lm = ClaudeLM(model=model) if model else ClaudeLM()
     dspy.configure(lm=lm)
     schema = load_schema()
-    agent = build_teacher(schema) if demos else FormAssistant()  # demos on = the canonical teacher
-    print(f"model={lm.model}  cases={len(cases)}  n={n}  demos={'ON' if demos else 'off'}"
+    agent = build_teacher(schema)  # the canonical teacher (demos retired 2026-07-13)
+    print(f"backend={backend}  model={lm.model}  cases={len(cases)}  n={n}"
           f"  -> {len(cases)*n} extractor calls\n", flush=True)
 
     scored, raw, total_cost = [], [], 0.0
@@ -282,14 +287,15 @@ def main():
     ap.add_argument("--eval-set", default=EVAL_SET)
     ap.add_argument("--limit", type=int, default=0, help="cap to first N cases (smoke)")
     ap.add_argument("--only", default="", help="comma-separated scenarios to run (band check)")
-    ap.add_argument("--no-demos", dest="demos", action="store_false",
-                    help="ablation: run the teacher WITHOUT the extract demos (reproduces teacher_v1)")
-    ap.set_defaults(demos=True)
+    ap.add_argument("--backend", choices=["claude", "openrouter"], default="claude",
+                    help="teacher LM backend (default claude = unchanged)")
+    ap.add_argument("--model", default="", help="override the model id passed to the backend LM")
     args = ap.parse_args()
     if args.selftest:
         selftest()
         return
-    run_baseline(args.n, args.label, args.eval_set, args.limit, args.only, args.demos)
+    run_baseline(args.n, args.label, args.eval_set, args.limit, args.only,
+                 args.backend, args.model)
 
 
 if __name__ == "__main__":
