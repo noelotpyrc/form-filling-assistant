@@ -22,8 +22,9 @@ stability (how often the N samples agree) to surface flakiness.
 
   Self-test (free, no model):  tuning/v2/.venv/bin/python -m tuning.v2.eval_score --selftest
   Teacher baseline ($$):       tuning/v2/.venv/bin/python -m tuning.v2.eval_score --n 5 --label teacher_v2
-    (always the canonical build_teacher(schema); the extract demos were retired
-     2026-07-13 — the bare-value policy is now enforced in the validator)
+    (always the canonical build_teacher(schema); it carries ONE extract demo for the
+     compound convention — render it natively with --backend openrouter, since the
+     claude CLI flattens demos and breaks markers)
 """
 from __future__ import annotations
 import argparse
@@ -174,7 +175,7 @@ def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = 
         lm = ClaudeLM(model=model) if model else ClaudeLM()
     dspy.configure(lm=lm)
     schema = load_schema()
-    agent = build_teacher(schema)  # the canonical teacher (demos retired 2026-07-13)
+    agent = build_teacher(schema)  # canonical teacher (one compound extract demo; native via openrouter)
     print(f"backend={backend}  model={lm.model}  cases={len(cases)}  n={n}"
           f"  -> {len(cases)*n} extractor calls\n", flush=True)
 

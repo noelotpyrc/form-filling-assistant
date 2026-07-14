@@ -150,18 +150,49 @@ def summarize_actions(schema: Schema, actions: list[dict]) -> str:
 
 # ---- the program ---------------------------------------------------------
 
-def build_teacher(schema: Schema) -> "FormAssistant":
-    """The canonical teacher — a plain FormAssistant(), no demos.
+def build_extract_demos(schema: Schema) -> list:
+    """ONE hand demo teaching the compound convention: a pending-answer plus a
+    volunteered extra in a single message must yield BOTH pairs, not just the
+    pending one (nemotron baseline missed the extra: compound 0/3, while bulk
+    without a pending is 100%). The assistant's last turn asked for the date of
+    birth, so binding the leading date to `dob` is a cued, confident attribution
+    (not a bare-value guess — the message carries other words, so the runtime
+    bare-value guard does not fire). The trailing phone is the volunteered extra.
 
-    Demos retired 2026-07-13: the LabeledFewShot bare-date contrast pair only ever
-    took effect semantically through the JSON fallback, and — flattened to one user
-    string by ClaudeLM._split through the CLI — it broke ChatAdapter marker
-    compliance (~85-90% malformed extract; see M4_PLAN Pilot1). The bare-value
-    policy it was meant to teach is now enforced deterministically in the validator
-    (doc-18.1 "code owns placement"), so the extractor needs no demo crutch. Kept as
-    the factory seam: a future MIPRO/GEPA compiled artifact would slot a `.load(...)`
-    here without touching callers (eval, data-gen)."""
-    return FormAssistant()
+    Instance is eval-disjoint (NOT the March-3rd-1995 / (415) 555-0132 eval compound
+    case, nor any _BARE_DATES instance in datagen)."""
+    return [
+        dspy.Example(
+            form_schema=context.render_schema(schema),
+            filled_fields=context.render_filled(schema, {}),
+            recent_history=context.render_history(
+                [{"role": "assistant", "content": "Thanks! What's your date of birth?"}]),
+            user_message="June 4, 1991 — oh, and my phone is (312) 555-0148.",
+            extractions=[Extraction(field_id="dob", value="1991-06-04"),
+                         Extraction(field_id="phone", value="(312) 555-0148")],
+        ).with_inputs("form_schema", "filled_fields", "recent_history", "user_message")
+    ]
+
+
+def build_teacher(schema: Schema) -> "FormAssistant":
+    """The canonical teacher — FormAssistant() with ONE extract demo (the compound
+    convention, `build_extract_demos`).
+
+    Demos are BACK for the API-native teacher (2026-07-14): OpenRouterLM passes the
+    DSPy messages array through NATIVELY, so a demo renders as real user/assistant
+    turns and lifts compound extraction without hurting marker compliance. Note the
+    earlier 2026-07-13 retirement was CLI-specific: ClaudeLM._split flattens the demo
+    into one user string, which broke ChatAdapter markers (~85-90% malformed extract,
+    M4_PLAN Pilot1) — so `--backend claude` is legacy / demo-incompatible; use
+    `--backend openrouter` for the demo-carrying teacher. (The bare-date restraint the
+    old demo also taught is now enforced deterministically in the validator, doc-18.1
+    "code owns placement", so this demo carries only the compound lesson.)
+
+    Kept as the factory seam: a future MIPRO/GEPA compiled artifact would slot a
+    `.load(...)` here without touching callers (eval, data-gen)."""
+    program = FormAssistant()
+    program.extract.demos = build_extract_demos(schema)
+    return program
 
 
 class FormAssistant(dspy.Module):

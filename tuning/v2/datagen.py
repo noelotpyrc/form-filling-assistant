@@ -61,14 +61,15 @@ BLOCK_ORDER = ["form_schema", "filled_fields", "recent_history", "user_message"]
 # ======================================================================
 
 def strip_demos(messages: list[dict], module: str) -> list[dict]:
-    """Drop any ChatAdapter demo pairs, keeping [system, user]. Retained defensively:
-    the teacher's extract demos were retired 2026-07-13 (build_teacher has 0 demos),
-    so today both modules render as [system, user] and this is a no-op — but a future
-    demo-carrying teacher would render [system, demo_u, demo_a, ..., user] and this
-    keeps the student learning the behavior, not the crutch."""
+    """Drop any ChatAdapter demo pairs, keeping [system, user]. Active again as of
+    2026-07-14: the teacher's extract now carries ONE compound demo, so the captured
+    extractor renders as [system, demo_u, demo_a, user] (2 middle messages) and this
+    strips that pair back to [system, user] — the student learns the behavior, not the
+    crutch. The responder carries no demos and renders [system, user] already (no-op).
+    A future multi-demo teacher (>1 pair) collapses the same way, module-agnostically."""
     assert len(messages) >= 2, f"expected >=2 messages, got {len(messages)}"
     n_mid = len(messages) - 2
-    if module == "extractor" and n_mid not in (0, 4):
+    if module == "extractor" and n_mid not in (0, 2):
         print(f"[warn] extractor capture unexpected middle count={n_mid} "
               f"roles={[m['role'] for m in messages]}")
     stripped = [messages[0], messages[-1]]
@@ -255,9 +256,11 @@ def run_parity(train_rows: list[dict]) -> dict:
 def parity_offline() -> bool:
     """--parity CLI mode: offline structural checks that survive the demo retirement.
     No LLM call. The still-valid structural checks run on the old sim reference
-    (roles / block order / completion markers on the reference itself); the demo-
-    attachment check is replaced by (a) the current Extract renders offline and lists
-    `extractions`, and (b) build_teacher has 0 demos attached (demos retired)."""
+    (roles / block order / completion markers on the reference itself); plus (a) the
+    current Extract renders offline and lists `extractions`, and (b) build_teacher
+    attaches ONE extract demo (the compound convention, back 2026-07-14). Demos DON'T
+    change the offline-rendered system prompt (ChatAdapter renders them as separate
+    message turns), so the parity anchor still holds."""
     teacher = build_teacher(load_schema())
     ref = load_reference()
     usr = ref["messages"][-1]["content"]
@@ -269,7 +272,8 @@ def parity_offline() -> bool:
         print(f"  [render error] {type(e).__name__}: {e}")
     checks = [
         ("offline ChatAdapter render of Extract succeeds + lists `extractions` output field", render_ok),
-        ("build_teacher(load_schema()) has 0 extract demos (demos retired)", len(teacher.extract.demos) == 0),
+        ("build_teacher(load_schema()) has 1 extract demo (compound convention, back 2026-07-14)",
+         len(teacher.extract.demos) == 1),
         ("reference roles == [system, user]", [m["role"] for m in ref["messages"]] == ["system", "user"]),
         ("reference user blocks in order form_schema<filled_fields<recent_history<user_message<completed",
          _blocks_ordered(usr)),
@@ -817,12 +821,18 @@ def selftest():
     schema = load_schema()
     rng = random.Random(0)
 
-    # --- strip-demos on synthetic 6-msg (extractor+demos) and 2-msg lists ---
+    # --- strip-demos: today's one-demo extractor [system, du, da, U] -> [system, U] ---
+    four = [{"role": "system", "content": "S"},
+            {"role": "user", "content": "du"}, {"role": "assistant", "content": "da"},
+            {"role": "user", "content": "U"}]
+    assert strip_demos(four, "extractor") == [four[0], four[-1]]   # one demo pair (mid=2)
+    # generic: any number of demo pairs collapses to [system, user] (module-agnostic;
+    # run as responder so the extractor-only n_mid sanity warning stays quiet)
     six = [{"role": "system", "content": "S"},
            {"role": "user", "content": "du1"}, {"role": "assistant", "content": "da1"},
            {"role": "user", "content": "du2"}, {"role": "assistant", "content": "da2"},
            {"role": "user", "content": "U"}]
-    assert strip_demos(six, "extractor") == [six[0], six[-1]]
+    assert strip_demos(six, "responder") == [six[0], six[-1]]
     two = [{"role": "system", "content": "S"}, {"role": "user", "content": "U"}]
     assert strip_demos(two, "responder") == two
     assert strip_demos(two, "extractor") == two          # no-demos extractor is legal (mid=0)
@@ -839,7 +849,7 @@ def selftest():
         else:
             tail = f"Respond with a JSON object in the following order of fields: {field}."
         usr = {"role": "user", "content": "[[ ## form_schema ## ]] ...\n\n" + tail}
-        mid = ([{"role": "user", "content": "d"}, {"role": "assistant", "content": "d"}] * 2
+        mid = ([{"role": "user", "content": "d"}, {"role": "assistant", "content": "d"}]  # one demo pair
                if demos and module == "extractor" else [])
         return {"messages": [{"role": "system", "content": sysc}] + mid + [usr],
                 "outputs": [completion], "cost": 0.0}
