@@ -58,3 +58,4 @@ __pycache__/
 *.pyc
 .venv/
 tuning/v2/sims/
+tuning/v2/datagen_runs/
