@@ -111,12 +111,9 @@ class OpenRouterLM(dspy.BaseLM):
             # usage.include -> the response carries usage.cost for per-call cost.
             "usage": {"include": True},
         }
+        # _post_with_retry owns error handling now: it retries retryable HTTP AND
+        # error-in-body failures in one loop, and raises non-retryable body errors.
         data = self._post_with_retry(headers, body)
-
-        # OpenRouter may report errors either as an HTTP error or a 200 body
-        # with an "error" key — surface both as a RuntimeError.
-        if isinstance(data, dict) and data.get("error"):
-            raise RuntimeError(f"OpenRouter error: {str(data['error'])[:500]}")
         choices = data.get("choices") or []
         if not choices:
             raise RuntimeError(f"OpenRouter returned no choices: {str(data)[:500]}")
@@ -134,22 +131,38 @@ class OpenRouterLM(dspy.BaseLM):
         return content, float(cost), usage, data.get("model", self.model)
 
     def _post_with_retry(self, headers, body):
-        """POST with exponential backoff on 429/5xx, honoring Retry-After."""
+        """POST with exponential backoff on 429/5xx, honoring Retry-After. Retries
+        cover BOTH HTTP-level failures AND OpenRouter's error-in-body case — an
+        HTTP 200 whose JSON body carries {"error": {"code": 429/5xx, ...}} (an
+        upstream ResourceExhausted lost a Pilot2 farm session). Non-retryable body
+        errors raise immediately; retryable ones share this loop."""
         last_err = None
         for attempt in range(len(_BACKOFF) + 1):
+            retry_after = None
             try:
                 status, text, retry_after = self._post_once(headers, body)
             except Exception as e:  # network/timeout
                 last_err = f"{type(e).__name__}: {str(e)[:300]}"
-                status, text, retry_after = None, "", None
+                status, text = None, ""
             if status is not None and status not in _RETRY_STATUS:
                 try:
-                    return json.loads(text)
+                    data = json.loads(text)
                 except json.JSONDecodeError:
                     raise RuntimeError(f"OpenRouter non-JSON body (status {status}): {text[:500]}")
-            # retryable (a retry status, or an exception)
-            if status is not None:
+                err = data.get("error") if isinstance(data, dict) else None
+                if not err:
+                    return data
+                # error-in-body: retry only if the body error code is retryable.
+                try:
+                    code = int(err.get("code"))  # handles 502 and "502"
+                except (TypeError, ValueError):
+                    code = None  # unparseable code -> non-retryable
+                if code not in _RETRY_STATUS:
+                    raise RuntimeError(f"OpenRouter error: {str(err)[:500]}")
+                last_err = f"body error {code}: {str(err.get('message'))[:300]}"
+            elif status is not None:  # a retry-status HTTP response
                 last_err = f"HTTP {status}: {text[:300]}"
+            # retryable: an exception, a retry-status HTTP, or a retryable body error
             if attempt < len(_BACKOFF):
                 delay = retry_after if retry_after is not None else _BACKOFF[attempt]
                 print(f"[OpenRouterLM] retry {attempt + 1}/{len(_BACKOFF)} in {delay}s ({last_err})")
