@@ -18,8 +18,20 @@ Reattach via: modal app logs sft-format-qwen35-08b
 Artifacts saved to Modal Volume "sft-format-checkpoints".
 Download the trained LoRA adapter after training:
     modal volume get sft-format-checkpoints qwen35-08b-dspy-format-lora ./qwen35-08b-dspy-format-lora
+
+Data paths: Modal bakes the training files into the image at module import, so
+they can't come from CLI args — set them via ENV VARS (read below at module
+scope). Defaults are the original v1 format-split files, resolved repo-relative.
+
+    v2 usage — slice-1 extractor SFT points at the P2 bridge outputs:
+        SFT_TRAIN_DATA=tuning/v2/sft_data/<run>/train_extractor.jsonl \
+        SFT_VAL_DATA=tuning/v2/sft_data/<run>/val_extractor.jsonl \
+        modal run tuning/sft/train_sft_format_modal.py
+    (the bridge's extra keys {module,source,behavior} are tolerated —
+     convert() reads only `messages`.)
 """
 
+import os
 import modal
 from pathlib import Path
 
@@ -27,15 +39,13 @@ from pathlib import Path
 
 app = modal.App("sft-format-qwen35-08b")
 
-# Local paths for data that gets baked into the image
-LOCAL_TRAIN_DATA = (
-    Path.home()
-    / "work/form-filling-assistant/tuning/sft/format_train_split.jsonl"
-)
-LOCAL_VAL_DATA = (
-    Path.home()
-    / "work/form-filling-assistant/tuning/sft/format_val_split.jsonl"
-)
+# Local paths for data that gets baked into the image. ENV-overridable
+# (SFT_TRAIN_DATA / SFT_VAL_DATA — CLI args can't reach here, see the module
+# docstring); defaults are the original v1 files, resolved repo-relative from
+# this file's location (the machine root moved from ~/work to ~/projects).
+_HERE = Path(__file__).resolve().parent
+LOCAL_TRAIN_DATA = Path(os.getenv("SFT_TRAIN_DATA") or (_HERE / "format_train_split.jsonl"))
+LOCAL_VAL_DATA = Path(os.getenv("SFT_VAL_DATA") or (_HERE / "format_val_split.jsonl"))
 
 # Training image — mirrors the notebook's install block, pinned.
 # Qwen3.5 is a VLM arch, so we use Unsloth's FastVisionModel path even though
