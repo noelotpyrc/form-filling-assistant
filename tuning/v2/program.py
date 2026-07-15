@@ -195,6 +195,20 @@ def build_teacher(schema: Schema) -> "FormAssistant":
     return program
 
 
+def assign_lms(program: "FormAssistant", extract_lm=None, respond_lm=None) -> "FormAssistant":
+    """Assign per-predictor LMs (M4_PLAN P4): the extract and respond calls are
+    fully decoupled through the deterministic core, so the two-artifact hypothesis
+    is to run a different model per predictor (e.g. slice-1 = student-extractor +
+    nemotron-responder). Setting `predictor.lm` overrides the global `settings.lm`
+    at call time (dspy 3.3.0b1 predict.py:149 `lm = kwargs.pop("lm", self.lm) or
+    settings.lm`); None leaves that predictor inheriting the global."""
+    if extract_lm is not None:
+        program.extract.lm = extract_lm
+    if respond_lm is not None:
+        program.respond.lm = respond_lm
+    return program
+
+
 class FormAssistant(dspy.Module):
     def __init__(self):
         super().__init__()

@@ -156,7 +156,7 @@ def run_case(agent, lm, schema, case: dict) -> dict:
 
 
 def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = "",
-                 backend: str = "claude", model: str = ""):
+                 backend: str = "claude", model: str = "", port: int = 0):
     import dspy
     from .schema import load_schema
     from .program import build_teacher
@@ -167,7 +167,15 @@ def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = 
         cases = [c for c in cases if c["scenario"] in keep]
     if limit:
         cases = cases[:limit]
-    if backend == "openrouter":
+    if backend == "student":
+        from .student_lm import StudentLM
+        kw = {}
+        if model:
+            kw["model"] = model   # else StudentLM's default ("student")
+        if port:
+            kw["port"] = port
+        lm = StudentLM(**kw)
+    elif backend == "openrouter":
         from .openrouter_lm import OpenRouterLM
         lm = OpenRouterLM(model=model) if model else OpenRouterLM()
     else:
@@ -175,9 +183,16 @@ def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = 
         lm = ClaudeLM(model=model) if model else ClaudeLM()
     dspy.configure(lm=lm)
     schema = load_schema()
-    agent = build_teacher(schema)  # canonical teacher (one compound extract demo; native via openrouter)
-    print(f"backend={backend}  model={lm.model}  cases={len(cases)}  n={n}"
-          f"  -> {len(cases)*n} extractor calls\n", flush=True)
+    if backend == "student":
+        # Demo-free: the student is SFT'd on demo-stripped prompts (P1 capture), so
+        # evaluating it with the teacher's in-context demo would be a train/serve mismatch.
+        from .program import FormAssistant
+        agent, program = FormAssistant(), "student-bare"
+    else:
+        # canonical teacher (one compound extract demo; native via openrouter)
+        agent, program = build_teacher(schema), "teacher"
+    print(f"backend={backend}  model={lm.model}  port={port or '-'}  program={program}"
+          f"  cases={len(cases)}  n={n}  -> {len(cases)*n} extractor calls\n", flush=True)
 
     scored, raw, total_cost = [], [], 0.0
     for si in range(n):
@@ -288,15 +303,16 @@ def main():
     ap.add_argument("--eval-set", default=EVAL_SET)
     ap.add_argument("--limit", type=int, default=0, help="cap to first N cases (smoke)")
     ap.add_argument("--only", default="", help="comma-separated scenarios to run (band check)")
-    ap.add_argument("--backend", choices=["claude", "openrouter"], default="claude",
-                    help="teacher LM backend (default claude = unchanged)")
+    ap.add_argument("--backend", choices=["claude", "openrouter", "student"], default="claude",
+                    help="LM backend (default claude = unchanged; student = served MLX SFT model)")
     ap.add_argument("--model", default="", help="override the model id passed to the backend LM")
+    ap.add_argument("--port", type=int, default=0, help="port for the student backend (default StudentLM's 8100)")
     args = ap.parse_args()
     if args.selftest:
         selftest()
         return
     run_baseline(args.n, args.label, args.eval_set, args.limit, args.only,
-                 args.backend, args.model)
+                 args.backend, args.model, args.port)
 
 
 if __name__ == "__main__":

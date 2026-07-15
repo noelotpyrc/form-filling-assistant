@@ -168,10 +168,14 @@ the responder eval (M3b) to grade any of it.
       shape matches the v1 trainer's input. → P3: point `LOCAL_TRAIN_DATA`/`LOCAL_VAL_DATA`
       (train_sft_format_modal.py:31-37, stale `~/work/…` root) at `sft_data/<run>/{train,val}_extractor.jsonl`
       + make the input path a CLI param (slice 1 = the extractor files).
-- [ ] **P3 — fix trainer data path.** `train_sft_format_modal.py` `LOCAL_TRAIN_DATA` points at stale
-      `~/work/form-filling-assistant/…` (functional-rebind pending, `[[migration-cleanup-scrubbed-paths]]`) →
-      rebind to the real repo path + make the input configurable. *files:* `sft/train_sft_format_modal.py`
-- [ ] **P4 — student LM + eval wiring.** `dspy.BaseLM` → served MLX student (OpenAI endpoint; 3.3.0b1 has no
+- [x] **P3 — DONE 2026-07-15.** Trainer data paths env-parameterized (`SFT_TRAIN_DATA`/`SFT_VAL_DATA`,
+      read at module scope for Modal's import-time image build), defaults = the v1 files resolved
+      repo-relative from `__file__` (stale `~/work/…` gone). v2 slice-1 usage documented: point the env
+      vars at `sft_data/<run>/{train,val}_extractor.jsonl` and `modal run` from repo root. H2 note:
+      app/volume names still v1 (`sft-format-*`) — give slice-1 its own volume to avoid clobbering v1
+      checkpoints.
+- [x] **P4 — DONE 2026-07-15.** `student_lm.py` (StudentLM -> local MLX OpenAI endpoint, temp=0, stub-server selftest), `program.assign_lms(extract_lm=, respond_lm=)` per-predictor override (verified against dspy source: `lm = kwargs.pop("lm", self.lm) or settings.lm`), `eval_score --backend student --port` with a **demo-free FormAssistant** (student trains on demo-stripped prompts; teacher's in-context demo at eval would be a train/serve mismatch). Original design note kept below.
+      Was: **student LM + eval wiring.** `dspy.BaseLM` → served MLX student (OpenAI endpoint; 3.3.0b1 has no
       litellm, so custom like `OpenRouterLM`) + a `student` backend in `eval_score.py`. Smoke vs any served
       model. **Design requirement: per-PREDICTOR LM assignment** (a `{module → lm/port}` map via
       `predictor.lm`, not one global LM) — the two calls are fully decoupled through the deterministic core,
