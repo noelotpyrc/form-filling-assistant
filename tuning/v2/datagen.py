@@ -39,6 +39,7 @@ Outputs (gitignored): tuning/v2/datagen_runs/<run>/{snapshots.jsonl,train.jsonl,
 from __future__ import annotations
 import argparse
 import json
+import os
 import random
 from collections import Counter
 from dataclasses import dataclass
@@ -298,10 +299,15 @@ def parity_offline() -> bool:
 # Layer 1 — context farm
 # ======================================================================
 
-def farm_session(agent, lm, schema: Schema, seed: int, max_turns: int = 24) -> dict:
+def farm_session(agent, lm, schema: Schema, seed: int, max_turns: int = 24,
+                 mix: float = 0.0) -> dict:
     """One natural LLM-U <-> teacher session. Logs a per-turn snapshot before each
     forward() and captures the turn as training pairs. Farm turns are never
-    naturalized (the U model already speaks naturally), so no naturalize param."""
+    naturalized (the U model already speaks naturally), so no naturalize param.
+
+    mix: per-turn probability of drawing a non-answer LLM-U directive (chitchat/
+    deflect/bulk) instead of "answer", for turns >= 1. mix=0 (default) preserves
+    the original always-answer behavior."""
     rng = random.Random(seed)
     persona = personas.gen_persona(schema, rng)
     style = personas.gen_style(rng)
@@ -309,6 +315,7 @@ def farm_session(agent, lm, schema: Schema, seed: int, max_turns: int = 24) -> d
     history: list[dict] = []
     snapshots: list[dict] = []
     rows: list[dict] = []
+    mixed_turns: list[dict] = []
     user_msg = ""
     teacher_cost = u_cost = 0.0
     turn = 0
@@ -334,7 +341,15 @@ def farm_session(agent, lm, schema: Schema, seed: int, max_turns: int = 24) -> d
         if state.pending and state.pending.target == CONFIRM_SUBMIT:
             break
 
-        action, ucost = llm_u(schema, persona, style, render_screen(pred), "answer")
+        # Opening turn always engages the form; only later turns may be mixed.
+        directive = "answer"
+        if turn >= 1 and mix and rng.random() < mix:
+            directive = rng.choices(["chitchat", "deflect", "bulk"],
+                                    weights=[0.5, 0.25, 0.25])[0]
+            mixed_turns.append({"turn": turn, "directive": directive})
+            print(f"    [mix] turn={turn} directive={directive}", flush=True)
+
+        action, ucost = llm_u(schema, persona, style, render_screen(pred), directive)
         u_cost += ucost
         kind = action.get("action", "message")
         if kind == "stop":
@@ -348,6 +363,7 @@ def farm_session(agent, lm, schema: Schema, seed: int, max_turns: int = 24) -> d
 
     return {"seed": seed, "style": style, "persona": persona, "turns": turn + 1,
             "filled": dict(state.form_state), "snapshots": snapshots, "rows": rows,
+            "mixed_turns": mixed_turns,
             "teacher_cost": teacher_cost, "u_cost": u_cost}
 
 
@@ -448,6 +464,54 @@ def _pre_compound(snap, schema):
     return bool(p and p.type in _FREE_TYPES and _compound_other(snap, schema, p.type))
 
 
+# partial_select: field_id -> {term, phrases}. `term` is a normalized substring of
+# >=2 option labels (verified against validator.match_options in selftest); phrases
+# wrap that category term. Pending must be one of these choice fields.
+_PARTIAL = {
+    "program": {"term": "science",
+                "phrases": ["a science program", "something science-related",
+                            "one of the science tracks"]},
+    "funding_type": {"term": "assistantship",
+                     "phrases": ["an assistantship", "some kind of assistantship",
+                                 "one of the assistantship options"]},
+}
+
+
+def _pre_partial(snap, schema):
+    p = pf(snap, schema)
+    return bool(p and p.is_choice and p.field_id in _PARTIAL)
+
+
+# invalid_value: per-type uncoercible values (verified to FAIL validator.coerce in
+# selftest). Wrapped in a sentence by the maker so the bare-value demotion guard
+# (validate's _is_bare_value) does not fire.
+_INVALID = {
+    "date":  ["February 30, 1990", "the 32nd of Maypril", "sometime last autumn"],
+    "phone": ["555-CALL", "just a sec, 12", "my old landline"],
+    "email": ["jane dot doe at gmail dot com", "reach me on instagram", "jane@nowhere"],
+}
+
+
+def _pre_invalid(snap, schema):
+    p = pf(snap, schema)
+    return bool(p and p.type in _INVALID)
+
+
+def _cross_candidates(snap, schema):
+    """Unfilled button-choice selects (excluding booleans) other than the pending
+    field — targets for a volunteered cross-field option label."""
+    filled = _filled(snap)
+    p = pf(snap, schema)
+    pfid = p.field_id if p else None
+    return [f for f in schema.fields
+            if f.button_choice and f.type != "boolean"
+            and f.field_id != pfid and f.field_id not in filled]
+
+
+def _pre_cross(snap, schema):
+    return bool(pf(snap, schema) and _cross_candidates(snap, schema))
+
+
 # ---- message templates ---------------------------------------------------
 
 def _mk_correction(snap, schema, rng):
@@ -475,11 +539,49 @@ def _mk_deflect(snap, schema, rng):
     ]).format(l=other.label)
 
 
+def _other_free(schema, exclude_fid, rng):
+    """A non-choice free field (text/date/phone/email) other than the pending one."""
+    return rng.choice([f for f in schema.fields
+                       if not f.is_choice and f.type in _FREE_TYPES and f.field_id != exclude_fid])
+
+
+def _mk_deflect_free(snap, schema, rng):
+    other = _other_free(schema, pf(snap, schema).field_id, rng)
+    return rng.choice([
+        "Hold on — what exactly do you need for {l}?",
+        "Wait, what format should the {l} be in?",
+        "Before I answer — what should I put for {l}?",
+    ]).format(l=other.label)
+
+
+def _mk_partial(snap, schema, rng):
+    x = rng.choice(_PARTIAL[pf(snap, schema).field_id]["phrases"])
+    return rng.choice(["I'm thinking {x}.", "Probably {x}.", "{x}, I guess."]).format(x=x)
+
+
+def _mk_invalid(snap, schema, rng):
+    v = rng.choice(_INVALID[pf(snap, schema).type])
+    return rng.choice(["It's {v}.", "Sure — {v}.", "Oh, it's {v}."]).format(v=v)
+
+
+def _mk_cross(snap, schema, rng):
+    f = rng.choice(_cross_candidates(snap, schema))
+    _val, label = rng.choice(f.options)
+    return rng.choice([
+        "Oh — put me down for {label}.",
+        "Actually, {label} please.",
+        "Let's make it {label}.",
+    ]).format(label=label)
+
+
 _RESTRAINT_Q = [
     "Quick question first — how long does the review usually take?",
     "Before that, when is the application deadline?",
     "One thing — how long until I hear back after submitting?",
     "Actually, how many weeks does the whole process take?",
+    "I think that's everything — can I submit now?",
+    "Can I save this and finish later tonight?",
+    "Can you show me a quick summary of what we have so far?",
 ]
 
 
@@ -600,8 +702,20 @@ def _mk_third_party(snap, schema, rng):
 
 _TRAP_CITIES = ["Austin", "Portland", "Nashville", "Boise", "Tucson", "Raleigh"]
 
+# narrative-embedded dates/numbers: values buried in a story that must NOT bind to
+# any field (the message is not bare, so validate's demotion guard is irrelevant).
+_TRAP_NARRATIVE = [
+    "I've been at my current job since 2019 — time flies.",
+    "My brother applied here back in March 2020.",
+    "We've moved twice in the last 3 years.",
+    "I graduated college over a decade ago, believe it or not.",
+    "Our lease is up in 6 months, so the timing is tricky.",
+]
+
 
 def _mk_trap(snap, schema, rng):
+    if rng.random() < 0.5:
+        return rng.choice(_TRAP_NARRATIVE)
     city = rng.choice(_TRAP_CITIES)
     return rng.choice([
         "We just moved to {c} — loving it so far.",
@@ -636,6 +750,10 @@ REGISTRY = [
     Behavior("precedence", "farm", _pre_precedence, _mk_precedence),
     Behavior("compound", "farm", _pre_compound, _mk_compound),
     Behavior("bulk", "farm", _pre_pending, _mk_bulk),
+    Behavior("deflect_free", "farm", _pre_pending, _mk_deflect_free),
+    Behavior("partial_select", "farm", _pre_partial, _mk_partial),
+    Behavior("invalid_value", "farm", _pre_invalid, _mk_invalid),
+    Behavior("cross_select", "farm", _pre_cross, _mk_cross),
     Behavior("asks_about_field", "constructed", _true, _mk_asks, _empty_ctx),
     Behavior("chitchat", "constructed", _true, _mk_chitchat, _empty_ctx),
     Behavior("wrapped_value", "constructed", _true, _mk_wrapped, _empty_ctx),
@@ -664,24 +782,46 @@ def eligible_snaps(beh: Behavior, snapshots: list[dict], schema: Schema) -> list
             if s.get("pending") != CONFIRM_SUBMIT and beh.precondition(s, schema)]
 
 
+# Naturalizer LM: a SEPARATE OpenRouterLM from the teacher `lm` — the capture path
+# slices the teacher's lm.history by position, so the naturalizer must never append
+# to it. Lazily built (first --naturalize use) so --selftest/--parity stay offline.
+# temp=0.8 for phrasing variety; 300 tokens is plenty for one short chat message.
+# paid slug: the :free route was pulled 2026-07-20 (~$0.0001/call; free routes churn)
+_NAT_MODEL = os.getenv("V2_NAT_MODEL", "tencent/hy3")
+_nat_lm = None
+
+
+def _naturalizer():
+    global _nat_lm
+    if _nat_lm is None:
+        from .openrouter_lm import OpenRouterLM
+        _nat_lm = OpenRouterLM(model=_NAT_MODEL, temperature=0.8, max_tokens=300)
+    return _nat_lm
+
+
 def naturalize_message(msg: str, schema: Schema, rng: random.Random) -> tuple[str, float]:
     style = personas.gen_style(rng)
     sys = ("Rephrase the user's message in the voice of this persona/style, keeping the same "
            "intent and any concrete values (names, emails, dates, numbers, option words). "
            "Reply with only the rephrased text — one short chat message.\n\n"
            f"Style: {style} — {STYLE_DESC[style]}.")
-    text, cost = claude_p(sys, msg)
-    return (text.strip() or msg), cost
+    lm = _naturalizer()
+    out = lm(messages=[{"role": "system", "content": sys}, {"role": "user", "content": msg}])
+    text = (out[0] if out else "").strip()
+    cost = (lm.history[-1].get("cost") if lm.history else 0.0) or 0.0
+    return (text or msg), cost
 
 
 def run_injection(agent, lm, schema: Schema, snapshots: list[dict], quota: int,
-                  rng: random.Random, naturalize: bool) -> dict:
+                  rng: random.Random, naturalize: bool, only: set[str] | None = None) -> dict:
     rows: list[dict] = []
     coverage: list[dict] = []
     inj_cost = nat_cost = 0.0
     prestep_handled = 0
 
     for beh in REGISTRY:
+        if only and beh.name not in only:   # restrict to named subset; coverage naturally excludes skipped
+            continue
         if beh.context == "farm":
             eligible = eligible_snaps(beh, snapshots, schema)
             n_elig = len(eligible)
@@ -752,11 +892,13 @@ def build_report(schema, farm_summaries, snapshots, coverage, prestep_handled,
                for m in ("extractor", "responder")}
     return {
         "args": {"farm": args.farm, "inject": args.inject, "quota": args.quota,
-                 "seed": args.seed, "max_turns": args.max_turns, "naturalize": args.naturalize},
+                 "seed": args.seed, "max_turns": args.max_turns, "naturalize": args.naturalize,
+                 "mix": args.mix},
         "farm_sessions": [
             {"seed": s["seed"], "style": s["style"], "turns": s["turns"],
              "filled": len(s["filled"]), "required": n_req,
-             "complete": len(s["filled"]) >= n_req} for s in farm_summaries],
+             "complete": len(s["filled"]) >= n_req,
+             "mixed_turns": s.get("mixed_turns", [])} for s in farm_summaries],
         "snapshots": len(snapshots),
         "coverage": coverage,
         "zero_eligible": [c["behavior"] for c in coverage if c.get("eligible") == 0],
@@ -946,6 +1088,10 @@ def selftest():
         "precedence": snap(pending="phone"),
         "compound": snap(pending="dob"),
         "bulk": snap(pending="dob"),
+        "deflect_free": snap(pending="dob"),
+        "partial_select": snap(pending="program"),
+        "invalid_value": snap(pending="dob"),
+        "cross_select": snap(pending="dob"),
     }
     for beh in REGISTRY:
         if beh.context == "farm":
@@ -972,6 +1118,27 @@ def selftest():
     assert not by_name["deflect"].precondition(cs, schema)
     assert eligible_snaps(by_name["correction"], [cs], schema) == []
 
+    # --- new-behavior data invariants (offline, no LLM) ---
+    from .validator import match_options as _mo, coerce as _co
+    # partial_select: every field's core term matches >=2 options
+    for fid, spec in _PARTIAL.items():
+        hits = _mo(spec["term"], schema.field(fid))
+        assert len(hits) >= 2, f"partial_select {fid}: term {spec['term']!r} -> {len(hits)} hits (<2)"
+    # invalid_value: every value actually FAILS coerce for its type
+    for ftype, vals in _INVALID.items():
+        f = next(fd for fd in schema.fields if fd.type == ftype)
+        for v in vals:
+            assert not _co(v, f)[0], f"invalid_value {ftype}: {v!r} should fail coerce"
+    # deflect_free maker names a non-choice free field's label
+    dm = by_name["deflect_free"].make_message(farm_snaps["deflect_free"], schema, rng)
+    free_labels = {f.label for f in schema.fields if not f.is_choice and f.type in _FREE_TYPES}
+    assert any(l in dm for l in free_labels), f"deflect_free names no free field: {dm!r}"
+    # cross_select maker names an exact option label of a button-choice select
+    cm = by_name["cross_select"].make_message(farm_snaps["cross_select"], schema, rng)
+    opt_labels = {str(lab) for f in schema.fields if f.button_choice and f.type != "boolean"
+                  for _v, lab in f.options}
+    assert any(l in cm for l in opt_labels), f"cross_select names no option label: {cm!r}"
+
     # --- TurnState round-trip ---
     st = rebuild_state(schema, snap(form_state={"email": "m@e.com"}, pending="dob"))
     assert st.form_state == {"email": "m@e.com"} and st.pending.target == "dob"
@@ -992,11 +1159,16 @@ def main():
     ap.add_argument("--run", default="pilot")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--max-turns", type=int, default=24)
-    ap.add_argument("--naturalize", action="store_true", help="rephrase injected messages via claude_p")
+    ap.add_argument("--mix", type=float, default=0.0,
+                    help="per-turn probability of a non-answer LLM-U directive in farm sessions")
+    ap.add_argument("--naturalize", action="store_true",
+                    help="rephrase injected messages via OpenRouter (V2_NAT_MODEL)")
     ap.add_argument("--snapshots", default="", help="load snapshots.jsonl (when --farm 0 --inject)")
     ap.add_argument("--backend", choices=["claude", "openrouter"], default="openrouter",
                     help="teacher LM backend (default openrouter = canonical nemotron teacher)")
     ap.add_argument("--model", default="", help="override the model id passed to the backend LM")
+    ap.add_argument("--behaviors", default="",
+                    help="comma-separated behavior names — restrict injection to these; empty = all")
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--parity", action="store_true")
     args = ap.parse_args()
@@ -1007,6 +1179,15 @@ def main():
     if args.parity:
         parity_offline()
         return
+
+    # validate --behaviors before any LM construction/injection — fail fast on a typo
+    only = {b.strip() for b in args.behaviors.split(",") if b.strip()} or None
+    if only:
+        valid = {b.name for b in REGISTRY}
+        bad = sorted(only - valid)
+        if bad:
+            ap.error(f"unknown behavior name(s): {', '.join(bad)}\n"
+                     f"valid names: {', '.join(sorted(valid))}")
 
     import dspy
     # datagen generates training data, so it must use the canonical teacher
@@ -1043,7 +1224,7 @@ def main():
             seed = args.seed + i
             print(f"[farm {i+1}/{args.farm}] seed={seed} ...", flush=True)
             try:
-                s = farm_session(agent, lm, schema, seed, args.max_turns)
+                s = farm_session(agent, lm, schema, seed, args.max_turns, args.mix)
             except Exception as e:
                 print(f"  !! farm session failed: {type(e).__name__}: {str(e)[:160]} — skipping", flush=True)
                 continue
@@ -1058,7 +1239,7 @@ def main():
             if not args.farm:
                 snapshots = [json.loads(l) for l in open(args.snapshots)]
                 print(f"loaded {len(snapshots)} snapshots from {args.snapshots}", flush=True)
-            inj = run_injection(agent, lm, schema, snapshots, args.quota, rng, args.naturalize)
+            inj = run_injection(agent, lm, schema, snapshots, args.quota, rng, args.naturalize, only)
             train_rows.extend(inj["rows"])
             coverage = inj["coverage"]
             prestep_handled = inj["prestep_handled"]
