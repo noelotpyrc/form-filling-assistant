@@ -128,6 +128,22 @@ def _validate_pair(fid: str, value: str, state: TurnState) -> Outcome:
         return Outcome(CLARIFY, fid, reason="empty value on free field")
 
     if f.is_choice:
+        if f.is_multi:
+            # multi_select: an EXPLICIT conjunction list (split on ',' '&' or the
+            # word 'and') where EVERY part uniquely matches ONE option -> set them
+            # ALL (value is a list, deduped, in order). Anything ambiguous (a part
+            # with 0 or >=2 hits, e.g. a category word like "assistantship") falls
+            # through to the single-select logic below, which narrows via CHOICE_NEEDED.
+            parts = [p for p in re.split(r"\s*(?:,|&|\band\b)\s*", str(value)) if p.strip()]
+            part_hits = [match_options(p, f) for p in parts]
+            if parts and all(len(h) == 1 for h in part_hits):
+                seen, vals = set(), []
+                for h in part_hits:
+                    v = h[0][0]
+                    if v not in seen:
+                        seen.add(v)
+                        vals.append(v)
+                return Outcome(set_kind, fid, value=vals)
         hits = match_options(value, f)
         if len(hits) == 1:
             return Outcome(set_kind, fid, value=hits[0][0])

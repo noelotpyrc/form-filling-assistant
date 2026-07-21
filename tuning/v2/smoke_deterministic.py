@@ -266,6 +266,41 @@ def s18d_bare_number_no_pending():
           f"types={types(a)} dirs={[x[0] for x in d]}")
 
 
+# ---- multi_select (funding_type) --------------------------------------------
+# funding_type is type=multi_select: an explicit conjunction of exact options sets
+# them ALL (value stored as a LIST); a single exact option is a one-element list;
+# a category word matching >=2 labels ("assistantship") stays ambiguous -> buttons.
+
+def s20a_multi_conjunction():
+    s = state_with({"funding_interest": True}, pending="funding_type")
+    a, d = run_turn(s, "fellowship and scholarship",
+                    [{"field_id": "funding_type", "value": "fellowship and scholarship"}])
+    check("S20a multi conjunction -> set_fields(funding_type=[fellowship,scholarship])",
+          types(a)[0] == "set_fields" and
+          a[0]["fields"][0] == {"field_id": "funding_type", "value": ["fellowship", "scholarship"]},
+          str(a[0]["fields"]) if a and a[0]["type"] == "set_fields" else str(types(a)))
+
+
+def s20b_multi_single():
+    s = state_with({"funding_interest": True}, pending="funding_type")
+    a, d = run_turn(s, "a fellowship would be great",
+                    [{"field_id": "funding_type", "value": "fellowship"}])
+    check("S20b multi single exact -> set_fields(funding_type=[fellowship]) (one-element list)",
+          types(a)[0] == "set_fields" and
+          a[0]["fields"][0] == {"field_id": "funding_type", "value": ["fellowship"]},
+          str(a[0]["fields"]) if a and a[0]["type"] == "set_fields" else str(types(a)))
+
+
+def s20c_multi_category():
+    s = state_with({"funding_interest": True}, pending="funding_type")
+    a, d = run_turn(s, "an assistantship, I think",
+                    [{"field_id": "funding_type", "value": "assistantship"}])
+    check("S20c multi category word ('assistantship') -> ask_choice(teaching,research)",
+          types(a) == ["ask_choice"] and
+          set(opt_values(a[0])) == {"teaching_assistantship", "research_assistantship"},
+          str(opt_values(a[0])) if a and a[0]["type"] == "ask_choice" else str(types(a)))
+
+
 def main():
     for fn in [s1_volunteered, s2_elliptical, s4_button_event, s5_ambiguous_select,
                s6_asks_about_field, s7_deflection, s8_chitchat, s12_save,
@@ -273,7 +308,8 @@ def main():
                s16_bulk_bare, s16b_unplaceable, s17_large_select_text,
                s19_freetext_country,
                s18a_bare_date_pending_binds, s18b_bare_date_no_pending_clarifies,
-               s18c_cued_date_sets, s18d_bare_number_no_pending]:
+               s18c_cued_date_sets, s18d_bare_number_no_pending,
+               s20a_multi_conjunction, s20b_multi_single, s20c_multi_category]:
         print(f"\n{fn.__name__}")
         fn()
     passed = sum(1 for _, c, _ in _results if c)

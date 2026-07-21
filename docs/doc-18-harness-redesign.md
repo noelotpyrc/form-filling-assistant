@@ -86,7 +86,8 @@ inference. Per turn:
    directive + pending. Queue empty → TERMINAL: show_preview +
    show_button(submit) — the submit flow is the agenda running out of work,
    not a learned behavior. Guards: ≤1 ask_choice/turn (responsive wins),
-   never re-emit an open ask_choice, pause agenda on save.
+   never re-emit an open ask_choice, pause agenda on save, stand down on
+   CLARIFY turns (a clarify thread is a competing focus — no stacked re-ask).
 6. RESPONDER (model)    context + message + merged actions + directives
                         → response_text (pure verbalization — never decides)
    - the model SEES what actions fired this turn → R5 (text-action disconnect)

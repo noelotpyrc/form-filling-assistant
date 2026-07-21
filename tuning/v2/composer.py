@@ -92,6 +92,7 @@ def compose(state: TurnState, prestep, outcomes: list[Outcome]):
         actions.append(_ask_choice(state.schema.field(c.field_id), c.options))
         state.pending = Pending(c.field_id)
         responsive_choice = True
+    clarified = any(o.kind == CLARIFY for o in outcomes)
     for o in outcomes:
         if o.kind == CLARIFY:
             directives.append(("clarify", o))
@@ -114,16 +115,18 @@ def compose(state: TurnState, prestep, outcomes: list[Outcome]):
             directives.append(("submit_blocked", [f.field_id for f in queue(state)]))
 
     # --- step 5: agenda (proactive) ---
-    a_actions, a_dirs = _agenda(state, prestep, responsive_choice, it)
+    a_actions, a_dirs = _agenda(state, prestep, responsive_choice, it, clarified)
     actions += a_actions
     directives += a_dirs
     return actions, directives
 
 
-def _agenda(state: TurnState, prestep, responsive_choice: bool, it: dict):
+def _agenda(state: TurnState, prestep, responsive_choice: bool, it: dict, clarified: bool):
     # guards — don't push the next field when the user is pausing (save) or just
     # tried to submit (we offer save-or-continue instead of nagging the next field)
-    if prestep.hold or responsive_choice or it.get("wants_save") or it.get("wants_submit"):
+    # clarified: a CLARIFY answer is a competing thread, same as responsive_choice —
+    # stand down; pending stays pending so the reask fires next quiet turn
+    if prestep.hold or responsive_choice or clarified or it.get("wants_save") or it.get("wants_submit"):
         return [], []
     p = state.pending
     if p and p.target == CONFIRM_SUBMIT:

@@ -256,6 +256,7 @@
 <section id="stage-2">
   <h2><span class="tag code">2</span> &nbsp;Validate</h2>
   <p>Turn raw pairs into typed <a href="#validator-categories">outcomes</a>. First, an unplaced <code>{null, value}</code> pair runs the <a href="#binding">binding cascade</a> — which either attaches a <code>field_id</code> or routes straight to <span class="pill">CLARIFY</span>. Then, per attributed pair: schema membership (else <span class="pill">DROPPED</span>) → empty-value branch (<span class="pill">CHOICE_NEEDED</span> for select/bool, <span class="pill">CLARIFY</span> for free) → present-value branch (coerce / option-match → <span class="pill">VALID_SET</span>, or ambiguous/no-match → <span class="pill">CHOICE_NEEDED</span>). A value targeting an already-filled field becomes a <span class="pill">CORRECTION</span>.</p>
+  <p><b>multi_select</b> (added 2026-07-21): a value naming an explicit conjunction list ("fellowship and scholarship") is split on <code>, / &amp; / and</code>; if <i>every</i> part matches exactly one option, all are set as one list-valued <span class="pill">VALID_SET</span>. Anything ambiguous (a category word matching ≥2 options, e.g. "assistantship") falls through to the single-select narrowing branch → <span class="pill">CHOICE_NEEDED</span> subset.</p>
   <p>Three guarantees live here: <code>pending</code>-binding is deterministic (not a model bias — <a href="#s2-2">S2.2</a>), option lists always come from the schema (kills hallucinated options, R3 — <a href="#s6-2">S6.2</a>), and a hallucinated <code>field_id</code> can never reach an action (<a href="#s9-2">S9.2</a>).</p>
   <div class="appears"><b>Appears in:</b>
     <a href="#s1-2">S1.2</a><a href="#s2-2">S2.2</a><a href="#s3-2">S3.2</a><a href="#s5-2">S5.2</a><a href="#s6-2">S6.2</a><a href="#s9-2">S9.2</a><a href="#s10-2">S10.2</a><a href="#s16-2">S16.2</a></div>
@@ -293,6 +294,7 @@
   <ul>
     <li>a responsive <code>ask_choice</code> was already emitted (≤1 per turn — the displaced target stays queued) (<a href="#s5-5">S5.5</a>);</li>
     <li><code>wants_save</code> fired — the user is pausing, don't push (<a href="#s12-5">S12.5</a>);</li>
+    <li>a <span class="pill">CLARIFY</span> outcome fired (added 2026-07-21) — the turn is already answering/clarifying a user question thread; same treatment as a responsive choice. Pending stays pending; the re-ask fires on the next quiet turn. Kills the "answer your question <i>and</i> circling back—" double-question pileup;</li>
     <li><span class="pill">pending</span> is still open/unanswered (chitchat, deflection) → re-assert in <b>text only</b>, never re-emit an on-screen choice (<a href="#s8-5">S8.5</a>);</li>
     <li><span class="pill">pending</span> is <code>confirm_submit</code>, or the agenda is <b>held</b> by a fix directive (<a href="#s15-5">S15.5</a>).</li>
   </ul>
