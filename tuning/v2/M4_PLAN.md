@@ -186,9 +186,17 @@ the responder eval (M3b) to grade any of it.
       *edit:* `eval_score.py`, serving path
 
 ## Heavy (H) — one at a time; each gated on the pipes above
-- [ ] **H1 — generate extractor training data at scale.** `datagen.py`: farm N sessions + injection to
-      per-behavior quotas (teacher $, budget-confirm). *gated:* P1 (incl. its parity/coverage/cleanliness
-      gates on a pilot), P2
+- [x] **H1 — DONE 2026-07-20/21.** Probes (haiku-U approved: 3 sessions eyeballed + mix probe) →
+      pre-H1 hardening (naturalizer → OpenRouter `V2_NAT_MODEL`; farm `--mix` non-answer directives;
+      composer CLARIFY agenda guard; registry 16→20: deflect_free / partial_select / invalid_value /
+      cross_select + trap/restraint widening; validator multi_select conjunction support, smoke 30/30) →
+      main run `h1a` (10 farm sessions all complete+filled, mix 0.15; inject 13/20 behaviors before the
+      account-wide free-cap hit — naturalizer shares the pool, my miss) → `--behaviors` top-up `h1a_fill`
+      next UTC day (8 behaviors 200/200; naturalizer = PAID tencent/hy3 after the :free route was pulled
+      same-day — free routes churn) → **audit + curation in the bridge** (per-behavior convention table;
+      443/49 kept/dropped — incl. bare_date 12 dob-bindings, refusal 8 engagements) → row-weighted split fix.
+      **Corpus `sft_data/h1a_merged/`: train_extractor 439 / val_extractor 110 / train_responder 118 /
+      val_responder 25; extractor chat_malformed 0/598.** Cost ≈ $1.64. Teacher format: 598/598 clean.
 - [ ] **H2 — Modal SFT run.** `modal run tuning/sft/train_sft_format_modal.py`. *gated:* P2, P3
 - [ ] **H3 — merge + convert.** `merge_lora_modal.py` (LoRA → fp16) → fp16 → MLX. *gated:* H2
 - [ ] **H4 — eval student on frozen set.** `eval_score.py` at the student → student/teacher gap = **thesis number**. *gated:* P4, H3
@@ -202,9 +210,22 @@ the responder eval (M3b) to grade any of it.
 | format bridge (P2), student LM (P4) | ❌ to build |
 
 ## Parked decisions
-- **LLM U model at H1 scale.** Pilot1 runs sonnet U (apples-to-apples with M2). Before H1: one
-  haiku-U A/B session (~$0.5) checking JSON-action discipline + phrasing diversity (farm user
-  messages are extractor training inputs); switch if clean (~$12+ saved at 50+ sessions).
+- **LLM U model at H1 scale — RESOLVED: haiku.** 3 probe sessions + mix probe eyeballed (terse/chatty/
+  unsure all style-faithful; bulk 7-value turn caught 7/7). ~$0.16/session vs sonnet's ~$0.55.
+- **Pre-slice-2 responder guidance tweaks (do BEFORE responder training data).** (a) option
+  re-enumeration verbosity; (b) grounding: responder fabricated admissions/funding policy on a deflect
+  turn (h1_probe_mix2) — add "outside the form, say you don't know; never invent policy" to guidance;
+  M3b Tier-1 grounding checks target this. (c) optional temp>0 datagen responder LM via assign_lms
+  (eval stays temp 0).
+- **third_party template wart.** "{n}, my neighbor, said this school has a great campus" is how_heard-
+  adjacent → teacher bound how_heard 3/25 (curated out). Reword before next datagen round.
+- **Refusal has no skip/defer mechanic.** Both extractor conventions ([] or engagement) end in the
+  harness re-asking the refused field. Curation standardizes on []; a composer defer-pending feature
+  (move on, revisit at end) is the real fix — post-M4.
+- **OpenRouter free routes churn.** tencent/hy3:free was pulled the same day it was adopted; the
+  free-models-per-day cap (~1000, ≥$10 credits) is ACCOUNT-WIDE across all :free models. Paid fallbacks
+  are cheap: hy3 $0.20/$0.80 per M, paid nemotron $0.60/$3.60 per M (~$3-4 per H1-scale run; re-anchor
+  via calibrate preflight before trusting metrics from the paid route).
 - **Responder cleanup — RESOLVED: canonicalize (in P2).** Reconstruct the missing
   `[[ ## response_text ## ]]` marker by re-wrapping `strip_markers(completion)` — data-only, non-invasive.
   Clean targets → the student learns clean markers, so no raw-text signature change needed. Raw-text kept
