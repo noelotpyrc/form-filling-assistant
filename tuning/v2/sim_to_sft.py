@@ -12,6 +12,10 @@ Two transforms, one per module:
   - extractor: pass `completion` through UNCHANGED (structured target; a malformed
     one is not reconstructable-with-certainty and the observed rate is 0%). A
     malformed extractor row is DROPPED, counted, and loudly warned — never silent.
+    INJECT extractor rows are additionally CURATED (see CURATION): a row whose
+    parsed extraction list violates its behavior's designed convention is DROPPED
+    (quota shortfall, not label editing). Farm extractor rows are organic teacher
+    judgment and are never curated.
   - responder: canonicalize EVERY completion uniformly (no branch on which marker
     is missing) by re-wrapping the shared `program.strip_markers()` prose —
     `canon = "[[ ## response_text ## ]]\n" + strip_markers(c) + "\n\n[[ ## completed ## ]]"`.
@@ -23,7 +27,9 @@ Split: seeded, GROUP-AWARE train/val at the GROUP level (a group is entirely in
 train or entirely in val), where a group = the persona/session a row came from
 (farm -> `session`; injected-with-snapshot -> `snapshot.session`; injected
 constructed-context -> its own singleton group). This blocks near-duplicate leakage
-across the split. Outputs per-module files (separate SFT artifacts per predictor):
+across the split. The val cut is ROW-WEIGHTED (groups accumulated until their row
+budget hits val_ratio of all rows) so val mirrors corpus composition — a group-count
+cut let small singleton groups crowd out the few heavyweight farm sessions. Outputs per-module files (separate SFT artifacts per predictor):
 `train_{module}.jsonl` / `val_{module}.jsonl`, plus `report.json`.
 
 Run:
@@ -36,6 +42,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -47,6 +54,67 @@ RUN_DIR = V2_DIR / "datagen_runs"
 OUT_ROOT = V2_DIR / "sft_data"
 DEFAULT_IN = RUN_DIR / "pilot2" / "train.jsonl"
 MODULES = ("extractor", "responder")
+
+
+# ======================================================================
+# inject-extractor convention curation
+# ======================================================================
+# Inject extractor rows are SYNTHESIZED to a convention we know a priori: each
+# behavior template dictates the exact extraction shape the student should emit.
+# So a row whose parsed extraction list violates that shape is a datagen quota
+# shortfall (the generator produced an off-spec sample) — we DROP it. This is
+# NOT label editing: we never rewrite a completion, only decline to keep a
+# violating one. Farm extractor rows are organic teacher judgment with no
+# a-priori convention and are NEVER curated (nor are responder rows). Behaviors
+# absent from the table (e.g. invalid_value, and any unknown/future behavior)
+# carry no constraint and pass through untouched.
+CURATION = {
+    # empty: extraction list must be []
+    "chitchat": "empty", "restraint_question": "empty", "trap": "empty",
+    "third_party": "empty", "refusal": "empty",
+    # null_only: non-empty, every pair's field_id is null
+    "bare_date": "null_only", "bare_ambiguous": "null_only",
+    # engaged_only: non-empty, every pair has a field_id and value == ""
+    "deflect": "engaged_only", "deflect_free": "engaged_only",
+    "asks_about_field": "engaged_only",
+    # valued: at least one pair with non-null field_id and non-empty value
+    "typed_choice": "valued", "precedence": "valued", "correction": "valued",
+    "compound": "valued", "bulk": "valued", "partial_select": "valued",
+    "cross_select": "valued", "wrapped_value": "valued",
+    # valued_or_engaged: non-empty, every pair has a non-null field_id (value free)
+    "no_match": "valued_or_engaged",
+}
+
+_EXTRACT_RE = re.compile(r"\[\[ ## extractions ## \]\](.*?)\[\[ ## completed", re.DOTALL)
+
+
+def parse_extractions(completion: str):
+    """The extraction list between the markers, or None if absent/unparseable."""
+    m = _EXTRACT_RE.search(completion)
+    if not m:
+        return None
+    try:
+        data = json.loads(m.group(1).strip())
+    except (ValueError, TypeError):
+        return None
+    return data if isinstance(data, list) else None
+
+
+def curation_passes(rule: str, pairs: list) -> bool:
+    """Does the parsed extraction list satisfy the behavior's convention rule?"""
+    def fid(p): return p.get("field_id") if isinstance(p, dict) else None
+    def val(p): return p.get("value") if isinstance(p, dict) else None
+    if rule == "empty":
+        return len(pairs) == 0
+    if rule == "null_only":
+        return len(pairs) > 0 and all(fid(p) is None for p in pairs)
+    if rule == "engaged_only":
+        return len(pairs) > 0 and all(fid(p) is not None and val(p) == "" for p in pairs)
+    if rule == "valued":
+        return any(fid(p) is not None and val(p) not in (None, "") for p in pairs)
+    if rule == "valued_or_engaged":
+        return len(pairs) > 0 and all(fid(p) is not None for p in pairs)
+    return True  # unknown rule -> no constraint
 
 
 # ======================================================================
@@ -81,12 +149,14 @@ def reshape(row: dict, target: str) -> dict:
             "messages": list(row["messages"]) + [{"role": "assistant", "content": target}]}
 
 
-def transform(rows: list[dict]) -> tuple[list[tuple[dict, tuple]], list[dict], Counter]:
-    """(out_rows_with_group, dropped_extractor_rows, responder_canon_stats).
-    out_rows_with_group is a list of (reshaped_row, group_key)."""
+def transform(rows: list[dict]) -> tuple[list[tuple[dict, tuple]], list[dict], Counter, dict]:
+    """(out_rows_with_group, dropped_extractor_rows, responder_canon_stats, curation).
+    out_rows_with_group is a list of (reshaped_row, group_key). `curation` maps
+    behavior -> Counter(kept / dropped / unparseable) for inject-extractor rows."""
     out: list[tuple[dict, tuple]] = []
     dropped: list[dict] = []
     canon_stats: Counter = Counter()   # "fixed" (was malformed) / "normalized" (was well-formed)
+    curation: dict[str, Counter] = defaultdict(Counter)  # behavior -> kept/dropped/unparseable
 
     for idx, row in enumerate(rows):
         module = row["module"]
@@ -95,6 +165,18 @@ def transform(rows: list[dict]) -> tuple[list[tuple[dict, tuple]], list[dict], C
             if not row.get("well_formed"):
                 dropped.append({"idx": idx, "source": row["source"], "behavior": row["behavior"]})
                 continue
+            # INJECT extractor rows: curate against the behavior's convention.
+            rule = CURATION.get(row["behavior"]) if row["source"] == "inject" else None
+            if rule is not None:
+                pairs = parse_extractions(row["completion"])
+                if pairs is None:
+                    curation[row["behavior"]]["unparseable"] += 1
+                    curation[row["behavior"]]["dropped"] += 1
+                    continue
+                if not curation_passes(rule, pairs):
+                    curation[row["behavior"]]["dropped"] += 1
+                    continue
+                curation[row["behavior"]]["kept"] += 1
             target = row["completion"]
         elif module == "responder":
             was_wf = datagen.is_well_formed("responder", row["completion"])
@@ -116,7 +198,7 @@ def transform(rows: list[dict]) -> tuple[list[tuple[dict, tuple]], list[dict], C
         for d in dropped_ext:
             print(f"!!!   idx={d.get('idx')} source={d.get('source')} behavior={d.get('behavior')}")
         print("!" * 68)
-    return out, dropped, canon_stats
+    return out, dropped, canon_stats, dict(curation)
 
 
 # ======================================================================
@@ -124,24 +206,40 @@ def transform(rows: list[dict]) -> tuple[list[tuple[dict, tuple]], list[dict], C
 # ======================================================================
 
 def split_groups(group_keys: list[tuple], val_ratio: float, seed: int) -> tuple[set, list]:
-    """Assign whole groups to val. Deterministic: sort keys, seeded-shuffle, take the
-    first round(val_ratio * n) as val. Returns (val_group_set, ordered_all_keys)."""
-    keys = sorted(set(group_keys), key=lambda k: (k[0], k[1]))
+    """Assign whole groups to val, ROW-WEIGHTED so val mirrors corpus composition.
+    `group_keys` is the per-row list of group keys (one entry per out row), so its
+    Counter is the group->row_count map. Deterministic: sort unique keys, seeded-
+    shuffle, then greedily take groups from the front until the cumulative ROW count
+    reaches val_ratio of all rows (slight overshoot on the last group is fine).
+    Group-count-uniform selection let a swarm of small singleton groups crowd out the
+    few heavyweight farm sessions (val drew only singletons); weighting the stop
+    condition by rows keeps both represented. Returns (val_group_set, ordered_all_keys)."""
+    sizes = Counter(group_keys)
+    keys = sorted(sizes, key=lambda k: (k[0], k[1]))
     shuffled = keys[:]
     random.Random(seed).shuffle(shuffled)
-    n_val = round(val_ratio * len(shuffled))
-    return set(shuffled[:n_val]), keys
+    target = val_ratio * len(group_keys)
+    val, cum = set(), 0
+    for k in shuffled:
+        if cum >= target:
+            break
+        val.add(k)
+        cum += sizes[k]
+    return val, keys
 
 
 # ======================================================================
 # report
 # ======================================================================
 
-def build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats,
+def build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats, curation,
                  val_groups, all_keys, file_counts, val_ratio, seed) -> dict:
     def _grpstr(k):
         return f"{k[0]}:{k[1]}"
     group_sizes = Counter(gk for _, gk in out_rows)
+    cur_by_behavior = {b: {"kept": c.get("kept", 0), "dropped": c.get("dropped", 0),
+                           "unparseable": c.get("unparseable", 0), "rule": CURATION.get(b)}
+                       for b, c in sorted(curation.items())}
     return {
         "input": str(in_path),
         "out_dir": str(out_dir),
@@ -163,6 +261,12 @@ def build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats,
                             "total": sum(canon_stats.values())},
         "extractor_drops": {"count": len([d for d in dropped if d.get("module") != "responder"]),
                             "rows": [d for d in dropped if d.get("module") != "responder"]},
+        "inject_extractor_curation": {
+            "by_behavior": cur_by_behavior,
+            "total_kept": sum(c["kept"] for c in cur_by_behavior.values()),
+            "total_dropped": sum(c["dropped"] for c in cur_by_behavior.values()),
+            "total_unparseable": sum(c["unparseable"] for c in cur_by_behavior.values()),
+        },
         "split": {
             "n_groups": len(all_keys),
             "n_val_groups": len(val_groups),
@@ -192,6 +296,18 @@ def print_report(rep: dict):
     ed = rep["extractor_drops"]
     print(f"extractor drops: {ed['count']} (expected 0)")
 
+    cur = rep["inject_extractor_curation"]
+    print("\n" + "=" * 68)
+    print("!!! INJECT-EXTRACTOR CONVENTION CURATION (violations DROPPED) !!!")
+    print("=" * 68)
+    print(f"  {'behavior':22} {'rule':18} {'kept':>5} {'dropped':>8} {'unparse':>8}")
+    for b, c in cur["by_behavior"].items():
+        print(f"  {b:22} {str(c['rule']):18} {c['kept']:>5} {c['dropped']:>8} {c['unparseable']:>8}")
+    print("  " + "-" * 64)
+    print(f"  {'TOTAL':22} {'':18} {cur['total_kept']:>5} {cur['total_dropped']:>8} "
+          f"{cur['total_unparseable']:>8}")
+    print("=" * 68)
+
     sp = rep["split"]
     print(f"\nsplit (val_ratio={rep['val_ratio']}, seed={rep['seed']}): "
           f"{sp['n_groups']} groups, {sp['n_val_groups']} -> val")
@@ -210,7 +326,7 @@ def print_report(rep: dict):
 
 def bridge(in_path: Path, out_dir: Path, val_ratio: float, seed: int) -> dict:
     rows = [json.loads(l) for l in open(in_path) if l.strip()]
-    out_rows, dropped, canon_stats = transform(rows)
+    out_rows, dropped, canon_stats, curation = transform(rows)
     val_groups, all_keys = split_groups([gk for _, gk in out_rows], val_ratio, seed)
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -225,7 +341,7 @@ def bridge(in_path: Path, out_dir: Path, val_ratio: float, seed: int) -> dict:
                     f.write(json.dumps(r) + "\n")
             file_counts[name] = len(sel)
 
-    rep = build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats,
+    rep = build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats, curation,
                        val_groups, all_keys, file_counts, val_ratio, seed)
     json.dump(rep, open(out_dir / "report.json", "w"), indent=2)
     return rep
@@ -247,7 +363,7 @@ def selftest():
 
     # --- reshape: assistant appended, roles [system, user, assistant], originals intact ---
     r = mk("extractor", "[[ ## extractions ## ]]\n[]\n\n[[ ## completed ## ]]")
-    out, dropped, cs = transform([r])
+    out, dropped, cs, _ = transform([r])
     assert len(out) == 1 and not dropped
     orow = out[0][0]
     assert [m["role"] for m in orow["messages"]] == ["system", "user", "assistant"]
@@ -259,7 +375,7 @@ def selftest():
 
     # --- canonicalization: malformed / bare-prose / well-formed all -> full scaffold ---
     def canon_ok(c):
-        out, _, _ = transform([mk("responder", c)])
+        out, _, _, _ = transform([mk("responder", c)])
         target = out[0][0]["messages"][-1]["content"]
         assert datagen.is_well_formed("responder", target), target
         assert target.startswith("[[ ## response_text ## ]]\n")
@@ -277,14 +393,14 @@ def selftest():
         assert canon_responder(canon_responder(c)) == canon_responder(c)   # idempotence
         assert canon_responder(target) == target                           # canon of canon
     # canon stat labels: malformed -> fixed, well-formed -> normalized
-    _, _, cs = transform([mk("responder", malformed), mk("responder", bare),
+    _, _, cs, _ = transform([mk("responder", malformed), mk("responder", bare),
                           mk("responder", wellformed)])
     assert cs["fixed"] == 2 and cs["normalized"] == 1, cs
 
     # --- extractor malformed -> dropped + counted (never becomes a row) ---
     good = mk("extractor", "[[ ## extractions ## ]]\n[]\n\n[[ ## completed ## ]]", well_formed=True)
     bad = mk("extractor", "oops no markers", well_formed=False)
-    out, dropped, cs = transform([good, bad])
+    out, dropped, cs, _ = transform([good, bad])
     assert len(out) == 1 and out[0][0]["messages"][-1]["content"] == good["completion"]
     assert len(dropped) == 1 and dropped[0]["idx"] == 1
 
@@ -302,7 +418,7 @@ def selftest():
     for _ in range(6):
         rows.append(mk("extractor", "[[ ## extractions ## ]]\n[]\n\n[[ ## completed ## ]]",
                        source="inject", snapshot=None))
-    out, _, _ = transform(rows)
+    out, _, _, _ = transform(rows)
     val_groups, all_keys = split_groups([gk for _, gk in out], 0.15, 0)
     # 3 session groups + 6 singleton groups = 9 (the inject-snapshot row folds into session 10)
     assert len(all_keys) == 9, all_keys
