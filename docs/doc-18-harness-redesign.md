@@ -241,6 +241,17 @@ over-attribution **≤ 8%**, wrong-field **≤ 10%** (the teacher no longer has 
 95%**; plus (Tier-2 / serving, M3b) completes scripted multi-turn sessions
 end-to-end and serves at an acceptable per-turn latency on the local Mac.
 
+**RESULT (M4/H4, 2026-07-23): all six criteria met.** Student (Qwen3.5-0.8B
+LoRA, 594 curated rows, 2 data rounds) on the frozen v1 set: F1 100 /
+value-match 99.1 / empty 100 / over-attr 0 / wrong-field 0 / choice 100.
+Untrained base: F1 20.3. Round-1 error analysis exposed an eval design gap
+(every case shipped `history=[]`; 24 pending/boolean cases were unreachable
+states) → **eval v2** (`eval_set_v2.jsonl`, 143 cases, banded: 111 realistic
+with deterministic history / 32 contract-synthetic kept as ungated
+robustness probes; `eval_score --eval-set v2`). On v2's realistic band the
+student ties the teacher at F1 99.6 (value 99.1 vs 100). v1 stays frozen for
+continuity; v2 is the headline yardstick going forward.
+
 ---
 
 ## 8. Milestones

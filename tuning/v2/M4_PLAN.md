@@ -197,9 +197,20 @@ the responder eval (M3b) to grade any of it.
       443/49 kept/dropped — incl. bare_date 12 dob-bindings, refusal 8 engagements) → row-weighted split fix.
       **Corpus `sft_data/h1a_merged/`: train_extractor 439 / val_extractor 110 / train_responder 118 /
       val_responder 25; extractor chat_malformed 0/598.** Cost ≈ $1.64. Teacher format: 598/598 clean.
-- [ ] **H2 — Modal SFT run.** `modal run tuning/sft/train_sft_format_modal.py`. *gated:* P2, P3
-- [ ] **H3 — merge + convert.** `merge_lora_modal.py` (LoRA → fp16) → fp16 → MLX. *gated:* H2
-- [ ] **H4 — eval student on frozen set.** `eval_score.py` at the student → student/teacher gap = **thesis number**. *gated:* P4, H3
+- [x] **H2 — DONE 2026-07-21/23 (two rounds).** Env-parameterized names (`SFT_APP`/`SFT_VOLUME`), fresh
+      volumes per slice (v1 checkpoints untouched). slice1: 439 rows, 11.5 min L4, eval_loss 0.143.
+      slice1b (round-2 corpus, 594 rows): 16 min, eval_loss 0.131. ~$0.15/run.
+- [x] **H3 — DONE.** merge_lora env-parameterized (`SFT_LORA_DIR`/`SFT_VOLUME`); artifacts on external
+      SSD (`/Volumes/Extreme SSD/form-filling-models/`): lora → Modal merge → fp16 → `mlx_vlm.convert`.
+      Serve: `mlx_vlm.server --model <mlx dir> --port 810X` (body `model` field must be the real path —
+      this server version loads whatever repo the request names; V2_STUDENT_MODEL must match).
+- [x] **H4 — DONE 2026-07-23 (round 2). THESIS RESULT: student ≈ teacher.**
+      Round 1 (slice1): F1 90.0 / value 91.1 — failed 2 criteria; error analysis → 3 buckets
+      (thin-context null-fallback never trained beyond dates; value transcription; compound).
+      Round 2 (slice1b, +175 targeted rows): **frozen v1: F1 100 / value 99.1 — ALL 6 criteria pass.**
+      eval v2 realistic band: student F1 99.6 = teacher F1 99.6 (nemotron N=3, value 100 vs 99.1).
+      Untrained base Qwen3.5-0.8B: F1 20.3 (710 fp). Baselines committed in `eval/`.
+      Total cost incl. all data: < $5. Known floor: rare value transcription slips (~1%).
 
 ## Readiness of v1 assets
 | asset | state |
