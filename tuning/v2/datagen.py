@@ -683,19 +683,35 @@ def _mk_chitchat(snap, schema, rng):
 
 
 def _mk_wrapped(snap, schema, rng):
-    email = personas.gen_persona(schema, rng)["email"]
+    """A distractor-wrapped bare value. The value type is sampled uniformly across
+    email / phone / dob (the eval wrapped a phone; training used to wrap only email)."""
+    persona = personas.gen_persona(schema, rng)
+    kind = rng.choice(["email", "phone", "dob"])
+    if kind == "email":
+        return rng.choice([
+            "Sorry, hectic morning — anyway the best email for me is {v}.",
+            "Kids are yelling in the background, ignore that — my email's {v}.",
+            "Phone's about to die, quick: reach me at {v}.",
+        ]).format(v=persona["email"])
+    if kind == "phone":
+        return rng.choice([
+            "In line at the store — you can text me at {v}.",
+            "Sorry, chaos here. Best number is {v}.",
+        ]).format(v=persona["phone"])
     return rng.choice([
-        "Sorry, hectic morning — anyway the best email for me is {e}.",
-        "Kids are yelling in the background, ignore that — my email's {e}.",
-        "Phone's about to die, quick: reach me at {e}.",
-    ]).format(e=email)
+        "Long day! Anyway, born {v} if you need it.",
+        "Kids finally asleep — for the record I was born {v}.",
+    ]).format(v=_date_phrase(persona["dob"]))
 
 
 def _mk_third_party(snap, schema, rng):
     name = f"{rng.choice(personas.FIRST)} {rng.choice(personas.LAST)}"
+    # the old "great campus" line was how_heard-adjacent (teacher bound how_heard on
+    # it); the two neighbor rewrites stay third-person mentions with zero how-heard scent.
     return rng.choice([
         "My roommate {n} thinks these forms are endless.",
-        "{n}, my neighbor, said this school has a great campus.",
+        "My neighbor {n} keeps asking how my application is going.",
+        "{n}, my neighbor, is applying to a totally different school.",
         "Funny, my friend {n} applied here years ago.",
     ]).format(n=name)
 
@@ -740,6 +756,110 @@ def _mk_bare_date(snap, schema, rng):
     return rng.choice(_BARE_DATES)
 
 
+# Greeting lines with NO field ask (used by pending_bare / boolean_phrase to build
+# the "history has a turn, but not the ask this answer belongs to" case). Kept
+# question-free so there is unambiguously no field solicitation.
+_GREETINGS = [
+    "Welcome back! Let's continue your application.",
+    "Good to see you again — let's pick up where we left off.",
+    "Hi there, glad you're back. Let's keep going with your application.",
+]
+
+
+def _greet_history(rng):
+    """[] (50%) or a single greeting assistant turn without any field ask (50%)."""
+    return [] if rng.random() < 0.5 else [{"role": "assistant", "content": rng.choice(_GREETINGS)}]
+
+
+# pending_bare: a bare persona value answering a pending field, with thin/no history
+# (the H4 gap — training only ever showed pending answers WITH the ask in history).
+# make_context RECORDS the pending field in the snapshot (rebuild_state reads "pending"),
+# so make_message can emit that field's bare value.
+_PENDING_BARE_FIELDS = ["full_name", "phone", "email", "dob"]
+
+
+def _pending_bare_ctx(schema, rng):
+    persona = personas.gen_persona(schema, rng)
+    fid = rng.choice(_PENDING_BARE_FIELDS)
+    pool = [k for k in _PENDING_BARE_FIELDS if k != fid]        # other persona-filled fields
+    if rng.random() < 0.5:
+        form_state = {}
+    else:
+        chosen = rng.sample(pool, rng.randint(2, 3))
+        form_state = {c: persona[c] for c in chosen}
+    return {"form_state": form_state, "pending": fid, "history": _greet_history(rng)}
+
+
+def _mk_pending_bare(snap, schema, rng):
+    f = schema.field(snap["pending"])
+    persona = personas.gen_persona(schema, rng)
+    val = _typed_value(schema, persona, f.type)
+    return val + ("." if rng.random() < 0.5 else "")           # optional trailing period
+
+
+# boolean_phrase: natural yes/no phrasings for a pending boolean field that do NOT
+# merely quote the "Yes"/"No" option label. value + phrase sampled together.
+_BOOLEAN_FIELDS = ["prior_application", "has_work_experience", "funding_interest", "gre_taken"]
+_BOOLEAN_PHRASES = {
+    "prior_application": {
+        True:  ["Yes — I applied once before.", "Yeah, I put in an application a couple years back."],
+        False: ["Nope, first time applying.", "Never applied here before.", "No, this is my first time."],
+    },
+    "has_work_experience": {
+        True:  ["Yeah, I've been working for a few years.", "Yes, a few years in the field.",
+                "I do — about five years of it."],
+        False: ["No, coming straight from undergrad.", "Not really, no work experience yet."],
+    },
+    "funding_interest": {
+        True:  ["Yes, I'd love to hear about funding.", "Definitely interested in assistantships."],
+        False: ["No interest in funding, I'm covered.", "Nah, I don't need any funding."],
+    },
+    "gre_taken": {
+        True:  ["Yes — back in 2019, actually.", "I did take it last fall."],
+        False: ["No, I haven't taken the GRE.", "Nope, never sat for it."],
+    },
+}
+
+
+def _boolean_phrase_ctx(schema, rng):
+    return {"form_state": {}, "pending": rng.choice(_BOOLEAN_FIELDS),
+            "history": _greet_history(rng)}
+
+
+def _mk_boolean_phrase(snap, schema, rng):
+    val = rng.choice([True, False])
+    return rng.choice(_BOOLEAN_PHRASES[snap["pending"]][val])
+
+
+# compound_volunteer: TWO self-labeled values in one sentence (empty context), the
+# pair varied across name+email / name+phone / email+phone / dob+phone.
+_COMPOUND_PAIRS = [("full_name", "email"), ("full_name", "phone"),
+                   ("email", "phone"), ("dob", "phone")]
+_COMPOUND_TEMPLATES = {
+    ("full_name", "email"): ["I'm {a} and you can reach me at {b}.",
+                             "Name's {a}, email is {b}."],
+    ("full_name", "phone"): ["Quick intro — {a}, cell {b}.",
+                             "I'm {a}, and my number is {b}."],
+    ("email", "phone"):     ["You can email me at {a} or call {b}.",
+                             "Best email is {a}, and my phone's {b}."],
+    ("dob", "phone"):       ["I was born {a}, and my number is {b}.",
+                             "Date of birth {a}; phone is {b}."],
+}
+
+
+def _compound_pair_values(schema, persona, pair):
+    a_fid, b_fid = pair
+    return (_typed_value(schema, persona, schema.field(a_fid).type),
+            _typed_value(schema, persona, schema.field(b_fid).type))
+
+
+def _mk_compound_volunteer(snap, schema, rng):
+    persona = personas.gen_persona(schema, rng)
+    pair = rng.choice(_COMPOUND_PAIRS)
+    a, b = _compound_pair_values(schema, persona, pair)
+    return rng.choice(_COMPOUND_TEMPLATES[pair]).format(a=a, b=b)
+
+
 REGISTRY = [
     Behavior("correction", "farm", _pre_correction, _mk_correction),
     Behavior("deflect", "farm", _pre_pending, _mk_deflect),
@@ -761,6 +881,9 @@ REGISTRY = [
     Behavior("trap", "constructed", _true, _mk_trap, _empty_ctx),
     Behavior("bare_ambiguous", "constructed", _true, _mk_bare_ambiguous, _empty_ctx),
     Behavior("bare_date", "constructed", _true, _mk_bare_date, _empty_ctx),
+    Behavior("pending_bare", "constructed", _true, _mk_pending_bare, _pending_bare_ctx),
+    Behavior("boolean_phrase", "constructed", _true, _mk_boolean_phrase, _boolean_phrase_ctx),
+    Behavior("compound_volunteer", "constructed", _true, _mk_compound_volunteer, _empty_ctx),
 ]
 
 
@@ -1101,7 +1224,8 @@ def selftest():
         else:
             s = beh.make_context(schema, rng)
             assert set(s) >= {"form_state", "pending", "history"}, f"{beh.name}: ctx shape"
-            assert len(s["form_state"]) <= 2 and len(s["history"]) <= 2, f"{beh.name}: minimal ctx"
+            # <=3 form_state fields: pending_bare pre-fills 2-3 persona fields; the rest are empty
+            assert len(s["form_state"]) <= 3 and len(s["history"]) <= 2, f"{beh.name}: minimal ctx"
             assert beh.precondition(s, schema), f"{beh.name}: constructed precondition"
         msg = beh.make_message(s, schema, rng)
         assert isinstance(msg, str) and msg.strip(), f"{beh.name}: empty message"
@@ -1138,6 +1262,50 @@ def selftest():
     opt_labels = {str(lab) for f in schema.fields if f.button_choice and f.type != "boolean"
                   for _v, lab in f.options}
     assert any(l in cm for l in opt_labels), f"cross_select names no option label: {cm!r}"
+
+    # --- new constructed behaviors (pending_bare / boolean_phrase / compound_volunteer) ---
+    pb = by_name["pending_bare"]
+    for _ in range(20):
+        s = pb.make_context(schema, rng)
+        assert s["pending"] in _PENDING_BARE_FIELDS, f"pending_bare pending: {s['pending']!r}"
+        assert len(s["history"]) in (0, 1), f"pending_bare history len {len(s['history'])}"
+        if s["history"]:
+            g = s["history"][0]
+            assert g["role"] == "assistant" and "?" not in g["content"]   # greeting, no field ask
+        assert pb.make_message(s, schema, rng).strip()
+
+    bp = by_name["boolean_phrase"]
+    for _ in range(20):
+        s = bp.make_context(schema, rng)
+        assert s["pending"] in _BOOLEAN_FIELDS, f"boolean_phrase pending: {s['pending']!r}"
+        assert len(s["history"]) in (0, 1)
+        m = bp.make_message(s, schema, rng)
+        assert m.strip() and m not in ("Yes", "No"), f"boolean_phrase bare label: {m!r}"
+
+    # compound_volunteer: every template carries both value slots, both render into the message
+    cv_persona = personas.gen_persona(schema, random.Random(7))
+    for pair, tmpls in _COMPOUND_TEMPLATES.items():
+        a, b = _compound_pair_values(schema, cv_persona, pair)
+        for t in tmpls:
+            assert "{a}" in t and "{b}" in t, f"compound template missing slot: {t!r}"
+            msg = t.format(a=a, b=b)
+            assert a in msg and b in msg, f"compound values not both present: {msg!r}"
+    cv = by_name["compound_volunteer"]
+    for _ in range(10):
+        assert cv.make_message(_empty_ctx(schema, rng), schema, rng).strip()
+
+    # wrapped_value now spans email/phone/dob (email + phone via distinctive signatures)
+    wv, seen = by_name["wrapped_value"], set()
+    for _ in range(60):
+        m = wv.make_message(_empty_ctx(schema, rng), schema, rng)
+        seen.add("email" if "@" in m else "phone" if "555-" in m else "dob")
+    assert {"email", "phone", "dob"} <= seen, f"wrapped_value kinds: {seen}"
+
+    # third_party carries no how_heard scent
+    tp = by_name["third_party"]
+    for _ in range(40):
+        m = tp.make_message(_empty_ctx(schema, rng), schema, rng).lower()
+        assert "campus" not in m and "heard" not in m, f"third_party how_heard scent: {m!r}"
 
     # --- TurnState round-trip ---
     st = rebuild_state(schema, snap(form_state={"email": "m@e.com"}, pending="dob"))

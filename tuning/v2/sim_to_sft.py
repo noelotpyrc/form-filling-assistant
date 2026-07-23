@@ -80,9 +80,16 @@ CURATION = {
     # valued: at least one pair with non-null field_id and non-empty value
     "typed_choice": "valued", "precedence": "valued", "correction": "valued",
     "compound": "valued", "bulk": "valued", "partial_select": "valued",
-    "cross_select": "valued", "wrapped_value": "valued",
+    "cross_select": "valued", "wrapped_value": "valued", "boolean_phrase": "valued",
     # valued_or_engaged: non-empty, every pair has a non-null field_id (value free)
     "no_match": "valued_or_engaged",
+    # valued_2: >=2 pairs each with a non-null field_id and a non-empty value
+    "compound_volunteer": "valued_2",
+    # pending_bind: the null-fallback / pending-bind shape for a bare answer. COMPROMISE
+    # (see curation_passes): the bridge row does NOT carry the case's pending field id
+    # (constructed inject rows have snapshot=None, no pending recorded), so the exact
+    # "field_id == pending" rule is not enforceable. Weaker deterministic rule used.
+    "pending_bare": "pending_bind",
 }
 
 _EXTRACT_RE = re.compile(r"\[\[ ## extractions ## \]\](.*?)\[\[ ## completed", re.DOTALL)
@@ -112,6 +119,17 @@ def curation_passes(rule: str, pairs: list) -> bool:
         return len(pairs) > 0 and all(fid(p) is not None and val(p) == "" for p in pairs)
     if rule == "valued":
         return any(fid(p) is not None and val(p) not in (None, "") for p in pairs)
+    if rule == "valued_2":
+        return sum(1 for p in pairs if fid(p) is not None and val(p) not in (None, "")) >= 2
+    if rule == "pending_bind":
+        # COMPROMISE: the row does not carry the case's pending field id, so we cannot
+        # enforce "field_id == the pending field". Weaker deterministic rule: exactly one
+        # pair, non-empty value, and field_id is null (the {null,value} fallback) OR one of
+        # the pending-eligible ids {full_name, phone, email, dob} (the pending-bind).
+        if len(pairs) != 1:
+            return False
+        p = pairs[0]
+        return val(p) not in (None, "") and fid(p) in (None, "full_name", "phone", "email", "dob")
     if rule == "valued_or_engaged":
         return len(pairs) > 0 and all(fid(p) is not None for p in pairs)
     return True  # unknown rule -> no constraint
@@ -438,6 +456,42 @@ def selftest():
     # a different seed generally differs but must still be a valid subset of the keys
     v3, _ = split_groups([gk for _, gk in out], 0.15, 1)
     assert v3 <= set(all_keys)
+
+    # --- new curation rules: pending_bind / valued_2 (+ valued sanity) ---
+    # pending_bind: exactly 1 pair, non-empty value, fid null OR pending-eligible
+    assert curation_passes("pending_bind", [{"field_id": "email", "value": "a@b.com"}])
+    assert curation_passes("pending_bind", [{"field_id": None, "value": "Maria Lee"}])
+    assert not curation_passes("pending_bind", [])                                    # empty
+    assert not curation_passes("pending_bind", [{"field_id": "email", "value": ""}])  # empty value
+    assert not curation_passes("pending_bind", [{"field_id": "program", "value": "x"}])  # ineligible fid
+    assert not curation_passes("pending_bind", [{"field_id": None, "value": "a"},
+                                                {"field_id": None, "value": "b"}])    # >1 pair
+    # valued_2: >=2 pairs each non-null fid + non-empty value
+    assert curation_passes("valued_2", [{"field_id": "full_name", "value": "Maria Lee"},
+                                        {"field_id": "email", "value": "m@e.com"}])
+    assert not curation_passes("valued_2", [{"field_id": "full_name", "value": "Maria Lee"}])  # only 1
+    assert not curation_passes("valued_2", [{"field_id": "full_name", "value": "Maria Lee"},
+                                            {"field_id": None, "value": "x"}])         # 2nd null fid
+    # valued (boolean_phrase): >=1 valued pair
+    assert curation_passes("valued", [{"field_id": "prior_application", "value": "No"}])
+    assert not curation_passes("valued", [{"field_id": None, "value": "x"}])
+
+    # --- CURATION wiring through transform (inject extractor rows) ---
+    def ext(behavior, body, well_formed=True):
+        c = f"[[ ## extractions ## ]]\n{body}\n\n[[ ## completed ## ]]"
+        return mk("extractor", c, source="inject", behavior=behavior, well_formed=well_formed)
+
+    o, _, _, cur = transform([ext("pending_bare", '[{"field_id": null, "value": "Maria Lee"}]'),
+                              ext("pending_bare", "[]")])
+    assert len(o) == 1 and cur["pending_bare"]["kept"] == 1 and cur["pending_bare"]["dropped"] == 1
+    o, _, _, cur = transform([
+        ext("compound_volunteer", '[{"field_id":"full_name","value":"Maria Lee"},'
+                                  '{"field_id":"email","value":"m@e.com"}]'),
+        ext("compound_volunteer", '[{"field_id":"full_name","value":"Maria Lee"}]')])
+    assert cur["compound_volunteer"]["kept"] == 1 and cur["compound_volunteer"]["dropped"] == 1
+    o, _, _, cur = transform([ext("boolean_phrase", '[{"field_id":"prior_application","value":"No"}]'),
+                              ext("boolean_phrase", '[{"field_id":null,"value":""}]')])
+    assert cur["boolean_phrase"]["kept"] == 1 and cur["boolean_phrase"]["dropped"] == 1
 
     print("selftest: all assertions passed")
 
