@@ -37,7 +37,10 @@ from pathlib import Path
 
 # ─── Modal Setup ────────────────────────────────────────────────────
 
-app = modal.App("sft-format-qwen35-08b")
+# App/volume names ENV-overridable (same rationale as SFT_TRAIN_DATA below):
+# v2 runs use fresh names (e.g. SFT_APP=sft-v2-slice1 SFT_VOLUME=sft-v2-slice1)
+# so they can't clobber the v1 checkpoints; defaults are the v1 originals.
+app = modal.App(os.getenv("SFT_APP", "sft-format-qwen35-08b"))
 
 # Local paths for data that gets baked into the image. ENV-overridable
 # (SFT_TRAIN_DATA / SFT_VAL_DATA — CLI args can't reach here, see the module
@@ -103,7 +106,8 @@ image = (
 #                                    adapter_model.safetensors + tokenizer.
 #                                    Use with: PeftModel.from_pretrained(base_model, path)
 #   log_history.json               — Training metrics per logging step (loss, eval_loss, lr)
-volume = modal.Volume.from_name("sft-format-checkpoints", create_if_missing=True)
+volume = modal.Volume.from_name(os.getenv("SFT_VOLUME", "sft-format-checkpoints"),
+                                create_if_missing=True)
 VOLUME_PATH = Path("/vol")
 OUTPUT_DIR = VOLUME_PATH / "sft_outputs"
 

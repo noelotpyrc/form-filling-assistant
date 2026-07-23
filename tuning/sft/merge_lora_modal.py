@@ -22,11 +22,15 @@ After the job finishes:
 """
 
 import modal
+import os
 from pathlib import Path
 
 app = modal.App("sft-merge-lora")
 
-LOCAL_LORA = Path.home() / "work/models/qwen35-08b-dspy-format-lora-v2"
+# ENV-overridable (same rationale as the trainer's SFT_* vars): v2 runs point
+# SFT_LORA_DIR at a locally-downloaded adapter and SFT_VOLUME at their own
+# volume; defaults are the v1 originals (old-machine path, kept for provenance).
+LOCAL_LORA = Path(os.getenv("SFT_LORA_DIR") or (Path.home() / "work/models/qwen35-08b-dspy-format-lora-v2"))
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
@@ -41,7 +45,8 @@ image = (
     .add_local_dir(str(LOCAL_LORA), remote_path="/data/sft-lora")
 )
 
-volume = modal.Volume.from_name("sft-format-checkpoints", create_if_missing=False)
+volume = modal.Volume.from_name(os.getenv("SFT_VOLUME", "sft-format-checkpoints"),
+                                create_if_missing=False)
 VOLUME_PATH = Path("/vol")
 MERGED_DIR = VOLUME_PATH / "merged"
 
