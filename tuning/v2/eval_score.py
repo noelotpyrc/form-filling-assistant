@@ -33,6 +33,8 @@ from collections import defaultdict
 from pathlib import Path
 
 EVAL_SET = "tuning/v2/eval/eval_set.jsonl"
+EVAL_SET_V2 = "tuning/v2/eval/eval_set_v2.jsonl"
+EVAL_SETS = {"v1": EVAL_SET, "v2": EVAL_SET_V2}
 OUT_DIR = Path("tuning/v2/eval")
 
 # value present but no valid target -> a set here is a wrong-field-assignment
@@ -155,7 +157,8 @@ def run_case(agent, lm, schema, case: dict) -> dict:
             "choice_field": choice_field, "cost": cost}
 
 
-def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = "",
+def run_baseline(n: int, label: str, eval_set: str, eval_set_name: str = "v1",
+                 limit: int = 0, only: str = "",
                  backend: str = "claude", model: str = "", port: int = 0):
     import dspy
     from .schema import load_schema
@@ -194,7 +197,8 @@ def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = 
     print(f"backend={backend}  model={lm.model}  port={port or '-'}  program={program}"
           f"  cases={len(cases)}  n={n}  -> {len(cases)*n} extractor calls\n", flush=True)
 
-    scored, raw, total_cost = [], [], 0.0
+    is_v2 = eval_set_name == "v2"
+    scored, bands, raw, total_cost = [], [], [], 0.0
     for si in range(n):
         for ci, case in enumerate(cases):
             try:
@@ -204,9 +208,35 @@ def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = 
                 continue
             s = score_observation(case, obs)
             scored.append(s)
-            raw.append({"sample": si, **s, "got_sets": obs["got_sets"], "cost": obs["cost"]})
+            bands.append(case.get("band"))   # lockstep with scored (survives skipped cases)
+            rec = {"sample": si, **s, "got_sets": obs["got_sets"], "cost": obs["cost"]}
+            if is_v2:
+                rec["band"] = case.get("band")   # realistic / contract-synthetic (not the scoring band)
+            raw.append(rec)
             total_cost += obs["cost"]
         print(f"  sample {si+1}/{n} done  (running ${total_cost:.2f})", flush=True)
+
+    if is_v2:
+        # split on the eval band: realistic is the headline (gated vs criteria);
+        # contract-synthetic is the v1-shape stress contract, reported not gated.
+        real = [s for s, b in zip(scored, bands) if b == "realistic"]
+        synth = [s for s, b in zip(scored, bands) if b == "contract-synthetic"]
+        agg_r, agg_c = aggregate(real), aggregate(synth)
+        stab_r = stability(real)
+        result = {"label": label, "model": lm.model, "n": n, "eval_set": "v2",
+                  "cost_usd": round(total_cost, 4),
+                  "metrics_realistic": agg_r, "metrics_contract": agg_c,
+                  "metrics": agg_r,   # headline alias for downstream that reads .metrics
+                  "stability": stab_r, "raw": raw}
+        out = OUT_DIR / f"baseline-{label}.json"
+        json.dump(result, open(out, "w"), indent=2, default=str)
+        print_report(agg_r, stab_r, total_cost, real,
+                     header="Tier-1 (realistic band) — HEADLINE, gated vs criteria", show_cost=False)
+        print_report(agg_c, stability(synth), total_cost, synth,
+                     header="Contract band (synthetic) — reported, NOT gated", show_cost=False)
+        print(f"\ncost: ${total_cost:.2f}")
+        print(f"\nwrote {out}")
+        return
 
     agg = aggregate(scored)
     stab = stability(scored)
@@ -218,9 +248,9 @@ def run_baseline(n: int, label: str, eval_set: str, limit: int = 0, only: str = 
     print(f"\nwrote {out}")
 
 
-def print_report(agg, stab, cost, scored):
+def print_report(agg, stab, cost, scored, header="Tier-1 extractor metrics", show_cost=True):
     p = lambda r: "n/a" if r["rate"] is None else f"{r['rate']*100:5.1f}% (n={r['n']})"
-    print("\n=== Tier-1 extractor metrics ===")
+    print(f"\n=== {header} ===")
     print(f"field F1:        {agg['field_f1']*100:5.1f}%  (P {agg['field_precision']*100:.1f} / "
           f"R {agg['field_recall']*100:.1f}; tp={agg['field_counts']['tp']} "
           f"fp={agg['field_counts']['fp']} fn={agg['field_counts']['fn']})")
@@ -240,7 +270,8 @@ def print_report(agg, stab, cost, scored):
         print(f"\nover-set / wrong-field violations ({len(viols)} obs):")
         for cid, v in viols[:20]:
             print(f"  {cid}: set {v}")
-    print(f"\ncost: ${cost:.2f}")
+    if show_cost:
+        print(f"\ncost: ${cost:.2f}")
 
 
 # ---- self-test (pure, no spend) ------------------------------------------
@@ -299,8 +330,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--n", type=int, default=5, help="samples per case (teacher is non-deterministic)")
-    ap.add_argument("--label", default="teacher_v1")
-    ap.add_argument("--eval-set", default=EVAL_SET)
+    ap.add_argument("--label", default=None,
+                    help="output label (default teacher_v1 for v1; REQUIRED for v2 so it can't clobber v1 baselines)")
+    ap.add_argument("--eval-set", choices=["v1", "v2"], default="v1",
+                    help="v1 = frozen byte-identical set; v2 = realistic history + band split")
     ap.add_argument("--limit", type=int, default=0, help="cap to first N cases (smoke)")
     ap.add_argument("--only", default="", help="comma-separated scenarios to run (band check)")
     ap.add_argument("--backend", choices=["claude", "openrouter", "student"], default="claude",
@@ -311,7 +344,12 @@ def main():
     if args.selftest:
         selftest()
         return
-    run_baseline(args.n, args.label, args.eval_set, args.limit, args.only,
+    # validate args before any LM construction (mirrors datagen's --behaviors check)
+    if args.eval_set == "v2" and not args.label:
+        ap.error("--label is required with --eval-set v2 (a default would clobber the v1 baseline files)")
+    label = args.label or "teacher_v1"
+    path = EVAL_SETS[args.eval_set]
+    run_baseline(args.n, label, path, args.eval_set, args.limit, args.only,
                  args.backend, args.model, args.port)
 
 

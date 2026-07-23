@@ -174,6 +174,110 @@ def gen_eval_set(per_template: int = 8, seed: int = 0) -> list[dict]:
     return cases
 
 
+# ---- v2: realistic history + band tags + value-type diversity ------------
+# v1 (gen_eval_set) stays byte-frozen for continuity. v2 fixes the M3a design
+# flaw where every case shipped history=[] (unreachable in the product, and for
+# the bare pending / boolean families the disambiguating cue was missing).
+#
+# Every case carries a "band":
+#   realistic          — deterministic minimal history a real session would show;
+#                        this is the headline band, gated against the criteria.
+#   contract-synthetic — the exact v1 shape (history=[]); kept to preserve the
+#                        stress-test contract, reported but NOT gated.
+
+# deterministic history strings (no RNG for history content)
+GREETING_V2 = ("Welcome to the Northfield University Graduate Application! "
+               "Which program are you interested in?")
+FIELD_ASK_V2 = {
+    "pending_name": "Thanks! What's your full legal name?",
+    "pending_phone": "What's the best phone number to reach you?",
+    "elliptical_dob": "What's your date of birth?",
+}
+BOOLEAN_ASK_V2 = "Have you previously applied to Northfield University?"
+BOOLEAN_PHRASINGS_NO = ["No, I have not applied before.", "Nope, first time applying."]
+BOOLEAN_PHRASING_YES = "Yes — I applied back in 2019, actually."
+
+# pending-family templates get cued (realistic) + bare (contract) variants
+PENDING_FAMILY_V2 = {"pending_name", "pending_phone", "elliptical_dob"}
+
+# new hand-authored wrapped_value edges — a conversational wrapper must NOT
+# suppress a real value (inverse of the trap). v1 only covered a wrapped phone
+# ((212) 555-9981); v2 adds value-type diversity. Fixed values, none colliding
+# with the compound demo / other edges ((312) 555-0148, (415) 555-0132,
+# (212) 555-9981 are taken).
+EDGE_CASES_V2_EXTRA = [
+    {"id": "edge_wrapped_phone", "scenario": "wrapped_value",
+     "user_message": "Haha sorry, kid's yelling in the background — anyway my cell is (646) 555-0173.",
+     "expect": {"sets": {"phone": "(646) 555-0173"}}},
+    {"id": "edge_wrapped_dob", "scenario": "wrapped_value",
+     "user_message": "Oh man, long day — for the record I was born on July 14th, 1996.",
+     "expect": {"sets": {"dob": "1996-07-14"}}},
+]
+
+
+def _asst(content: str) -> list:
+    return [{"role": "assistant", "content": content}]
+
+
+def gen_eval_set_v2(per_template: int = 8, seed: int = 0) -> list[dict]:
+    """Frozen-reproducible v2 set. Same persona/rng seeding approach as v1
+    (one persona per template instance, drawn in template order), so two calls
+    are byte-identical. Adds bands, realistic history, and cued/bare variants."""
+    rng = random.Random(seed)
+    cases = []
+    for name, fn in TEMPLATES:
+        for i in range(per_template):
+            p = personas.gen_persona(SCHEMA, rng)
+            if name in PENDING_FAMILY_V2:
+                msg, expect = fn(p, rng)
+                pending = expect.pop("pending", None)
+                form_state = expect.pop("form_state", {})
+                # cued: realistic, the field-specific ask makes the state reachable
+                cases.append({
+                    "id": f"{name}_cued-{i}", "scenario": name, "band": "realistic",
+                    "form_state": dict(form_state), "pending": pending,
+                    "conversation_history": _asst(FIELD_ASK_V2[name]),
+                    "user_message": msg, "expect": dict(expect)})
+                # bare: exact v1 shape (history=[]), kept as synthetic contract
+                cases.append({
+                    "id": f"{name}_bare-{i}", "scenario": name, "band": "contract-synthetic",
+                    "form_state": dict(form_state), "pending": pending,
+                    "conversation_history": [], "user_message": msg, "expect": dict(expect)})
+            elif name == "boolean":
+                prior = p["prior_application"]
+                # cued: pending=prior_application; yes/no must follow the persona.
+                # the "back in 2019" (yes) phrasing only fires when True.
+                cmsg = BOOLEAN_PHRASING_YES if prior else rng.choice(BOOLEAN_PHRASINGS_NO)
+                cases.append({
+                    "id": f"boolean_cued-{i}", "scenario": "boolean", "band": "realistic",
+                    "form_state": {}, "pending": "prior_application",
+                    "conversation_history": _asst(BOOLEAN_ASK_V2),
+                    "user_message": cmsg, "expect": {"sets": {"prior_application": prior}}})
+                # bare: exact v1 shape (no pending, field inferred from words)
+                bmsg, bexpect = fn(p, rng)
+                cases.append({
+                    "id": f"boolean_bare-{i}", "scenario": "boolean", "band": "contract-synthetic",
+                    "form_state": {}, "pending": None,
+                    "conversation_history": [], "user_message": bmsg, "expect": bexpect})
+            else:
+                msg, expect = fn(p, rng)
+                form_state = expect.pop("form_state", {})
+                pending = expect.pop("pending", None)
+                cases.append({
+                    "id": f"{name}-{i}", "scenario": name, "band": "realistic",
+                    "form_state": form_state, "pending": pending,
+                    "conversation_history": _asst(GREETING_V2),
+                    "user_message": msg, "expect": expect})
+    # all v1 edges (once, realistic + greeting) + 2 new wrapped_value edges
+    for ec in EDGE_CASES + EDGE_CASES_V2_EXTRA:
+        cases.append({
+            "id": ec["id"], "scenario": ec["scenario"], "band": "realistic",
+            "form_state": ec.get("form_state", {}), "pending": ec.get("pending"),
+            "conversation_history": _asst(GREETING_V2),
+            "user_message": ec["user_message"], "expect": ec["expect"]})
+    return cases
+
+
 # ---- human-readable digest (kept in sync with the jsonl on every write) ---
 
 _WHY = {
@@ -242,15 +346,44 @@ def write_md(cases: list[dict], path: str):
         f.write("".join(out))
 
 
+def _preview_v2(per_template: int, seed: int):
+    cases = gen_eval_set_v2(per_template, seed)
+    by_band = {}
+    for c in cases:
+        by_band.setdefault(c["band"], []).append(c)
+    print("=== v2 histories in use ===")
+    print(f"  greeting: {GREETING_V2!r}")
+    for k, v in FIELD_ASK_V2.items():
+        print(f"  ask[{k}]: {v!r}")
+    print(f"  ask[boolean]: {BOOLEAN_ASK_V2!r}")
+    print("\n=== v2 sample cases (first of each id family) ===")
+    seen = set()
+    for c in cases:
+        fam = c["id"].rsplit("-", 1)[0]
+        if fam in seen:
+            continue
+        seen.add(fam)
+        hist = c["conversation_history"]
+        h = hist[0]["content"] if hist else "(none)"
+        print(f"\n[{c['id']}] band={c['band']} pending={c['pending']}"
+              f"\n  history: {h!r}\n  msg: {c['user_message']!r}\n  expect: {c['expect']}")
+    print(f"\n=== v2 set size: {len(cases)} cases "
+          f"({', '.join(f'{b}={len(cs)}' for b, cs in sorted(by_band.items()))}) ===")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--preview", action="store_true")
+    ap.add_argument("--v2", action="store_true", help="generate/preview the v2 set (bands + realistic history)")
     ap.add_argument("--per-template", type=int, default=8)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="tuning/v2/eval/eval_set.jsonl")
     args = ap.parse_args()
 
     if args.preview:
+        if args.v2:
+            _preview_v2(args.per_template, args.seed)
+            return
         print("=== TEMPLATES (instantiated once for preview) ===")
         rng = random.Random(7)
         for name, fn in TEMPLATES:
@@ -265,12 +398,16 @@ def main():
         return
 
     import os
-    cases = gen_eval_set(args.per_template, args.seed)
+    if args.v2 and args.out == "tuning/v2/eval/eval_set.jsonl":
+        args.out = "tuning/v2/eval/eval_set_v2.jsonl"
+    cases = gen_eval_set_v2(args.per_template, args.seed) if args.v2 \
+        else gen_eval_set(args.per_template, args.seed)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w") as f:
         for c in cases:
             f.write(json.dumps(c) + "\n")
-    md = os.path.join(os.path.dirname(args.out), "cases.md")
+    # v2 gets its own digest file — cases.md is the frozen v1 digest
+    md = os.path.join(os.path.dirname(args.out), "cases_v2.md" if args.v2 else "cases.md")
     write_md(cases, md)
     print(f"wrote {len(cases)} cases to {args.out} and digest to {md}")
 
