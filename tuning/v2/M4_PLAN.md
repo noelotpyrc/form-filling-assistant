@@ -220,6 +220,43 @@ the responder eval (M3b) to grade any of it.
 | MLX serve pattern (`mlx server --model … --port`) | ✅ documented (CLAUDE.md) |
 | format bridge (P2), student LM (P4) | ❌ to build |
 
+## M3b hybrid probe findings (2026-07-24) — student issues DOCUMENTED, fix methodology TBD
+
+Run: `probe_runs/m3b_hybrid/` — 26 sessions (13 scenarios × 2 seeds), hybrid = slice1b
+extractor (MLX, port 8101) + nemotron responder + haiku LLM-U. All 26 completed to the
+submit gate; every behavioral assertion passed (opening, terminal, conditionals, save,
+premature-block, status, trap-no-bind on the story values, refusal, invalid→clarify→fix).
+Latency p50 3.8s/turn (bundles nemotron responder + its 502 retries; student-only share
+not yet isolated). Value mismatches vs persona decomposed into three causes:
+
+1. ~~Harness bug~~ (fixed same day): prestep selected-option no-match set the raw label
+   ('Save Draft' → prior_application). Now: no hits → no set.
+2. **STUDENT ISSUE #1 — hallucinated PII under narrative pressure** (trap seed-1 turn 3):
+   user said only "moved to Seoul in 2019... living in South Korea... miss Brazil";
+   student emitted 4 pairs incl. **email `sara.yamamoto14@example.com` and phone
+   `(892) 555-1089` — never uttered by anyone**, shaped exactly like training personas
+   (memorized-value regurgitation), plus citizenship=KR over-attributed from "living in".
+   Elicited by mid-form state + rich history — the frozen eval's thin contexts never
+   trigger it (over-attr 0% there). Frequency: 1 turn / ~355. Worst class: invents PII.
+3. **STUDENT ISSUE #2 — enthusiasm read as boolean yes** (refusal seed-2): "I'm ready to
+   knock this out!" → has_work_experience=True. Over-attribution from filler tone.
+4. Simulator infidelity (~6 cases): haiku deviated from persona (other country, partial
+   address, different corrected dob); student extracted the utterance faithfully — NOT
+   student errors. Probe now separates these (utterance-support classification).
+
+**Fix methodology NOT decided — discuss before acting.** Candidate directions, each with
+open questions: (a) round-3 training data: farm-context trap/filler injections (existing
+trap behavior is empty-context; the failure needed mid-form history) — but does more
+restraint data actually remove memorized-value regurgitation, or just lower its rate?
+(b) decoding/serving guard: values emitted by the extractor that appear nowhere in the
+turn's inputs could be dropped deterministically by the validator (a "provenance check" —
+code-owns-placement extended to code-owns-provenance); strongest guarantee, but needs
+care with normalization (dates/formats) to avoid killing legit coercions. (c) more
+epochs/data against transcription noise generally. (d) accept + monitor: rate is 0.3%
+of turns, and (b) would make it structurally harmless. Leaning (b)+(a), NOT decided.
+Eval-v2.1 candidates: both cases as hand-authored edges (rich-history trap w/ mid-form
+state; enthusiasm-filler boolean).
+
 ## Parked decisions
 - **LLM U model at H1 scale — RESOLVED: haiku.** 3 probe sessions + mix probe eyeballed (terse/chatty/
   unsure all style-faithful; bulk 7-value turn caught 7/7). ~$0.16/session vs sonnet's ~$0.55.
