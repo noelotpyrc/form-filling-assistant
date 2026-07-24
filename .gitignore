@@ -60,3 +60,4 @@ __pycache__/
 tuning/v2/sims/
 tuning/v2/datagen_runs/
 tuning/v2/sft_data/
+tuning/v2/probe_runs/

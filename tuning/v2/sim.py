@@ -16,12 +16,13 @@ import os
 import random
 import re
 import subprocess
+import time
 from pathlib import Path
 
 import dspy
 from .claude_lm import ClaudeLM, CLAUDE_BIN
 from .schema import load_schema, Schema
-from .state import TurnState, CONFIRM_SUBMIT
+from .state import TurnState, Pending, CONFIRM_SUBMIT
 from .context import _display
 from .program import FormAssistant
 from . import persona as personas
@@ -45,6 +46,12 @@ DIRECTIVES = {
     "bulk": "Volunteer SEVERAL pieces of your information at once in a single message, not just the one asked.",
     "save": "Say you'd like to save your progress and come back to finish later.",
     "premature_submit": "Insist on submitting the whole application right now.",
+    # --- M3b probe additions (additive; do not change the above) ---
+    "typed_answer": "Answer the assistant's CURRENT question by TYPING the option as free text — do NOT click any on-screen button. Use natural casing and your own words (e.g. type \"computer science\" rather than the exact button label).",
+    "status": "Do NOT answer the current question. Instead, ask the assistant how much of the form is left — what still remains to be filled in.",
+    "trap": "Do NOT answer the current question. Instead, tell a SHORT personal story that happens to mention a city and a year (for example, that you moved to Austin in 2019). This is just background chatter about your life — it is NOT information for the form and must not be recorded.",
+    "refusal": "Politely DECLINE to provide the specific piece of information the assistant is currently asking for. Do not give the value or any substitute — just say you'd rather not share that right now.",
+    "invalid_value": "Answer the current question, but give a PLAUSIBLE BUT MALFORMED value for its type — an impossible date, a phone number with too few digits, or an email missing its '@'. Present it as if it were your real value. (If the current field is plain text, just answer normally.)",
 }
 
 # A scenario maps (user-turn index) -> directive key. Default is "answer".
@@ -56,6 +63,17 @@ SCENARIOS = {
     "correct":   {2: "correct"},
     "save":      {3: "save"},
     "premature": {1: "premature_submit"},
+    # --- M3b probe additions ---
+    "typed":     {1: "typed_answer"},
+    "status":    {2: "status"},
+    "trap":      {2: "trap"},
+    "refusal":   {3: "refusal"},
+    # {4: invalid_value}; the following (u_turn 5) defaults to "answer", which the
+    # U model uses to supply the corrected value naturally.
+    "invalid":   {5: "invalid_value"},   # turn 5 asks dob (coercible) — turn 4 is full_name (text, nothing to reject)
+    # empty schedule (all "answer"); the probe runner preloads an initial state so
+    # the session resumes mid-form and continues to completion.
+    "resume":    {},
 }
 
 
@@ -84,13 +102,26 @@ def render_persona(schema: Schema, persona: dict) -> str:
                      for f in schema.fields if f.field_id in persona)
 
 
+# Human labels for the composer's action buttons (show_button). These are UI
+# controls, NOT form-field options — clicking one is a `User clicked` event.
+BUTTON_LABELS = {"save_draft": "Save Draft", "submit": "Submit"}
+
+
+def shown_button_labels(pred) -> set[str]:
+    """Lower-cased labels of the action BUTTONS on the current screen (save/submit),
+    so the message builder can emit `User clicked` for them (vs `selected option`)."""
+    return {BUTTON_LABELS.get(a["button"], a["button"]).lower()
+            for a in pred.actions if a["type"] == "show_button"}
+
+
 def render_screen(pred) -> str:
     scr = f"Assistant said:\n{pred.text}"
     for a in pred.actions:
         if a["type"] == "ask_choice":
-            scr += "\n\nButtons on screen: " + ", ".join(f'"{o["label"]}"' for o in a["options"])
+            scr += "\n\nOption buttons on screen: " + ", ".join(f'"{o["label"]}"' for o in a["options"])
         elif a["type"] == "show_button":
-            scr += f'\n\n[A "{a["button"]}" button is shown.]'
+            label = BUTTON_LABELS.get(a["button"], a["button"])
+            scr += f'\n\nAction button on screen: "{label}" (a UI control, not a form option)'
     return scr
 
 
@@ -98,6 +129,8 @@ U_SYS = """You are role-playing a person filling out an online application by ch
 
 YOUR information (use it to answer; phrase naturally in your own words, don't dump raw values):
 {persona}
+
+USE EXACTLY the values from YOUR information above — emails, phone numbers, dates, addresses, names, and countries must be reproduced with their real value (you may reformat a date, but never change the value itself); never invent, paraphrase into a different value, or substitute a new one, and any asides or stories you tell must not contradict these facts.
 
 Your style: {style} — {style_desc}.
 
@@ -122,37 +155,69 @@ def _module_of(call: dict) -> str:
     return "responder" if "conversational reply" in sysmsg else "extractor"
 
 
-def run_session(agent, lm, schema, scenario: str, seed: int, max_turns: int = 24) -> dict:
+def run_session(agent, lm, schema, scenario: str, seed: int, max_turns: int = 24,
+                initial_state: dict | None = None, initial_pending: str | None = None,
+                initial_history: list | None = None, extra_lms: list | None = None) -> dict:
+    """LLM-U-driven session loop.
+
+    initial_state / initial_pending / initial_history preload form_state, pending,
+    and conversation history (used by the "resume" scenario). Backward compatible:
+    omit them for a fresh session.
+
+    extra_lms: additional LMs whose history is ALSO sliced per turn for records +
+    cost (the hybrid probe passes [student_lm] while lm is the responder
+    OpenRouterLM, so the student's extractor calls are captured too). When omitted,
+    behaviour is identical to the single-lm original.
+
+    Per-turn wall-clock latency: the agent() call is wrapped with time.monotonic and
+    the elapsed seconds stored on each transcript entry ("latency"). This is
+    per-TURN (one extract + one respond call), not per-extract-call — StudentLM does
+    not record per-call timing in its history, so per-turn agent latency is used, as
+    the M3b spec permits.
+    """
     rng = random.Random(seed)
     persona = personas.gen_persona(schema, rng)
     style = personas.gen_style(rng)
     policy = SCENARIOS[scenario]
-    state = TurnState(schema=schema, form_state={})
-    history: list[dict] = []
+    state = TurnState(schema=schema, form_state=dict(initial_state or {}))
+    if initial_pending:
+        state.pending = Pending(initial_pending)
+    history: list[dict] = list(initial_history or [])
     records: list[dict] = []
     transcript: list[dict] = []
     user_msg = ""          # turn 0 kickoff: assistant greets
     u_turn = 0
     teacher_cost = u_cost = 0.0
+    sliced_lms = [lm] + list(extra_lms or [])
 
     for turn in range(max_turns):
-        prev = len(lm.history)
+        prevs = [len(x.history) for x in sliced_lms]
+        t0 = time.monotonic()
         pred = agent(state=state, user_message=user_msg, history=history)
-        for call in lm.history[prev:]:
-            records.append({"session": seed, "scenario": scenario, "turn": turn,
-                            "module": _module_of(call), "messages": call["messages"],
-                            "completion": call["outputs"][0] if call.get("outputs") else ""})
-        teacher_cost += sum((c.get("cost") or 0.0) for c in lm.history[prev:])
+        latency = time.monotonic() - t0
+        for x, prev in zip(sliced_lms, prevs):
+            for call in x.history[prev:]:
+                records.append({"session": seed, "scenario": scenario, "turn": turn,
+                                "module": _module_of(call), "messages": call["messages"],
+                                "completion": call["outputs"][0] if call.get("outputs") else ""})
+            teacher_cost += sum((c.get("cost") or 0.0) for c in x.history[prev:])
         if user_msg:
             history.append({"role": "user", "content": user_msg})
         history.append({"role": "assistant", "content": pred.text})
         transcript.append({"turn": turn, "user": user_msg, "assistant": pred.text,
-                           "actions": [a["type"] for a in pred.actions]})
+                           "actions": [a["type"] for a in pred.actions],
+                           # additive: full action dicts + pending target + latency
+                           # so the M3b probe assertion layer can inspect them.
+                           "action_details": pred.actions,
+                           "pending": (state.pending.target if state.pending else None),
+                           "pending_held": bool(state.pending and state.pending.held),
+                           "latency": round(latency, 4)})
 
         if state.pending and state.pending.target == CONFIRM_SUBMIT:
             break
 
         directive = policy.get(u_turn, "answer")
+        buttons = shown_button_labels(pred)
         action, ucost = llm_u(schema, persona, style, render_screen(pred), directive)
         u_cost += ucost
         u_turn += 1
@@ -160,7 +225,12 @@ def run_session(agent, lm, schema, scenario: str, seed: int, max_turns: int = 24
         if kind == "stop":
             break
         elif kind == "select":
-            user_msg = f'[system] User selected option: "{action.get("label", "")}"'
+            label = action.get("label", "").strip()
+            # a save/submit ACTION button is a click event, not an option selection
+            if label.lower() in buttons:
+                user_msg = f"[system] User clicked: {label}"
+            else:
+                user_msg = f'[system] User selected option: "{label}"'
         else:
             user_msg = action.get("text", "").strip()
             if not user_msg:

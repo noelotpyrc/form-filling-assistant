@@ -53,7 +53,7 @@ from .program import build_teacher
 from .claude_lm import ClaudeLM
 from . import context
 from . import persona as personas
-from .sim import claude_p, render_screen, llm_u, STYLE_DESC
+from .sim import claude_p, render_screen, llm_u, STYLE_DESC, shown_button_labels
 
 RUN_DIR = Path(__file__).resolve().parent / "datagen_runs"
 # Reference record for the parity anchor: the first extractor pair the old sim
@@ -349,13 +349,19 @@ def farm_session(agent, lm, schema: Schema, seed: int, max_turns: int = 24,
             mixed_turns.append({"turn": turn, "directive": directive})
             print(f"    [mix] turn={turn} directive={directive}", flush=True)
 
+        buttons = shown_button_labels(pred)
         action, ucost = llm_u(schema, persona, style, render_screen(pred), directive)
         u_cost += ucost
         kind = action.get("action", "message")
         if kind == "stop":
             break
         elif kind == "select":
-            user_msg = f'[system] User selected option: "{action.get("label", "")}"'
+            # mirror of sim.run_session: a save/submit ACTION button -> click event
+            label = action.get("label", "").strip()
+            if label.lower() in buttons:
+                user_msg = f"[system] User clicked: {label}"
+            else:
+                user_msg = f'[system] User selected option: "{label}"'
         else:
             user_msg = action.get("text", "").strip()
             if not user_msg:
