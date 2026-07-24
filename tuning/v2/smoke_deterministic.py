@@ -86,6 +86,19 @@ def s4_button_event():
           str(a[0]["fields"]))
 
 
+def s21_unknown_option_label():
+    # An off-schema `User selected option` label (e.g. a UI button leaking through as
+    # an option event) must NEVER be written as a raw value (doc-18.1 prestep fix):
+    # no set, pending stays open so the agenda's reask recovers.
+    s = state_with({"full_name": "M"}, pending="prior_application")
+    a, d = run_turn(s, '[system] User selected option: "Save Draft"', [])
+    check("S21 unknown option label -> no set, prior_application unwritten, pending stays",
+          not any(x["type"] == "set_fields" for x in a)
+          and "prior_application" not in s.form_state
+          and s.pending and s.pending.target == "prior_application",
+          f"types={types(a)} filled={s.form_state} pending={s.pending}")
+
+
 def s5_ambiguous_select():
     s = state_with({})
     a, d = run_turn(s, "I'm interested in a science program", [{"field_id": "program", "value": "science"}])
@@ -302,7 +315,8 @@ def s20c_multi_category():
 
 
 def main():
-    for fn in [s1_volunteered, s2_elliptical, s4_button_event, s5_ambiguous_select,
+    for fn in [s1_volunteered, s2_elliptical, s4_button_event, s21_unknown_option_label,
+               s5_ambiguous_select,
                s6_asks_about_field, s7_deflection, s8_chitchat, s12_save,
                s13_premature_submit, s14_terminal, s15_validation_error,
                s16_bulk_bare, s16b_unplaceable, s17_large_select_text,

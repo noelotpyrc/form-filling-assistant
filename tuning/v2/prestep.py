@@ -45,9 +45,13 @@ def run(user_message: str, state: TurnState) -> PreStep:
             pf = state.pending_field()
             if pf and pf.is_choice:
                 hits = match_options(opt, pf)
-                val = hits[0][0] if hits else opt
+                if not hits:
+                    # unknown label = UI anomaly; never write an off-schema value
+                    # (doc-18.1 'options come from the schema'). Leave pending open —
+                    # the agenda's reask handles recovery.
+                    return PreStep(handled=True)
                 return PreStep(handled=True,
-                               set_outcomes=[Outcome(VALID_SET, pf.field_id, value=val)])
+                               set_outcomes=[Outcome(VALID_SET, pf.field_id, value=hits[0][0])])
             return PreStep(handled=True)
 
         clicked = _sys_match(msg, r"User clicked")
