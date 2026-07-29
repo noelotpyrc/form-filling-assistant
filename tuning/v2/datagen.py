@@ -14,6 +14,16 @@ same shape sim.py emits so P2's bridge is layer-agnostic):
   optionally naturalize, run one forward(with_response=False), capture the
   extractor pair (source="inject", behavior=name).
 
+ORACLE mode (--oracle, injection only): the injected row's extractor target comes
+from the injection SPEC, not the teacher — the maker knows exactly which values it
+inserted, so `make_oracle` returns (message, expected) and the prompt is rendered
+offline (demo-stripped [system, user], byte-identical to a captured row). No LM call
+per row; two build gates (harness round-trip + utterance support) and the behavior's
+own sim_to_sft.CURATION rule are asserted on every label. With --naturalize the
+rewrite passes `guard_naturalization` (no new question / no new hedging / no mutated
+value), re-rolling up to 3 times then falling back to the raw template. Farm sessions
+stay teacher-labeled, so --oracle with --farm is refused.
+
 Leaf helpers are reused from sim.py (untouched): claude_p / render_screen / llm_u
 / STYLE_DESC (which transitively reuse render_persona, U_SYS, DIRECTIVES,
 _parse_action). Capture path classifies each lm.history entry by CONTENT — module
@@ -33,6 +43,8 @@ Run:
   parity  (free):    tuning/v2/.venv/bin/python -m tuning.v2.datagen --parity
   farm+inject ($$):  tuning/v2/.venv/bin/python -m tuning.v2.datagen --farm 5 --inject --quota 5 --run pilot
   inject only ($$):  tuning/v2/.venv/bin/python -m tuning.v2.datagen --inject --snapshots tuning/v2/datagen_runs/pilot/snapshots.jsonl
+  oracle inject:     tuning/v2/.venv/bin/python -m tuning.v2.datagen --inject --oracle --naturalize \
+                         --snapshots tuning/v2/datagen_runs/h1a/snapshots.jsonl --quota 25 --run r3_oracle
   claude teacher:    tuning/v2/.venv/bin/python -m tuning.v2.datagen --backend claude --farm 5 --inject --run pilot
 Outputs (gitignored): tuning/v2/datagen_runs/<run>/{snapshots.jsonl,train.jsonl,report.json}
 """
@@ -41,6 +53,7 @@ import argparse
 import json
 import os
 import random
+import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
@@ -54,6 +67,9 @@ from .claude_lm import ClaudeLM
 from . import context
 from . import persona as personas
 from .sim import claude_p, render_screen, llm_u, STYLE_DESC, shown_button_labels
+from .validator import coerce, match_options
+# oracle-label support gate: reuse the probe's utterance-support logic verbatim
+from .probe import _invention_check, _norm
 
 RUN_DIR = Path(__file__).resolve().parent / "datagen_runs"
 # Reference record for the parity anchor: the first extractor pair the old sim
@@ -379,11 +395,20 @@ def farm_session(agent, lm, schema: Schema, seed: int, max_turns: int = 24,
 
 @dataclass
 class Behavior:
+    """A behavior template. `make_oracle(snap, schema, rng)` returns
+    (message, expected) where `expected` is the ORACLE extraction label — the
+    designed convention for this behavior, known because the maker inserted the
+    values itself (same authority as sim_to_sft.CURATION). The legacy path calls
+    `make_message(...)`, which is the same draw with `expected` discarded, so a
+    given (snap, rng state) yields the identical message either way."""
     name: str
     context: str                                   # "farm" | "constructed"
     precondition: Callable[[dict, Schema], bool]   # farm: filters snapshots
-    make_message: Callable[[dict, Schema, random.Random], str]
+    make_oracle: Callable[[dict, Schema, random.Random], tuple]
     make_context: Optional[Callable[[Schema, random.Random], dict]] = None  # constructed only
+
+    def make_message(self, snap: dict, schema: Schema, rng: random.Random) -> str:
+        return self.make_oracle(snap, schema, rng)[0]
 
 
 def _date_phrase(iso: str) -> str:
@@ -519,17 +544,23 @@ def _pre_cross(snap, schema):
 
 
 # ---- message templates ---------------------------------------------------
+# Every maker returns (message, expected_extractions). See Behavior.
+
+def _pair(fid, value):
+    return {"field_id": fid, "value": value}
+
 
 def _mk_correction(snap, schema, rng):
     persona = personas.gen_persona(schema, rng)
     cands = [k for k in _filled(snap) if k in persona]
     f = schema.field(rng.choice(cands))
     val = _pv(schema, persona, f.field_id)
-    return rng.choice([
+    msg = rng.choice([
         "Actually I need to fix something — my {l} should be {v}.",
         "Oh wait, let me correct that: my {l} is actually {v}.",
         "Sorry, I gave the wrong {l} earlier — it's {v}.",
     ]).format(l=f.label, v=val)
+    return msg, [_pair(f.field_id, val)]
 
 
 def _other_select(schema, exclude_fid, rng):
@@ -538,11 +569,12 @@ def _other_select(schema, exclude_fid, rng):
 
 def _mk_deflect(snap, schema, rng):
     other = _other_select(schema, pf(snap, schema).field_id, rng)
-    return rng.choice([
+    msg = rng.choice([
         "Hold on — what are my choices for {l}?",
         "Before I answer, can you tell me the options for {l}?",
         "Wait, what can I pick for {l}?",
     ]).format(l=other.label)
+    return msg, [_pair(other.field_id, "")]
 
 
 def _other_free(schema, exclude_fid, rng):
@@ -553,31 +585,40 @@ def _other_free(schema, exclude_fid, rng):
 
 def _mk_deflect_free(snap, schema, rng):
     other = _other_free(schema, pf(snap, schema).field_id, rng)
-    return rng.choice([
+    msg = rng.choice([
         "Hold on — what exactly do you need for {l}?",
         "Wait, what format should the {l} be in?",
         "Before I answer — what should I put for {l}?",
     ]).format(l=other.label)
+    return msg, [_pair(other.field_id, "")]
 
 
 def _mk_partial(snap, schema, rng):
-    x = rng.choice(_PARTIAL[pf(snap, schema).field_id]["phrases"])
-    return rng.choice(["I'm thinking {x}.", "Probably {x}.", "{x}, I guess."]).format(x=x)
+    p = pf(snap, schema)
+    spec = _PARTIAL[p.field_id]
+    x = rng.choice(spec["phrases"])
+    msg = rng.choice(["I'm thinking {x}.", "Probably {x}.", "{x}, I guess."]).format(x=x)
+    # the CATEGORY TERM (not the whole phrase) is the value the options narrow on
+    return msg, [_pair(p.field_id, spec["term"])]
 
 
 def _mk_invalid(snap, schema, rng):
-    v = rng.choice(_INVALID[pf(snap, schema).type])
-    return rng.choice(["It's {v}.", "Sure — {v}.", "Oh, it's {v}."]).format(v=v)
+    p = pf(snap, schema)
+    v = rng.choice(_INVALID[p.type])
+    msg = rng.choice(["It's {v}.", "Sure — {v}.", "Oh, it's {v}."]).format(v=v)
+    # transcription, not validation: the invalid surface IS the label (coerce fails downstream)
+    return msg, [_pair(p.field_id, v)]
 
 
 def _mk_cross(snap, schema, rng):
     f = rng.choice(_cross_candidates(snap, schema))
     _val, label = rng.choice(f.options)
-    return rng.choice([
+    msg = rng.choice([
         "Oh — put me down for {label}.",
         "Actually, {label} please.",
         "Let's make it {label}.",
     ]).format(label=label)
+    return msg, [_pair(f.field_id, str(label))]
 
 
 _RESTRAINT_Q = [
@@ -592,24 +633,27 @@ _RESTRAINT_Q = [
 
 
 def _mk_restraint(snap, schema, rng):
-    return rng.choice(_RESTRAINT_Q)
+    return rng.choice(_RESTRAINT_Q), []
 
 
 def _mk_refusal(snap, schema, rng):
     p = pf(snap, schema)
-    return rng.choice([
+    msg = rng.choice([
         "I'd rather not give my {l} just yet, if that's okay.",
         "Can we skip my {l} for now? I'd prefer not to share it yet.",
         "I'm not comfortable giving my {l} at the moment.",
     ]).format(l=p.label)
+    return msg, []
 
 
 def _mk_typed_choice(snap, schema, rng):
-    _val, lab = rng.choice(pf(snap, schema).options)
+    p = pf(snap, schema)
+    _val, lab = rng.choice(p.options)
     low = str(lab).lower()
-    return rng.choice([
+    msg = rng.choice([
         "{x} works for me", "let's go with {x}", "{x}, please", "i'll do {x}",
     ]).format(x=low)
+    return msg, [_pair(p.field_id, low)]
 
 
 _NO_MATCH = {
@@ -628,15 +672,18 @@ _NO_MATCH = {
 def _mk_no_match(snap, schema, rng):
     p = pf(snap, schema)
     val = rng.choice(_NO_MATCH.get(p.field_id, ["something not on your list"]))
-    return rng.choice(["I'd like {v}.", "Put me down for {v}.", "{v}, please."]).format(v=val)
+    msg = rng.choice(["I'd like {v}.", "Put me down for {v}.", "{v}, please."]).format(v=val)
+    # transcription: the unlisted surface bound to the engaged field (no option matches)
+    return msg, [_pair(p.field_id, val)]
 
 
 def _mk_precedence(snap, schema, rng):
     email = personas.gen_persona(schema, rng)["email"]
-    return rng.choice([
+    msg = rng.choice([
         "Oh — my email is {e}.", "Hang on, my email is {e}.",
         "By the way, the best email for me is {e}.",
     ]).format(e=email)
+    return msg, [_pair("email", email)]
 
 
 def _mk_compound(snap, schema, rng):
@@ -645,16 +692,19 @@ def _mk_compound(snap, schema, rng):
     other = _compound_other(snap, schema, p.type)
     pval = _typed_value(schema, persona, p.type)
     oval = _typed_value(schema, persona, other.type)
-    return f"{pval} — oh, and my {other.label} is {oval}."
+    msg = f"{pval} — oh, and my {other.label} is {oval}."
+    return msg, [_pair(p.field_id, pval), _pair(other.field_id, oval)]
 
 
 def _mk_bulk(snap, schema, rng):
     persona = personas.gen_persona(schema, rng)
-    return rng.choice([
+    msg = rng.choice([
         "While I'm at it: I'm {n}, {e}, {p}.",
         "Let me just give you a few things — {n}, reachable at {e} or {p}.",
         "Might as well: name's {n}, email {e}, phone {p}.",
     ]).format(n=persona["full_name"], e=persona["email"], p=persona["phone"])
+    return msg, [_pair("full_name", persona["full_name"]),
+                 _pair("email", persona["email"]), _pair("phone", persona["phone"])]
 
 
 # ---- constructed contexts + their messages -------------------------------
@@ -668,11 +718,12 @@ _ASK_SELECTS = ["start_term", "enrollment_type", "program", "gender", "how_heard
 
 def _mk_asks(snap, schema, rng):
     f = schema.field(rng.choice(_ASK_SELECTS))
-    return rng.choice([
+    msg = rng.choice([
         "What options do I have for {l}?",
         "Which choices are there for {l}?",
         "Can you list the {l} options?",
     ]).format(l=f.label)
+    return msg, [_pair(f.field_id, "")]
 
 
 _CHITCHAT = [
@@ -685,7 +736,7 @@ _CHITCHAT = [
 
 
 def _mk_chitchat(snap, schema, rng):
-    return rng.choice(_CHITCHAT)
+    return rng.choice(_CHITCHAT), []
 
 
 def _mk_wrapped(snap, schema, rng):
@@ -694,32 +745,38 @@ def _mk_wrapped(snap, schema, rng):
     persona = personas.gen_persona(schema, rng)
     kind = rng.choice(["email", "phone", "dob"])
     if kind == "email":
-        return rng.choice([
+        v = persona["email"]
+        msg = rng.choice([
             "Sorry, hectic morning — anyway the best email for me is {v}.",
             "Kids are yelling in the background, ignore that — my email's {v}.",
             "Phone's about to die, quick: reach me at {v}.",
-        ]).format(v=persona["email"])
-    if kind == "phone":
-        return rng.choice([
+        ]).format(v=v)
+    elif kind == "phone":
+        v = persona["phone"]
+        msg = rng.choice([
             "In line at the store — you can text me at {v}.",
             "Sorry, chaos here. Best number is {v}.",
-        ]).format(v=persona["phone"])
-    return rng.choice([
-        "Long day! Anyway, born {v} if you need it.",
-        "Kids finally asleep — for the record I was born {v}.",
-    ]).format(v=_date_phrase(persona["dob"]))
+        ]).format(v=v)
+    else:
+        v = _date_phrase(persona["dob"])
+        msg = rng.choice([
+            "Long day! Anyway, born {v} if you need it.",
+            "Kids finally asleep — for the record I was born {v}.",
+        ]).format(v=v)
+    return msg, [_pair(kind, v)]
 
 
 def _mk_third_party(snap, schema, rng):
     name = f"{rng.choice(personas.FIRST)} {rng.choice(personas.LAST)}"
     # the old "great campus" line was how_heard-adjacent (teacher bound how_heard on
     # it); the two neighbor rewrites stay third-person mentions with zero how-heard scent.
-    return rng.choice([
+    msg = rng.choice([
         "My roommate {n} thinks these forms are endless.",
         "My neighbor {n} keeps asking how my application is going.",
         "{n}, my neighbor, is applying to a totally different school.",
         "Funny, my friend {n} applied here years ago.",
     ]).format(n=name)
+    return msg, []
 
 
 _TRAP_CITIES = ["Austin", "Portland", "Nashville", "Boise", "Tucson", "Raleigh"]
@@ -737,20 +794,22 @@ _TRAP_NARRATIVE = [
 
 def _mk_trap(snap, schema, rng):
     if rng.random() < 0.5:
-        return rng.choice(_TRAP_NARRATIVE)
+        return rng.choice(_TRAP_NARRATIVE), []
     city = rng.choice(_TRAP_CITIES)
-    return rng.choice([
+    msg = rng.choice([
         "We just moved to {c} — loving it so far.",
         "Grew up near {c}, great memories.",
         "Visiting {c} next month for a wedding.",
     ]).format(c=city)
+    return msg, []
 
 
 _BARE_NUMS = ["2019", "42", "7", "128", "2015", "3"]
 
 
 def _mk_bare_ambiguous(snap, schema, rng):
-    return rng.choice(_BARE_NUMS)
+    tok = rng.choice(_BARE_NUMS)
+    return tok, [_pair(None, tok)]   # code owns binding: never a field from type alone
 
 
 # NOT "August 10, 2000" / "August 3, 1990" — those are the eval/demo instances.
@@ -759,7 +818,8 @@ _BARE_DATES = ["June 12, 1994", "March 3, 1988", "November 20, 2001",
 
 
 def _mk_bare_date(snap, schema, rng):
-    return rng.choice(_BARE_DATES)
+    d = rng.choice(_BARE_DATES)
+    return d, [_pair(None, d)]        # verbatim surface; the cascade places it
 
 
 # Greeting lines with NO field ask (used by pending_bare / boolean_phrase to build
@@ -800,29 +860,46 @@ def _mk_pending_bare(snap, schema, rng):
     f = schema.field(snap["pending"])
     persona = personas.gen_persona(schema, rng)
     val = _typed_value(schema, persona, f.type)
-    return val + ("." if rng.random() < 0.5 else "")           # optional trailing period
+    msg = val + ("." if rng.random() < 0.5 else "")            # optional trailing period
+    # null-fallback IS the convention: `pending` is never rendered, so the model
+    # cannot attribute — the binding cascade owns placement (doc-18.1).
+    return msg, [_pair(None, val)]
 
 
 # boolean_phrase: natural yes/no phrasings for a pending boolean field that do NOT
 # merely quote the "Yes"/"No" option label. value + phrase sampled together.
+#
+# SUPPORTABILITY RULE (2026-07-26): every phrase must NAME ITS OWN TOPIC. The context
+# is a greeting with no field ask and `pending` is never rendered, so a phrase that
+# doesn't self-identify ("I did take it last fall" — take WHAT?) carries a label the
+# visible input cannot support. _BOOL_KEYWORDS below is the assertion the selftest runs.
 _BOOLEAN_FIELDS = ["prior_application", "has_work_experience", "funding_interest", "gre_taken"]
+_BOOL_KEYWORDS = {
+    "prior_application": ("appl",),                    # applied / applying / application
+    "has_work_experience": ("work",),                  # work / working / work experience
+    "funding_interest": ("funding", "assistantship"),
+    "gre_taken": ("gre",),
+}
 _BOOLEAN_PHRASES = {
     "prior_application": {
         True:  ["Yes — I applied once before.", "Yeah, I put in an application a couple years back."],
-        False: ["Nope, first time applying.", "Never applied here before.", "No, this is my first time."],
+        False: ["Nope, first time applying.", "Never applied here before.",
+                "No, this is my first time applying here."],
     },
     "has_work_experience": {
-        True:  ["Yeah, I've been working for a few years.", "Yes, a few years in the field.",
-                "I do — about five years of it."],
-        False: ["No, coming straight from undergrad.", "Not really, no work experience yet."],
+        True:  ["Yeah, I've been working for a few years.",
+                "Yes, a few years of work experience in the field.",
+                "I do — about five years of work experience."],
+        False: ["No work experience — coming straight from undergrad.",
+                "Not really, no work experience yet."],
     },
     "funding_interest": {
         True:  ["Yes, I'd love to hear about funding.", "Definitely interested in assistantships."],
         False: ["No interest in funding, I'm covered.", "Nah, I don't need any funding."],
     },
     "gre_taken": {
-        True:  ["Yes — back in 2019, actually.", "I did take it last fall."],
-        False: ["No, I haven't taken the GRE.", "Nope, never sat for it."],
+        True:  ["Yes — I took the GRE back in 2019, actually.", "I did take the GRE last fall."],
+        False: ["No, I haven't taken the GRE.", "Nope, never sat for the GRE."],
     },
 }
 
@@ -834,7 +911,8 @@ def _boolean_phrase_ctx(schema, rng):
 
 def _mk_boolean_phrase(snap, schema, rng):
     val = rng.choice([True, False])
-    return rng.choice(_BOOLEAN_PHRASES[snap["pending"]][val])
+    msg = rng.choice(_BOOLEAN_PHRASES[snap["pending"]][val])
+    return msg, [_pair(snap["pending"], "Yes" if val else "No")]
 
 
 # compound_volunteer: TWO self-labeled values in one sentence (empty context), the
@@ -863,7 +941,8 @@ def _mk_compound_volunteer(snap, schema, rng):
     persona = personas.gen_persona(schema, rng)
     pair = rng.choice(_COMPOUND_PAIRS)
     a, b = _compound_pair_values(schema, persona, pair)
-    return rng.choice(_COMPOUND_TEMPLATES[pair]).format(a=a, b=b)
+    msg = rng.choice(_COMPOUND_TEMPLATES[pair]).format(a=a, b=b)
+    return msg, [_pair(pair[0], a), _pair(pair[1], b)]
 
 
 REGISTRY = [
@@ -891,6 +970,139 @@ REGISTRY = [
     Behavior("boolean_phrase", "constructed", _true, _mk_boolean_phrase, _boolean_phrase_ctx),
     Behavior("compound_volunteer", "constructed", _true, _mk_compound_volunteer, _empty_ctx),
 ]
+
+
+# ======================================================================
+# Layer 2b — ORACLE labels (--oracle): the spec labels the row, not the teacher
+# ======================================================================
+# The maker knows exactly which values it inserted, so the extraction label is
+# derivable without an LM call. Two build gates keep an oracle label honest:
+#   (a) round-trip — the harness must be able to PROCESS the value
+#       (validator.coerce for free fields / match_options for choices);
+#   (b) support    — the value must be findable in the message the model sees
+#       (probe._invention_check, the same utterance-support logic the probe uses).
+# Values are the VERBATIM SURFACE form the user typed; code owns canonicalization
+# (coerce turns "January 15, 1998" into 1998-01-15 downstream).
+
+# Designed-invalid surfaces: the whole point is that the harness REJECTS them
+# downstream, so gate (a) is inverted for these (selftest asserts they do NOT
+# coerce / do NOT match an option).
+_ORACLE_NO_ROUNDTRIP = {"no_match", "invalid_value"}
+_HEDGE_RE = re.compile(r"should we|are we sure|maybe|i think|not sure|"
+                       r"is that (ok|okay|right|alright)|do you think|would that work|"
+                       r"perhaps|i guess", re.I)
+
+
+def oracle_roundtrip_ok(schema: Schema, behavior: str, fid, value) -> bool:
+    """Gate (a). A valued label the harness cannot process is a maker bug.
+    Skipped for null-field / engagement pairs (nothing to bind) and for the
+    designed-invalid behaviors."""
+    if fid is None or str(value).strip() == "" or behavior in _ORACLE_NO_ROUNDTRIP:
+        return True
+    f = schema.field(fid)
+    if f is None:
+        return False
+    if f.is_choice:
+        hits = match_options(value, f)
+        # partial_select deliberately narrows to a SUBSET (>=2 options); every other
+        # choice behavior inserts an exact option label -> exactly one hit.
+        return len(hits) >= 2 if behavior == "partial_select" else len(hits) == 1
+    return coerce(str(value), f)[0]
+
+
+def oracle_support_ok(schema: Schema, fid, value, msg: str) -> bool:
+    """Gate (b). Is `value` findable in `msg`? Reuses probe._invention_check
+    (email substring / phone digit-run / normalized text / date coerce-span).
+    Booleans are UNCHECKED there and here ("Yes"/"No" is never the surface text);
+    choices fall back to a normalized substring of the inserted label/term."""
+    if str(value).strip() == "":
+        return True
+    f = schema.field(fid) if fid else None
+    if f is None:
+        return _norm(value) in _norm(msg)          # bare token / unplaced value
+    if f.type == "boolean":
+        return True
+    if f.is_choice:
+        return _norm(value) in _norm(msg)
+    check = value
+    if f.type == "date":
+        ok, iso = coerce(str(value), f)
+        if not ok:
+            return _norm(value) in _norm(msg)      # uncoercible (invalid_value)
+        check = iso                                 # _invention_check compares ISO
+    verdict = _invention_check(schema, fid, check, [msg], {})
+    return True if verdict is None else bool(verdict)
+
+
+def check_oracle(schema: Schema, behavior: str, msg: str, expected: list) -> list[str]:
+    """Both gates over one (message, oracle label). Returns problem strings ([] = ok)."""
+    probs = []
+    for p in expected:
+        fid, val = p.get("field_id"), p.get("value", "")
+        if not oracle_roundtrip_ok(schema, behavior, fid, val):
+            probs.append(f"roundtrip {behavior} {fid}={val!r}")
+        if not oracle_support_ok(schema, fid, val, msg):
+            probs.append(f"support {behavior} {fid}={val!r} not in {msg!r}")
+    return probs
+
+
+def oracle_completion(expected: list) -> str:
+    """The extractor CHAT completion for an oracle label — byte-format identical to
+    the kept teacher completions (json.dumps defaults: ", " / ": " separators)."""
+    return f"[[ ## extractions ## ]]\n{json.dumps(expected)}\n\n[[ ## completed ## ]]"
+
+
+def render_extract_prompt(schema: Schema, snap: dict, user_message: str) -> list[dict]:
+    """The demo-stripped [system, user] extractor prompt, rendered OFFLINE (no LM).
+    Same machinery as the parity anchor (`expected_extractor_system`); verified
+    byte-equal to captured h1b rows (system + every block before user_message)."""
+    from dspy.adapters.chat_adapter import ChatAdapter
+    from .program import Extract
+    inputs = {"form_schema": context.render_schema(schema),
+              "filled_fields": context.render_filled(schema, snap["form_state"]),
+              "recent_history": context.render_history(snap["history"]),
+              "user_message": user_message}
+    msgs = ChatAdapter().format(Extract, [], inputs)
+    roles = [m["role"] for m in msgs]
+    assert roles == ["system", "user"], f"offline render roles {roles}"
+    return [{"role": m["role"], "content": m["content"]} for m in msgs]
+
+
+def guard_naturalization(raw_msg: str, nat_msg: str, expected: list,
+                         schema: Schema) -> tuple[bool, str]:
+    """Did the temp-0.8 rewrite change the SEMANTICS the oracle label asserts?
+    Measured drift on round 2: 78/542 statement-shaped injections came back with a
+    "?", 41/542 hedged ("Let's make it TOEFL." -> "should we go with TOEFL then?"),
+    which no longer commits. Teacher labels self-corrected (the teacher labels the
+    text it sees); an oracle label would sit on non-committal text, so reject.
+    Only NEW drift counts — a raw template that already asks or hedges is fine."""
+    if "?" in nat_msg and "?" not in raw_msg:
+        return False, "question_added"
+    if _HEDGE_RE.search(nat_msg) and not _HEDGE_RE.search(raw_msg):
+        return False, "hedge_added"
+    for p in expected:
+        if not oracle_support_ok(schema, p.get("field_id"), p.get("value", ""), nat_msg):
+            return False, "value_unsupported"
+    return True, ""
+
+
+def naturalize_guarded(raw: str, expected: list, schema: Schema, rng: random.Random,
+                       tries: int = 3) -> tuple[str, float, dict]:
+    """Naturalize under the guard: re-roll a rejected rewrite (fresh LM call) up to
+    `tries` total, then FALL BACK to the raw template. Never drops the case, never
+    keeps a mismatched (label, text) pair."""
+    cost = 0.0
+    stats = {"attempts": 0, "rejections": [], "fallback": False}
+    for _ in range(tries):
+        nat, c = naturalize_message(raw, schema, rng)
+        cost += c
+        stats["attempts"] += 1
+        ok, reason = guard_naturalization(raw, nat, expected, schema)
+        if ok:
+            return nat, cost, stats
+        stats["rejections"].append(reason)
+    stats["fallback"] = True
+    return raw, cost, stats
 
 
 # ======================================================================
@@ -941,28 +1153,53 @@ def naturalize_message(msg: str, schema: Schema, rng: random.Random) -> tuple[st
     return (text or msg), cost
 
 
+def oracle_row(schema: Schema, beh_name: str, snap: dict, snap_ref, msg: str,
+               expected: list) -> dict:
+    """One inject row labeled by the SPEC, no LM call. Same keys as a captured
+    inject row (so the bridge/report stay layer-agnostic) plus label_source."""
+    probs = check_oracle(schema, beh_name, msg, expected)
+    assert not probs, f"oracle gate failure [{beh_name}]: {probs}"
+    completion = oracle_completion(expected)
+    assert is_well_formed("extractor", completion), f"oracle completion malformed: {completion!r}"
+    from .sim_to_sft import CURATION, curation_passes, parse_extractions
+    pairs = parse_extractions(completion)
+    assert pairs is not None, f"oracle completion unparseable: {completion!r}"
+    rule = CURATION.get(beh_name)
+    assert rule is None or curation_passes(rule, pairs), \
+        f"oracle label violates its own convention [{beh_name}/{rule}]: {pairs}"
+    return {"source": "inject", "behavior": beh_name, "session": None, "turn": None,
+            "snapshot": snap_ref, "module": "extractor",
+            "messages": render_extract_prompt(schema, snap, msg),
+            "completion": completion, "cost": 0.0, "well_formed": True,
+            "adapter_retried": False, "retry_completion": None,
+            "label_source": "oracle"}
+
+
 def run_injection(agent, lm, schema: Schema, snapshots: list[dict], quota: int,
-                  rng: random.Random, naturalize: bool, only: set[str] | None = None) -> dict:
+                  rng: random.Random, naturalize: bool, only: set[str] | None = None,
+                  oracle: bool = False, quotas: dict | None = None) -> dict:
     rows: list[dict] = []
     coverage: list[dict] = []
     inj_cost = nat_cost = 0.0
     prestep_handled = 0
+    guard = {"attempts": 0, "rejections": Counter(), "fallbacks": 0, "cases": 0}
 
     for beh in REGISTRY:
         if only and beh.name not in only:   # restrict to named subset; coverage naturally excludes skipped
             continue
+        q = (quotas or {}).get(beh.name, quota)
         if beh.context == "farm":
             eligible = eligible_snaps(beh, snapshots, schema)
             n_elig = len(eligible)
             if n_elig == 0:
                 print(f"[WARN] behavior {beh.name!r}: ZERO eligible snapshots — "
-                      f"recording gap of {quota}, not skipping silently")
+                      f"recording gap of {q}, not skipping silently")
                 coverage.append({"behavior": beh.name, "context": "farm", "eligible": 0,
-                                 "produced": 0, "failed": 0, "quota": quota, "gap": quota})
+                                 "produced": 0, "failed": 0, "quota": q, "gap": q})
                 continue
-            picks = [rng.choice(eligible) for _ in range(quota)]   # with replacement if n_elig < quota
+            picks = [rng.choice(eligible) for _ in range(q)]   # with replacement if n_elig < q
         else:
-            picks = [None] * quota
+            picks = [None] * q
             n_elig = None
 
         produced = failed = 0
@@ -974,6 +1211,20 @@ def run_injection(agent, lm, schema: Schema, snapshots: list[dict], quota: int,
                 else:
                     snap = beh.make_context(schema, rng)
                     snap_ref = None
+                if oracle:
+                    msg, expected = beh.make_oracle(snap, schema, rng)
+                    if naturalize:
+                        msg, c, st = naturalize_guarded(msg, expected, schema, rng)
+                        nat_cost += c
+                        guard["cases"] += 1
+                        guard["attempts"] += st["attempts"]
+                        guard["fallbacks"] += int(st["fallback"])
+                        for reason in st["rejections"]:
+                            guard["rejections"][reason] += 1
+                    rows.append(oracle_row(schema, beh.name, snap, snap_ref, msg, expected))
+                    produced += 1
+                    continue
+
                 msg = beh.make_message(snap, schema, rng)
                 if naturalize:
                     msg, c = naturalize_message(msg, schema, rng)
@@ -995,11 +1246,14 @@ def run_injection(agent, lm, schema: Schema, snapshots: list[dict], quota: int,
                       flush=True)
 
         coverage.append({"behavior": beh.name, "context": beh.context, "eligible": n_elig,
-                         "produced": produced, "failed": failed, "quota": quota,
-                         "gap": max(0, quota - produced)})
+                         "produced": produced, "failed": failed, "quota": q,
+                         "gap": max(0, q - produced)})
 
-    return {"rows": rows, "coverage": coverage, "prestep_handled": prestep_handled,
-            "inject_teacher": inj_cost, "naturalizer": nat_cost}
+    out = {"rows": rows, "coverage": coverage, "prestep_handled": prestep_handled,
+           "inject_teacher": inj_cost, "naturalizer": nat_cost}
+    if oracle and naturalize:
+        out["nat_guard"] = {**guard, "rejections": dict(guard["rejections"])}
+    return out
 
 
 # ======================================================================
@@ -1007,7 +1261,7 @@ def run_injection(agent, lm, schema: Schema, snapshots: list[dict], quota: int,
 # ======================================================================
 
 def build_report(schema, farm_summaries, snapshots, coverage, prestep_handled,
-                 train_rows, costs, parity, args) -> dict:
+                 train_rows, costs, parity, args, nat_guard=None) -> dict:
     n_req = sum(1 for f in schema.fields if f.required)
     ms = Counter((r["source"], r["module"]) for r in train_rows)
 
@@ -1019,10 +1273,18 @@ def build_report(schema, farm_summaries, snapshots, coverage, prestep_handled,
     quality = {m: {"chat_malformed": _rate(m, "well_formed", False),
                    "adapter_retried": _rate(m, "adapter_retried", True)}
                for m in ("extractor", "responder")}
+    rep_extra = {}
+    if nat_guard is not None:
+        rep_extra["naturalizer_guard"] = nat_guard
+    n_oracle = sum(1 for r in train_rows if r.get("label_source") == "oracle")
+    if n_oracle:
+        rep_extra["oracle_rows"] = n_oracle
     return {
         "args": {"farm": args.farm, "inject": args.inject, "quota": args.quota,
                  "seed": args.seed, "max_turns": args.max_turns, "naturalize": args.naturalize,
-                 "mix": args.mix},
+                 "mix": args.mix, "oracle": getattr(args, "oracle", False),
+                 "quotas": getattr(args, "quotas", "")},
+        **rep_extra,
         "farm_sessions": [
             {"seed": s["seed"], "style": s["style"], "turns": s["turns"],
              "filled": len(s["filled"]), "required": n_req,
@@ -1071,6 +1333,13 @@ def print_report(rep: dict, out: Path):
     p = rep["pairs"]
     print(f"\ntraining pairs: {p['total']}  by_module={p['by_module']}  by_source={p['by_source']}")
     print(f"  by source/module: {p['by_source_module']}")
+    if rep.get("oracle_rows"):
+        print(f"  label_source=oracle rows: {rep['oracle_rows']} (no teacher call)")
+    if rep.get("naturalizer_guard"):
+        g = rep["naturalizer_guard"]
+        print(f"naturalizer guard: {g['cases']} cases, {g['attempts']} LM attempts, "
+              f"{g['fallbacks']} fell back to the raw template")
+        print(f"  rejections by reason: {g['rejections'] or '{}'}")
 
     print("quality (captured CHAT rows):")
     for m, q in rep["quality"].items():
@@ -1318,12 +1587,204 @@ def selftest():
     assert st.form_state == {"email": "m@e.com"} and st.pending.target == "dob"
     assert rebuild_state(schema, snap(pending=None)).pending is None
 
+    oracle_selftest(schema, farm_snaps)
+
     print("selftest: all assertions passed")
+
+
+# ---------------------------------------------------------------------------
+# oracle-mode selftest (offline: no LM, no naturalizer, no teacher)
+# ---------------------------------------------------------------------------
+
+def oracle_selftest(schema: Schema, farm_snaps: dict):
+    from .sim_to_sft import CURATION, curation_passes, parse_extractions
+    by_name = {b.name: b for b in REGISTRY}
+
+    # real h1a farm snapshots if present (gitignored), else the synthetic ones
+    snap_path = RUN_DIR / "h1a" / "snapshots.jsonl"
+    real = [json.loads(l) for l in open(snap_path)] if snap_path.exists() else []
+    src = "h1a snapshots" if real else "synthetic snapshots"
+
+    # 1. every behavior, many seeds: label satisfies its CURATION rule + both gates
+    n_labels = 0
+    for beh in REGISTRY:
+        for seed in range(50):
+            pick = random.Random(1000 + seed)
+            if beh.context == "farm":
+                pool = [s for s in real if beh.precondition(s, schema)] if real else []
+                s = pick.choice(pool) if pool else farm_snaps[beh.name]
+            else:
+                s = beh.make_context(schema, pick)
+            msg, expected = beh.make_oracle(s, schema, random.Random(2000 + seed))
+            assert isinstance(msg, str) and msg.strip(), f"{beh.name}: empty message"
+            assert isinstance(expected, list), f"{beh.name}: expected must be a list"
+            # determinism: make_message is the same draw with `expected` discarded
+            assert beh.make_message(s, schema, random.Random(2000 + seed)) == msg, \
+                f"{beh.name}: make_message diverges from make_oracle"
+            completion = oracle_completion(expected)
+            assert is_well_formed("extractor", completion), f"{beh.name}: {completion!r}"
+            pairs = parse_extractions(completion)
+            assert pairs == expected, f"{beh.name}: completion round-trip {pairs} != {expected}"
+            rule = CURATION.get(beh.name)
+            assert rule is None or curation_passes(rule, pairs), \
+                f"{beh.name}/{rule}: oracle label violates its own convention: {pairs}"
+            probs = check_oracle(schema, beh.name, msg, expected)
+            assert not probs, f"{beh.name}: {probs}"
+            n_labels += 1
+    print(f"oracle selftest: {n_labels} labels over {len(REGISTRY)} behaviors ({src}) "
+          f"pass CURATION + round-trip + support")
+
+    # designed-invalid behaviors: assert the harness REALLY rejects the surface
+    for _ in range(20):
+        rng = random.Random(7)
+        m, exp = by_name["no_match"].make_oracle(farm_snaps["no_match"], schema, rng)
+        f = schema.field(exp[0]["field_id"])
+        assert match_options(exp[0]["value"], f) == [], f"no_match value matched an option: {exp}"
+        m, exp = by_name["invalid_value"].make_oracle(farm_snaps["invalid_value"], schema, rng)
+        f = schema.field(exp[0]["field_id"])
+        assert not coerce(exp[0]["value"], f)[0], f"invalid_value coerced: {exp}"
+
+    # 2. boolean_phrase phrase audit: every phrase self-identifies its field
+    for fid, byval in _BOOLEAN_PHRASES.items():
+        kws = _BOOL_KEYWORDS[fid]
+        for val, phrases in byval.items():
+            for ph in phrases:
+                assert any(k in ph.lower() for k in kws), \
+                    f"boolean_phrase {fid}/{val}: {ph!r} names no field keyword {kws}"
+    assert set(_BOOLEAN_PHRASES) == set(_BOOL_KEYWORDS) == set(_BOOLEAN_FIELDS)
+
+    # 3. naturalizer guard — canned cases, no LM
+    toefl_exp = [{"field_id": "english_test_type", "value": "TOEFL"}]
+    ok, why = guard_naturalization(
+        "Let's make it TOEFL.",
+        "um, so should we go with TOEFL then? like, are we sure that's the one we want to pick?",
+        toefl_exp, schema)
+    assert not ok and why == "question_added", (ok, why)
+    ok, why = guard_naturalization("Let's make it TOEFL.", "hmm, maybe TOEFL.", toefl_exp, schema)
+    assert not ok and why == "hedge_added", (ok, why)
+    ok, why = guard_naturalization("Let's make it TOEFL.", "Ok cool, let's just do TOEFL.",
+                                   toefl_exp, schema)
+    assert ok and why == "", (ok, why)
+    # value mutated (phone digits changed) -> rejected
+    ph_exp = [{"field_id": "phone", "value": "(614) 555-5969"}]
+    ok, why = guard_naturalization("My number is (614) 555-5969.",
+                                   "My number is (614) 555-1234.", ph_exp, schema)
+    assert not ok and why == "value_unsupported", (ok, why)
+    ok, why = guard_naturalization("My number is (614) 555-5969.",
+                                   "hey — so my cell is (614) 555-5969, ok!", ph_exp, schema)
+    assert ok, (ok, why)
+    # value dropped entirely -> rejected
+    ok, why = guard_naturalization("My number is (614) 555-5969.", "I'll send my number later.",
+                                   ph_exp, schema)
+    assert not ok and why == "value_unsupported", (ok, why)
+    # hedge ALREADY in the raw template (partial_select "I guess") is not new drift
+    part_exp = [{"field_id": "program", "value": "science"}]
+    ok, why = guard_naturalization("a science program, I guess.",
+                                   "eh, a science program, I guess.", part_exp, schema)
+    assert ok and why == "", (ok, why)
+    # a question-shaped raw template stays legal when the rewrite keeps asking
+    ok, why = guard_naturalization("Wait, what can I pick for Gender?",
+                                   "hold on, what are the Gender options?",
+                                   [{"field_id": "gender", "value": ""}], schema)
+    assert ok, (ok, why)
+
+    # 4. offline prompt render == the captured shape (structural parity)
+    s = {"form_state": {"full_name": "Maria Lee"}, "pending": "dob", "history": []}
+    msgs = render_extract_prompt(schema, s, "June 12, 1994")
+    assert [m["role"] for m in msgs] == ["system", "user"]
+    assert msgs[0]["content"] == expected_extractor_system(), "offline system != parity anchor"
+    assert _blocks_ordered(msgs[-1]["content"]), "offline user blocks out of order"
+
+    # ...and byte-parity against a REAL captured h1b_merged inject row (gitignored ->
+    # skipped when absent): same snapshot, same system message, same block framing.
+    ref_run = RUN_DIR / "h1b_merged"
+    if (ref_run / "train.jsonl").exists() and (ref_run / "snapshots.jsonl").exists():
+        snaps = {(x["session"], x["turn"]): x
+                 for x in (json.loads(l) for l in open(ref_run / "snapshots.jsonl"))}
+        checked = 0
+        for line in open(ref_run / "train.jsonl"):
+            row = json.loads(line)
+            if row["source"] != "inject" or not row.get("snapshot"):
+                continue
+            key = (row["snapshot"]["session"], row["snapshot"]["turn"])
+            if key not in snaps:
+                continue
+            got = render_extract_prompt(schema, snaps[key], "PLACEHOLDER")
+            assert got[0]["content"] == row["messages"][0]["content"], \
+                f"oracle system != captured system (snapshot {key})"
+            ref, new = row["messages"][-1]["content"], got[-1]["content"]
+            i, j = ref.find("[[ ## user_message ## ]]"), new.find("[[ ## user_message ## ]]")
+            assert i > 0 and j > 0 and ref[:i] == new[:j], \
+                f"oracle user blocks differ before user_message (snapshot {key})"
+            checked += 1
+            if checked >= 25:
+                break
+        assert checked, "h1b_merged has inject rows but none resolved to a snapshot"
+        print(f"oracle selftest: offline render byte-parity vs {checked} captured h1b_merged rows")
+        # no inject row in the reference run is a responder row (oracle emits none)
+        assert not any(json.loads(l)["module"] == "responder"
+                       for l in open(ref_run / "train.jsonl")
+                       if json.loads(l)["source"] == "inject")
+
+    # 5. emitted row shape (oracle_row is the live emitter) + legacy rows carry no label_source
+    row = oracle_row(schema, "bare_date", s, None, "June 12, 1994",
+                     [{"field_id": None, "value": "June 12, 1994"}])
+    assert row["label_source"] == "oracle" and row["module"] == "extractor"
+    assert row["source"] == "inject" and row["session"] is None and row["turn"] is None
+    assert row["well_formed"] and not row["adapter_retried"] and row["cost"] == 0.0
+    assert row["completion"] == ('[[ ## extractions ## ]]\n'
+                                '[{"field_id": null, "value": "June 12, 1994"}]\n\n'
+                                '[[ ## completed ## ]]')
+    legacy = _row_from_chain(
+        [{"module": "extractor", "format": "chat", "messages":
+          [{"role": "system", "content": "S"}, {"role": "user", "content": "U"}],
+          "completion": "[[ ## extractions ## ]]\n[]\n\n[[ ## completed ## ]]", "cost": 0.0}],
+        {"source": "inject", "behavior": "chitchat"})
+    assert "label_source" not in legacy, "legacy teacher row must not gain label_source"
+    # a label violating its convention is a BUG -> raises
+    try:
+        oracle_row(schema, "chitchat", s, None, "nice weather",
+                   [{"field_id": "dob", "value": "June 12, 1994"}])
+        raise AssertionError("oracle_row accepted a convention-violating label")
+    except AssertionError as e:
+        assert "convention" in str(e) or "gate failure" in str(e), e
+
+    # 6. --quotas parsing
+    valid = {b.name for b in REGISTRY}
+    assert parse_quotas("compound=75,wrapped_value=50, third_party=50 ,cross_select=43",
+                        valid) == {"compound": 75, "wrapped_value": 50,
+                                   "third_party": 50, "cross_select": 43}
+    assert parse_quotas("", valid) == {}
+    for bad in ("compund=75", "compound=x", "compound=-3"):
+        try:
+            parse_quotas(bad, valid)
+            raise AssertionError(f"parse_quotas accepted {bad!r}")
+        except ValueError:
+            pass
+    print("oracle selftest: guard / render / row shape / quotas all pass")
 
 
 # ======================================================================
 # CLI
 # ======================================================================
+
+def parse_quotas(spec: str, valid: set[str]) -> dict:
+    """"name=N,name=N" -> {name: N}. Raises ValueError on a typo or a bad count, so
+    one run can mirror an accumulated multi-run per-behavior total in one shot."""
+    out: dict[str, int] = {}
+    for part in (p.strip() for p in spec.split(",")):
+        if not part:
+            continue
+        name, _, n = part.partition("=")
+        name = name.strip()
+        if name not in valid:
+            raise ValueError(f"--quotas: unknown behavior name {name!r}\n"
+                             f"valid names: {', '.join(sorted(valid))}")
+        if not n.strip().isdigit():
+            raise ValueError(f"--quotas: {name} needs a non-negative integer, got {n.strip()!r}")
+        out[name] = int(n)
+    return out
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -1343,6 +1804,12 @@ def main():
     ap.add_argument("--model", default="", help="override the model id passed to the backend LM")
     ap.add_argument("--behaviors", default="",
                     help="comma-separated behavior names — restrict injection to these; empty = all")
+    ap.add_argument("--quotas", default="",
+                    help="per-behavior quota overrides on top of --quota, e.g. "
+                         "'compound=75,wrapped_value=50'")
+    ap.add_argument("--oracle", action="store_true",
+                    help="label injected rows from the injection spec (no teacher call). "
+                         "Farm sessions are teacher-labeled, so --farm is not allowed.")
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--parity", action="store_true")
     args = ap.parse_args()
@@ -1354,30 +1821,47 @@ def main():
         parity_offline()
         return
 
-    # validate --behaviors before any LM construction/injection — fail fast on a typo
+    # validate --behaviors / --quotas before any LM construction/injection — fail fast on a typo
+    valid = {b.name for b in REGISTRY}
     only = {b.strip() for b in args.behaviors.split(",") if b.strip()} or None
     if only:
-        valid = {b.name for b in REGISTRY}
         bad = sorted(only - valid)
         if bad:
             ap.error(f"unknown behavior name(s): {', '.join(bad)}\n"
                      f"valid names: {', '.join(sorted(valid))}")
+    try:
+        quotas = parse_quotas(args.quotas, valid)
+    except ValueError as e:
+        ap.error(str(e))
+    if args.oracle:
+        if args.farm:
+            ap.error("--oracle labels INJECTED rows from the spec; farm sessions stay "
+                     "teacher-labeled, so --oracle with --farm > 0 is not supported")
+        if not args.inject:
+            ap.error("--oracle only affects injection — pass --inject")
 
-    import dspy
-    # datagen generates training data, so it must use the canonical teacher
-    # (openrouter nemotron) by default — unlike eval_score, which keeps claude for
-    # legacy comparisons. The teacher LM only drives build_teacher; the LLM-U path
-    # (sim.claude_p / llm_u) always uses the claude CLI regardless.
-    if args.backend == "openrouter":
-        from .openrouter_lm import OpenRouterLM
-        lm = OpenRouterLM(model=args.model) if args.model else OpenRouterLM()
-    else:
-        lm = ClaudeLM(model=args.model) if args.model else ClaudeLM()
-    dspy.configure(lm=lm)
     schema = load_schema()
-    agent = build_teacher(schema)
     rng = random.Random(args.seed)
-    print(f"teacher backend={args.backend}  model={lm.model}", flush=True)
+    lm = agent = None
+    if args.oracle:
+        # No teacher at all: labels come from the injection spec, prompts are rendered
+        # offline. (The naturalizer, if enabled, is still an LM — a separate one.)
+        print("oracle mode: injected rows labeled from the injection spec (no teacher LM)",
+              flush=True)
+    else:
+        import dspy
+        # datagen generates training data, so it must use the canonical teacher
+        # (openrouter nemotron) by default — unlike eval_score, which keeps claude for
+        # legacy comparisons. The teacher LM only drives build_teacher; the LLM-U path
+        # (sim.claude_p / llm_u) always uses the claude CLI regardless.
+        if args.backend == "openrouter":
+            from .openrouter_lm import OpenRouterLM
+            lm = OpenRouterLM(model=args.model) if args.model else OpenRouterLM()
+        else:
+            lm = ClaudeLM(model=args.model) if args.model else ClaudeLM()
+        dspy.configure(lm=lm)
+        agent = build_teacher(schema)
+        print(f"teacher backend={args.backend}  model={lm.model}", flush=True)
 
     if args.inject and not args.farm and not args.snapshots:
         ap.error("--inject with --farm 0 requires --snapshots PATH")
@@ -1390,6 +1874,7 @@ def main():
     farm_summaries: list[dict] = []
     coverage: list[dict] = []
     prestep_handled = 0
+    nat_guard = None
     costs = {"farm_teacher": 0.0, "farm_u": 0.0, "inject_teacher": 0.0, "naturalizer": 0.0}
 
     try:
@@ -1413,10 +1898,12 @@ def main():
             if not args.farm:
                 snapshots = [json.loads(l) for l in open(args.snapshots)]
                 print(f"loaded {len(snapshots)} snapshots from {args.snapshots}", flush=True)
-            inj = run_injection(agent, lm, schema, snapshots, args.quota, rng, args.naturalize, only)
+            inj = run_injection(agent, lm, schema, snapshots, args.quota, rng, args.naturalize,
+                                only, args.oracle, quotas)
             train_rows.extend(inj["rows"])
             coverage = inj["coverage"]
             prestep_handled = inj["prestep_handled"]
+            nat_guard = inj.get("nat_guard")
             costs["inject_teacher"] += inj["inject_teacher"]
             costs["naturalizer"] += inj["naturalizer"]
     finally:
@@ -1431,7 +1918,7 @@ def main():
             for r in train_rows:
                 f.write(json.dumps(r) + "\n")
         report = build_report(schema, farm_summaries, snapshots, coverage, prestep_handled,
-                              train_rows, costs, parity, args)
+                              train_rows, costs, parity, args, nat_guard)
         json.dump(report, open(out / "report.json", "w"), indent=2, default=str)
         print_report(report, out)
 
