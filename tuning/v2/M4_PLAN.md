@@ -257,6 +257,185 @@ of turns, and (b) would make it structurally harmless. Leaning (b)+(a), NOT deci
 Eval-v2.1 candidates: both cases as hand-authored edges (rich-history trap w/ mid-form
 state; enthusiasm-filler boolean).
 
+**Template contamination (2026-07-24, self-caught; SECOND collision found 2026-07-25):**
+round-2's `compound_volunteer` training template "I'm {a} and you can reach me at {b}."
+is verbatim the eval `t_multi` frame — so `multi-0`'s round-2 pass is a contaminated
+witness. **Second collision (2026-07-25):** `datagen.py:704` wrapped_value template
+"In line at the store — you can text me at {v}." vs eval `edge_chitchat_with_value`
+"Sorry, typing in line at the store — anyway you can reach me at (212) 555-9981." — same
+scene and construction, so that case is contaminated too. The compound-skill closure is
+therefore down to **2 clean witnesses** (edge_answer_plus_extra, probe bulk turns with
+organic phrasing), not 3. Remediate next datagen round: replace both templates.
+The manual grep rule was insufficient (it missed this one) — replace it with a BUILD STEP:
+strip slots from every eval template and every training template, fail the build on a
+frame match or high overlap. See the eval-gen design below (decision 2).
+
+## Invention stress sweep (2026-07-25) — `stress_invent.py`, 1366 calls, 3 checkpoints
+
+Built to answer two questions about student issue #1: does the eval use out-of-sample
+values, and what triggers the hallucination? `tuning/v2/stress_invent.py` — student
+extractor only (temp 0, no responder, no LLM-U, $0), 576 constructed turns per
+checkpoint that contain NO bindable answer (correct output = set nothing), each emitted
+(field, value) classified `supported / expected_hint / semantic / from_history /
+from_corpus / novel_in_format / other_novel`. Grid: content(6) x filled(3) x pending(6)
+at history_depth=6 (block `main`, 432 calls) + content(6) x history_depth(3) x
+pii_in_history(2) at filled=half (block `hist`, 144 calls), 4 personas per cell.
+Anchor gate: the trap/seed-1 turn-3 input is rebuilt from `probe_runs/m3b_hybrid/
+sessions.jsonl` and must reproduce the recorded sets — **ANCHOR OK on slice1b**, so the
+failure is deterministic at temp 0 and the rig matches the reference system.
+
+**Value provenance, before running anything.** eval_set.py and datagen.py call the SAME
+`persona.gen_persona`, so eval values are same-format, different-seed: 0/204 train emails
+and 0/96 train phones recur in eval_set_v2; 3/30 full names do (name space is only 552
+pairs). The anchor's invented values are in NEITHER — `sara.yamamoto14@example.com`: 0
+corpus hits ("Sara" is not even in FIRST); `(892) 555-1089`: 0 hits (area code `(892) 555`
+appears 26x). Corpus audit of every free-text target value in h1b_merged: **371/371 are
+literal substrings of that turn's own user_message** — 0 copy-forward, 0 invented. SFT
+never saw a label that invents.
+
+| checkpoint | calls | unparseable | set% | invention | from_corpus | from_history | semantic |
+|---|---|---|---|---|---|---|---|
+| base Qwen3.5-0.8B | 214 | 112 (52%) | 45.8% | 6.1% | **0** | 206 | 1181 |
+| slice1 (439 rows) | 576 | 0 | 22.0% | 1.0% (6 calls / 10 values) | **0** | 37 | 59 |
+| slice1b (594 rows) | 576 | 0 | 19.8% | 1.6% (9 calls / 25 values) | **0** | 9 | 75 |
+
+`from_corpus` is 0 in all 1366 calls: **no verbatim memorization anywhere** — what was
+memorized is the generator's FORMAT (`first.last##@example.com`, `(NXX) 555-XXXX`), which
+is why a value-disjoint eval gives no protection. SFT did not introduce the behavior: base
+invents at 7.4% on the 94 cells it shares with slice1b vs slice1b's 2.1%. slice1 -> slice1b
+moved 6 -> 9 invention calls (not actionable at that n) while cutting copy-forward 37 -> 9.
+
+**Triggers (slice1b).** filled empty/half/near_complete = 0.0% / 0.7% / **4.9%**;
+content chitchat, numeric_filler, emotional_filler, deflect_ask = **0.0%** all four,
+travel_story 2.8%, **third_person 8.3%**; pending email/phone = 5.6% / 2.8%, dob and
+full_name 0.0%; history_depth and pii_in_history: no effect. Mechanism: a near-complete
+form + a person's NAME in the turn -> the model completes the record around that name
+(`"Ravi Ali in my office went through this exact process"` -> `email=ravi.ali14@example.com`,
+`phone=(432) 555-1099`, `dob=1999-01-01`, `address=454 Elm Rd, Auburn, CA 30055`), and
+`mailing_address="2098 Diego Johansson, China"` shows it is not even coherent.
+
+**The sweep's larger finding — third-party name binding (NOT invention, NOT guardable).**
+On `third_person` turns the friend's name is bound to `full_name` in **26/96 (slice1b)** and
+**30/96 (slice1)** — bucket `supported`, because the name really is in the utterance. A
+provenance check cannot touch it. `third_party` IS in the training registry (rule `empty`,
+46 kept rows in round 2) yet does not transfer to a near-complete form: the same
+thin-context-data / rich-context-failure pattern as the trap. Direct evidence for (a).
+Boolean/choice over-attribution on non-answer turns rose round 1 -> 2:
+`prior_application` 13 -> 30 values.
+
+**Implication for the fix menu** (still NOT decided): (b) provenance check is cheap and
+structurally sound — 371/371 training labels are utterance-literal, so requiring free-text
+values to appear in the current utterance IS the training distribution and cannot
+false-positive on a correctly learned skill; it kills all 25 slice1b invented values but
+none of the ~56 supported-but-wrong or ~75 semantic ones. (a) round-3 farm-context
+injections now has evidence (thin-context third_party/trap did not generalize) and is the
+only lever on the third-party binding. (c) more data: slice1 -> slice1b is flat-to-worse
+on both, so epochs/volume alone is not the answer. Booleans need their own rule (an
+explicit affirmation token) or data — provenance cannot check `True`.
+Runs: `tuning/v2/stress_runs/{base_qwen35,slice1,slice1b}/` (gitignored).
+
+### Issue #1 fix — AGREED 2026-07-25: validator provenance gate (code only, no retrain)
+
+Scope: student issue #1 ONLY (unsupported free-text values). Issues #2 (boolean/choice
+over-attribution) and third-party name binding stay OPEN — no provenance check can reach
+them, see below.
+
+- **Where.** `validator.py::_validate_pair` — it already receives `user_message` via
+  `validate(pairs, state, user_message)`. For a non-choice field, a value the utterance
+  does not support returns an outcome that sets nothing; the field stays unfilled and the
+  harness re-asks. Same "code owns the decision" pattern as the `_bind_unplaced` cascade
+  (code-owns-placement extended to code-owns-provenance).
+- **Support test.** The logic already written as `probe.py::_invention_check` — email
+  substring, phone digit-run, normalized substring for text, **coerce-span for dates**.
+  Factor it into ONE shared helper so the guard, `probe.py` and `stress_invent.py` cannot
+  drift apart. Dates MUST route through `validator.coerce`, never raw matching
+  ("January 15, 1998" -> "1998-01-15" is not a substring) — that is the only real hazard.
+- **Coverage.** All 25 invented values in the slice1b sweep are free-text (email, phone,
+  dob, address) -> all 25 droppable. It removes 0 of the ~56 supported-but-wrong and 0 of
+  the ~75 semantic sets.
+- **Why low-risk.** 371/371 free-text training labels are literal substrings of their own
+  turn's user_message, so requiring that at serve time IS the training distribution — it
+  cannot reject a correctly learned skill.
+- **Gates (all local, free), hard-block the change on all four:** 31/31 deterministic
+  smoke; eval v1 (F1 100 / value 99.1 — tight regression detector); eval v2 realistic
+  band; replay the 25 recorded invented values from `stress_runs/slice1b/results.jsonl`
+  and confirm each is dropped.
+- **Not decided:** whether a dropped value is logged/surfaced anywhere, and whether the
+  same gate should apply to the teacher path (it is model-agnostic by construction).
+
+## Eval v3 design decisions (2026-07-25)
+
+**`third_party_name` expects empty — a v3 CEILING, not a correctness fact.** The case
+"Desmond Quaintrell is the one who talked me into going back to school." expects no set,
+including no `how_heard=referral`. That is right for the current single-turn extraction
+contract: the sentence is about persuasion, not about how the applicant heard of
+Northfield, and nothing is pending. But a more capable system SHOULD do one of two things
+we deliberately do not ask of the student: (a) carry the mention forward and propose it
+when `how_heard` becomes pending — "you mentioned Desmond told you about this school;
+shall I put referral?" — or (b) clarify at the time and bind `referral` in advance. Both
+require cross-turn memory of an unbound hint plus a confirmation mechanic, neither of
+which exists in the harness. So v3 scores "empty" as correct; when the composer grows a
+deferred-hint mechanic, this expectation must be revisited rather than treated as settled.
+Same family as the parked refusal defer mechanic.
+
+**Unlisted option values — CONVENTION B, CONFIRMED 2026-07-25: no inference.** The
+`country_*` fields carry 15 options: 14 countries plus `OTHER`/"Other". When a user names
+a country that is not in the list ("I'm in Kenya"), the extractor emits what was said;
+`match_options` returns `[]`; for a large select (15 > `CHOICE_BUTTON_MAX` 8) the validator
+returns `Outcome(CLARIFY, ...)`; nothing is written, `clarified` suppresses the agenda, the
+field stays pending, and the assistant asks the user to pick. `OTHER` binds ONLY when the
+user says "Other" themselves. The rejected alternative (A: let the extractor infer `OTHER`
+from an unlisted place name) is faster on the genuinely-unlisted path but loses data on
+near-misses: `match_options` returns `[]` for "Britain", "Great Britain", "America" and
+"Holland" even though United Kingdom and United States ARE options, so A would file a
+British applicant under "Other". B costs one extra turn; A silently corrupts.
+Consequences: (1) eval v3 gains an `unlisted_country` scenario expecting empty — this makes
+the stress sweep's real failure (Nairobi/Kenya narrative -> `country_citizenship='NG'`)
+detectable for the first time; (2) round-3 training should include country-field `no_match`
+cases — `gen_persona` only ever draws LISTED countries, so the student has likely never
+seen this; (3) SEPARATE ISSUE, not an eval case: `match_options` has no alias table, so
+"Britain" fails to reach UK. Near-miss names are deliberately excluded from the eval —
+scoring them `empty` would freeze a validator gap as ground truth, the same defect as the
+removed "the 3rd of March, 1994" case.
+
+## Oracle-as-labeler (proposed, NOT adopted) — 2026-07-25
+
+Today the teacher writes every training label (692 of 916 rows in h1b_merged are
+teacher-labeled injections) and the convention table only VETOES — `sim_to_sft` passes
+completions through unchanged and drops violators, never rewrites. Eval v3 showed the
+same convention table can WRITE labels instead (that is where v3's 414 expectations come
+from, at $0 and with no teacher call). Extending that to injected training rows would
+remove teacher noise from the majority of the corpus and retire curation's 8-10% drop tax.
+
+NOT adopted, because auditing six dropped rows one per behavior showed the deletions are
+three different things, and only the first is a loss:
+- **(A) teacher error, convention right** — `bare_date` "January 15, 1998" -> teacher bound
+  `dob`; `deflect_free` "what format should the Test Date be in?" -> teacher `[]` instead of
+  engagement. Oracle labeling recovers a good row.
+- **(B) convention choice, teacher defensible** — `refusal` "skip my phone for now" -> teacher
+  `{phone, ""}`; we standardise on `[]` only because there is no defer mechanic. Substitution,
+  not correction.
+- **(C) the case itself is broken; deleting was CORRECT** — `boolean_phrase` renders a greeting
+  with NO field ask (`_boolean_phrase_ctx` = `rng.choice(_BOOLEAN_FIELDS)` + `_greet_history`)
+  while `pending` is deliberately not shown to the model, so "I did take it last fall" has no
+  visible referent and the teacher's null-fallback is right; `cross_select` "Let's make it
+  TOEFL." was naturalized into "are we sure that's the one we want to pick?", which no longer
+  commits. Writing the spec label here would be WORSE than dropping the row.
+
+**Naturalizer drift (measured, judged NOT a problem as-is).** 14.4% of statement-shaped
+injections (78/542) came back containing "?" and 7.6% (41) with hedging. Mostly harmless
+style ("Um, actually I think my Program of Interest should be Public Health (MPH)" still
+commits); occasionally answer-inverting (the `cross_select` case). Under the CURRENT
+pipeline this is self-correcting — the teacher answers the text as written, curation drops
+the row, no wrong label enters training — so the cost is ~9 rows/round of quota, not data
+quality. It becomes a correctness problem ONLY under oracle labeling. Therefore: if we ever
+adopt oracle-as-labeler, a lexical guard is a PRECONDITION (reject/re-roll a naturalization
+that adds "?" where the template had none, or hedging where the template committed, plus a
+prompt line "keep the commitment; never turn a statement into a question"). Until then,
+leave the naturalizer alone. It also partly re-explains the curation stats: `bare_date`
+12/25 is genuine teacher guessing, but the `cross_select` / `deflect_free` drops are
+substantially naturalizer semantics, not teacher unreliability.
+
 ## Parked decisions
 - **LLM U model at H1 scale — RESOLVED: haiku.** 3 probe sessions + mix probe eyeballed (terse/chatty/
   unsure all style-faithful; bulk 7-value turn caught 7/7). ~$0.16/session vs sonnet's ~$0.55.

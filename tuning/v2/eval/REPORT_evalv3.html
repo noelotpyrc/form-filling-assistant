@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eval v3 — four-model comparison</title>
+<style>
+  :root{
+    --bg:#fbfbfd; --panel:#fff; --ink:#1a1a22; --mut:#5b6170; --line:#e3e5ec;
+    --hl:#fff7d6; --accent:#2563eb; --good:#0f766e; --warn:#b45309; --bad:#b42318;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:14px}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:0;max-width:1180px;margin:0 auto}
+  nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;
+    padding:20px 14px;border-right:1px solid var(--line);font-size:13px}
+  nav.toc h4{margin:14px 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+  nav.toc a{display:block;padding:3px 8px;border-radius:6px;color:var(--ink)}
+  nav.toc a.sub{padding-left:20px;color:var(--mut);font-size:12.5px}
+  nav.toc a:hover{background:#eef1f7;text-decoration:none}
+  nav.toc code{background:none;padding:0;font-size:12px}
+  main{padding:26px 34px 120px;min-width:0}
+  header.doc{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:8px}
+  header.doc h1{margin:0 0 6px;font-size:24px}
+  .sub{color:var(--mut);font-size:13.5px;margin:2px 0}
+  section{padding:22px 0;border-bottom:1px solid var(--line)}
+  section:target{animation:flash 1.4s ease}
+  h2{font-size:19px;margin:0 0 10px;scroll-margin-top:14px}
+  h3{font-size:15.5px;margin:20px 0 6px;scroll-margin-top:14px}
+  p{margin:8px 0}
+  ul{margin:8px 0;padding-left:22px}
+  li{margin:3px 0}
+  code{font-family:var(--mono);font-size:.88em;background:#eef1f7;padding:1px 5px;border-radius:5px;
+    word-break:break-word}
+  pre{background:#0f1222;color:#e6e8f0;padding:14px 16px;border-radius:10px;overflow-x:auto;
+    font-family:var(--mono);font-size:12px;line-height:1.55;white-space:pre}
+  .tw{overflow-x:auto;margin:10px 0;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:0}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top;
+    white-space:nowrap}
+  th{background:#f4f6fb;font-size:12.5px;position:relative}
+  td.wrapcell,th.wrapcell{white-space:normal;min-width:170px}
+  td code{background:#f2f4f9;font-size:11.8px;padding:1px 4px}
+  tbody tr:nth-child(even) td{background:#fcfcfe}
+  td.best{background:#eefaf4;box-shadow:inset 3px 0 0 var(--good)}
+  tbody tr:nth-child(even) td.best{background:#eafaf3}
+  .cap{color:var(--mut);font-size:13px;margin:6px 0 0}
+  .headline{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px 14px;margin:10px 0}
+  .headline .tw{margin-top:0}
+  .disclose{border-left:4px solid var(--warn);background:#fff9ef;border-radius:8px;
+    padding:10px 14px;margin:14px 0 0;font-size:13.5px}
+  .disclose p:first-child{margin-top:0}
+  .disclose ul{margin:6px 0}
+  .note{background:#f4f6fb;border-left:4px solid var(--accent);padding:8px 12px;
+    border-radius:6px;font-size:13.5px;margin:10px 0}
+  .warn{color:var(--warn);font-weight:700}
+  .xm{color:var(--bad);font-weight:700}
+  footer.doc{color:var(--mut);font-size:13px;padding:18px 0 0}
+  @keyframes flash{0%{background:var(--hl)}100%{background:transparent}}
+  @media(max-width:820px){
+    .wrap{grid-template-columns:1fr}
+    nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+    main{padding:18px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="toc">
+<h4>Report</h4>
+<a href="#s1">1. Provenance</a>
+<a href="#s2">2. Headline</a>
+<a href="#s3">3. v1 frozen-eval continuity (109 cases)</a>
+<a href="#s4">4. Per depth band</a>
+<a href="#s5">5. Per scenario (whole-case pass, x/18)</a>
+<a href="#s6">6. Case-level flips, slice1b -&gt; r3-oracle</a>
+<a class="sub" href="#s6-1">6.1 All 20 pass -&gt; fail regressions</a>
+<a class="sub" href="#s6-2">6.2 fail -&gt; pass, by scenario (42)</a>
+<a class="sub" href="#s6-3">6.3 fail -&gt; fail: the joint residue (36)</a>
+<a href="#s7">7. Error-cause breakdown</a>
+<a class="sub" href="#s7-1">7.1 Positive-expectation (<code>sets</code>) cases — 198 total</a>
+<a class="sub" href="#s7-2">7.2 Empty-expectation cases — 180 total</a>
+<a href="#s8">8. Value-transcription check</a>
+<a href="#s9">9. Invented-PII spot check</a>
+<a href="#s10">10. Observations</a>
+<a href="#s11">11. Limitations</a>
+</nav>
+
+<main>
+<header class="doc">
+<h1>Eval v3 — four-model comparison</h1>
+<p class="sub"><b>Generated:</b> 2026-07-26. <b>Eval set:</b> <code>tuning/v2/eval/eval_set_v3.jsonl</code> (frozen, v3).</p>
+</header>
+<section id="s1">
+<h2>1. Provenance</h2>
+<p><b>Eval set v3</b> — 414 cases, 23 scenarios x 18 cases each. Depth bands: early 125, mid 124, late 165 (band = number of already-filled form fields at the point the case is cut: early 0-3, mid 4-7, late 8+). Contexts are sampled from 30 held-out farm sessions, seeds 102-131, one snapshot per case (<code>report_v3.json</code>: <code>snapshots_used</code> 414, <code>snapshot_reuse</code> 0). Expectations were written by the injection spec (the convention table), not by a model, then audited independently against a full teacher run: 17 disagreements were adjudicated and 8 cases corrected. (That audit count comes from the eval-v3 construction record; it is not derivable from the JSONs in this directory.) Expectation shapes: 198 <code>sets</code> cases, 180 <code>empty</code> cases, 36 <code>choice</code> cases.</p>
+<p><b>Scoring</b> — <code>tuning/v2/eval_score.py</code>. A <code>sets</code> case passes only if the set of field ids matches exactly AND every value matches (string-equal after strip, or bool-equal). An <code>empty</code> case passes only if nothing was set. A <code>choice</code> case passes only if a choice was offered on an expected field and nothing was set. Derived rates: over-attribution is measured on the <code>no_value</code> sub-band (value-free noise), wrong-field-assignment on the <code>unplaceable</code> sub-band (<code>ambiguous</code>, <code>no_match</code>, <code>bare_date</code>, <code>bare_ambiguous</code>, <code>invalid_value</code>); together those two make up the empty-correct denominator.</p>
+<p><b>Models</b></p>
+<div class="tw"><table>
+<thead><tr><th class="wrapcell">label</th><th class="wrapcell">JSON</th><th class="wrapcell">provenance</th></tr></thead>
+<tbody><tr><td class="wrapcell">base Qwen3.5-0.8B</td><td class="wrapcell"><code>baseline-base_qwen35_evalv3.json</code></td><td class="wrapcell"><code>mlx-community/Qwen3.5-0.8B-bf16</code>, untuned</td></tr>
+<tr><td class="wrapcell">slice1b (round 2)</td><td class="wrapcell"><code>baseline-sft_v2_slice1b_evalv3.json</code></td><td class="wrapcell">teacher-labeled corpus <code>h1b_merged</code>: 718 extractor rows after curation dropped 55 convention-violating teacher labels</td></tr>
+<tr><td class="wrapcell">r3-oracle (round 3)</td><td class="wrapcell"><code>baseline-sft_r3_oracle_evalv3.json</code></td><td class="wrapcell">oracle-labeled injections: 682 rows labeled by the injection spec with zero teacher involvement + 81 teacher-labeled farm rows = 763; curation drops 0 by construction; 11 assistant-voice naturalizations dropped at merge; hyperparams identical to round 2 (3 epochs, batch 8, lr 2e-4, L4); final eval_loss 0.132</td></tr>
+<tr><td class="wrapcell">teacher nemotron</td><td class="wrapcell"><code>baseline-teacher_nemotron_v3.json</code></td><td class="wrapcell"><code>nvidia/nemotron-3-ultra-550b-a55b</code> via OpenRouter — the model that labels farm conversations</td></tr></tbody>
+</table></div>
+<p><b>Eval cost</b> (<code>cost_usd</code> in each JSON): base $0.0000, slice1b $0.0000, r3-oracle $0.0000, teacher $0.6992. All four runs are <code>n=1</code> sample per case; <code>stability.flaky</code> is empty in all four.</p>
+</section>
+<section id="s2">
+<h2>2. Headline</h2>
+<div class="headline">
+<div class="tw"><table>
+<thead><tr><th>metric</th><th>base Qwen3.5-0.8B</th><th>slice1b (round 2)</th><th>r3-oracle (round 3)</th><th>teacher nemotron</th></tr></thead>
+<tbody><tr><td>cases scored</td><td>358 of 414</td><td>414</td><td>414</td><td>414</td></tr>
+<tr><td>field F1</td><td>21.5</td><td>84.8</td><td class="best"><b>90.2</b></td><td>97.1</td></tr>
+<tr><td>precision</td><td>12.6</td><td>80.2</td><td class="best"><b>90.9</b></td><td>95.8</td></tr>
+<tr><td>recall</td><td>75.2</td><td class="best"><b>89.9</b></td><td>89.5</td><td>98.4</td></tr>
+<tr><td>value-match</td><td class="best"><b>93.5</b> (n=170)</td><td>93.1 (n=231)</td><td>93.0 (n=230)</td><td>99.6 (n=253)</td></tr>
+<tr><td>empty-correct (n=180)</td><td>25.3</td><td>77.8</td><td class="best"><b>91.1</b></td><td>96.1</td></tr>
+<tr><td>over-attrib (n=126)</td><td>80.6</td><td>25.4</td><td class="best"><b>11.9</b></td><td>4.0</td></tr>
+<tr><td>wrong-field (n=54)</td><td>63.5</td><td>14.8</td><td class="best"><b>1.9</b></td><td>3.7</td></tr>
+<tr><td>choice-correct (n=36)</td><td>0.0</td><td class="best"><b>100.0</b></td><td>97.2</td><td>100.0</td></tr>
+<tr><td>tp / fp / fn</td><td>170 / 1184 / 56</td><td>231 / 57 / 26</td><td>230 / 23 / 27</td><td>253 / 11 / 4</td></tr>
+<tr><td>whole-case pass rate</td><td>27.4 (98/358)</td><td>81.2 (336/414)</td><td>86.5 (358/414)</td><td>96.6 (400/414)</td></tr>
+<tr><td>eval cost (USD)</td><td>0.0000</td><td>0.0000</td><td>0.0000</td><td>0.6992</td></tr></tbody>
+</table></div>
+<p class="cap">Bold marks the best of the three locally-served models (base / slice1b / r3-oracle) per row. Lower is better for over-attribution and wrong-field. Rates are percentages.</p>
+<div class="disclose">
+<p><b>Base disclosure — read before comparing base to anything.</b> The base run scored <b>358 of 414</b> cases. The other 56 raised an exception in <code>run_case</code> (unparseable completions); <code>run_baseline</code> catches it, prints it, and <code>continue</code>s, so those cases are <b>skipped, not scored as failures</b>. Every base rate above is therefore computed over the subset of cases where base produced parseable output, which flatters base. The skips are not uniform:</p>
+<ul><li>by band: early 14, mid 18, late 24</li><li>by expectation shape: <code>sets</code> 173 of 198 scored, <code>empty</code> 150 of 180, <code>choice</code> 35 of 36</li><li>by scenario: pending_answer 7, third_party_name 7, restraint_question 6, wrapped_value 6, refusal 5, boolean_phrase 4, narrative_trap 4, chitchat 3, bulk 2, compound 2, invalid_value 2, residence_statement 2, unlisted_country 2, deflect 1, multi_select_subset 1, precedence 1, third_party_fact 1</li></ul>
+<p>Base's derived-rate denominators are correspondingly smaller than the other models': empty-correct n=150 (vs 180), over-attribution n=98 (vs 126), wrong-field n=52 (vs 54), choice n=35 (vs 36; the skipped choice case is <code>deflect-12</code>). A run that scored the unparseable cases as failures would put base lower on every row.</p>
+</div>
+</div>
+</section>
+<section id="s3">
+<h2>3. v1 frozen-eval continuity (109 cases)</h2>
+<p>The v1 set is the byte-frozen 109-case regression detector from M3a. It is reported here only to show that round 3 did not break the criteria round 2 met.</p>
+<div class="tw"><table>
+<thead><tr><th>model</th><th>samples n</th><th>observations</th><th>field F1</th><th>P</th><th>R</th><th>value-match</th><th>empty-correct</th><th>over-attrib</th><th>wrong-field</th><th>choice-correct</th><th>whole-case pass</th><th>failing case</th></tr></thead>
+<tbody><tr><td>slice1b (round 2)</td><td>1</td><td>109</td><td>100.0</td><td>100.0</td><td>100.0</td><td>99.1</td><td>100.0</td><td>0.0</td><td>0.0</td><td>100.0</td><td>108/109</td><td>correction_email-7</td></tr>
+<tr><td>r3-oracle (round 3)</td><td>1</td><td>109</td><td>99.5</td><td>100.0</td><td>99.1</td><td>100.0</td><td>100.0</td><td>0.0</td><td>0.0</td><td>100.0</td><td>108/109</td><td>edge_answer_plus_extra</td></tr>
+<tr><td>teacher nemotron</td><td>3</td><td>327</td><td>100.0</td><td>100.0</td><td>100.0</td><td>100.0</td><td>100.0</td><td>0.0</td><td>0.0</td><td>100.0</td><td>327/327</td><td>none</td></tr></tbody>
+</table></div>
+<p>Sources: <code>baseline-sft_v2_slice1b.json</code>, <code>baseline-sft_r3_oracle_evalv1.json</code>, <code>baseline-nemotron_v2.json</code>. The teacher row is <code>n=3</code> samples (327 observations over 109 cases). The two students trade one case each: slice1b misses a value on <code>correction_email-7</code>, r3-oracle drops a field on <code>edge_answer_plus_extra</code>.</p>
+</section>
+<section id="s4">
+<h2>4. Per depth band</h2>
+<div class="tw"><table>
+<thead><tr><th>model</th><th>band</th><th>n</th><th>field F1</th><th>P</th><th>R</th><th>value-match</th><th>empty-correct</th><th>over-attrib</th><th>wrong-field</th><th>choice-correct</th></tr></thead>
+<tbody><tr><td>base Qwen3.5-0.8B</td><td>early</td><td>111</td><td>25.6</td><td>15.4</td><td>77.4</td><td>95.1 (n=41)</td><td>44.7 (n=38)</td><td>68.2 (n=22)</td><td>37.5 (n=16)</td><td>0.0 (n=28)</td></tr>
+<tr><td>base Qwen3.5-0.8B</td><td>mid</td><td>106</td><td>26.3</td><td>15.6</td><td>84.6</td><td>98.7 (n=77)</td><td>14.3 (n=35)</td><td>76.5 (n=17)</td><td>94.4 (n=18)</td><td>0.0 (n=3)</td></tr>
+<tr><td>base Qwen3.5-0.8B</td><td>late</td><td>141</td><td>15.4</td><td>8.8</td><td>63.4</td><td>84.6 (n=52)</td><td>20.8 (n=77)</td><td>86.4 (n=59)</td><td>55.6 (n=18)</td><td>0.0 (n=4)</td></tr>
+<tr><td>slice1b (round 2)</td><td>early</td><td>125</td><td>91.2</td><td>86.1</td><td>96.9</td><td>95.2 (n=62)</td><td>79.5 (n=44)</td><td>25.0 (n=28)</td><td>12.5 (n=16)</td><td>100.0 (n=29)</td></tr>
+<tr><td>slice1b (round 2)</td><td>mid</td><td>124</td><td>91.9</td><td>91.4</td><td>92.3</td><td>96.9 (n=96)</td><td>87.8 (n=41)</td><td>4.8 (n=21)</td><td>20.0 (n=20)</td><td>100.0 (n=3)</td></tr>
+<tr><td>slice1b (round 2)</td><td>late</td><td>165</td><td>73.0</td><td>65.8</td><td>82.0</td><td>86.3 (n=73)</td><td>72.6 (n=95)</td><td>31.2 (n=77)</td><td>11.1 (n=18)</td><td>100.0 (n=4)</td></tr>
+<tr><td>r3-oracle (round 3)</td><td>early</td><td>125</td><td>87.7</td><td>86.4</td><td>89.1</td><td>96.5 (n=57)</td><td>84.1 (n=44)</td><td>25.0 (n=28)</td><td>0.0 (n=16)</td><td>96.6 (n=29)</td></tr>
+<tr><td>r3-oracle (round 3)</td><td>mid</td><td>124</td><td>95.1</td><td>96.1</td><td>94.2</td><td>98.0 (n=98)</td><td>97.6 (n=41)</td><td>0.0 (n=21)</td><td>5.0 (n=20)</td><td>100.0 (n=3)</td></tr>
+<tr><td>r3-oracle (round 3)</td><td>late</td><td>165</td><td>86.2</td><td>88.2</td><td>84.3</td><td>84.0 (n=75)</td><td>91.6 (n=95)</td><td>10.4 (n=77)</td><td>0.0 (n=18)</td><td>100.0 (n=4)</td></tr>
+<tr><td>teacher nemotron</td><td>early</td><td>125</td><td>96.9</td><td>96.9</td><td>96.9</td><td>100.0 (n=62)</td><td>97.7 (n=44)</td><td>0.0 (n=28)</td><td>6.2 (n=16)</td><td>100.0 (n=29)</td></tr>
+<tr><td>teacher nemotron</td><td>mid</td><td>124</td><td>98.6</td><td>99.0</td><td>98.1</td><td>100.0 (n=102)</td><td>100.0 (n=41)</td><td>0.0 (n=21)</td><td>0.0 (n=20)</td><td>100.0 (n=3)</td></tr>
+<tr><td>teacher nemotron</td><td>late</td><td>165</td><td>95.7</td><td>91.8</td><td>100.0</td><td>98.9 (n=89)</td><td>93.7 (n=95)</td><td>6.5 (n=77)</td><td>5.6 (n=18)</td><td>100.0 (n=4)</td></tr></tbody>
+</table></div>
+</section>
+<section id="s5">
+<h2>5. Per scenario (whole-case pass, x/18)</h2>
+<p>Sorted by delta (r3-oracle minus slice1b). <span class="warn">&#9888;</span> marks every scenario where r3-oracle is worse than slice1b. Base denominators vary because of its skipped cases.</p>
+<div class="tw"><table>
+<thead><tr><th>scenario</th><th>base (n scored)</th><th>slice1b</th><th>r3-oracle</th><th>teacher</th><th>delta r3 - slice1b</th></tr></thead>
+<tbody><tr><td>narrative_trap</td><td>0/14</td><td>7/18</td><td>17/18</td><td>18/18</td><td>+55.6 pp</td></tr>
+<tr><td>third_party_name</td><td>2/11</td><td>9/18</td><td>14/18</td><td>13/18</td><td>+27.8 pp</td></tr>
+<tr><td>invalid_value</td><td>0/16</td><td>14/18</td><td>18/18</td><td>18/18</td><td>+22.2 pp</td></tr>
+<tr><td>multi_select_subset</td><td>2/17</td><td>3/18</td><td>6/18</td><td>15/18</td><td>+16.7 pp</td></tr>
+<tr><td>correction</td><td>7/18</td><td>16/18</td><td>18/18</td><td>18/18</td><td>+11.1 pp</td></tr>
+<tr><td>refusal</td><td>1/13</td><td>16/18</td><td>18/18</td><td>18/18</td><td>+11.1 pp</td></tr>
+<tr><td>bulk</td><td>2/16</td><td>11/18</td><td>13/18</td><td>18/18</td><td>+11.1 pp</td></tr>
+<tr><td>no_match</td><td>10/18</td><td>15/18</td><td>17/18</td><td>17/18</td><td>+11.1 pp</td></tr>
+<tr><td>bare_ambiguous</td><td>9/18</td><td>17/18</td><td>18/18</td><td>17/18</td><td>+5.6 pp</td></tr>
+<tr><td>chitchat</td><td>5/15</td><td>17/18</td><td>18/18</td><td>18/18</td><td>+5.6 pp</td></tr>
+<tr><td>asks_about_field</td><td>0/18</td><td>18/18</td><td>18/18</td><td>18/18</td><td>+0.0 pp</td></tr>
+<tr><td>boolean_phrase</td><td>0/14</td><td>16/18</td><td>16/18</td><td>18/18</td><td>+0.0 pp</td></tr>
+<tr><td>compound</td><td>3/16</td><td>12/18</td><td>12/18</td><td>18/18</td><td>+0.0 pp</td></tr>
+<tr><td>freetext_select</td><td>12/18</td><td>18/18</td><td>18/18</td><td>18/18</td><td>+0.0 pp</td></tr>
+<tr><td>pending_answer</td><td>5/11</td><td>18/18</td><td>18/18</td><td>18/18</td><td>+0.0 pp</td></tr>
+<tr><td>precedence</td><td>3/17</td><td>16/18</td><td>16/18</td><td>18/18</td><td>+0.0 pp</td></tr>
+<tr><td>restraint_question</td><td>1/12</td><td>15/18</td><td>15/18</td><td>18/18</td><td>+0.0 pp</td></tr>
+<tr><td>unlisted_country</td><td>10/16</td><td>18/18</td><td>18/18</td><td>18/18</td><td>+0.0 pp</td></tr>
+<tr><td>third_party_fact <span class="warn">&#9888;</span></td><td>0/17</td><td>12/18</td><td>11/18</td><td>18/18</td><td>-5.6 pp</td></tr>
+<tr><td>wrapped_value <span class="warn">&#9888;</span></td><td>2/12</td><td>16/18</td><td>15/18</td><td>18/18</td><td>-5.6 pp</td></tr>
+<tr><td>deflect <span class="warn">&#9888;</span></td><td>0/17</td><td>18/18</td><td>17/18</td><td>18/18</td><td>-5.6 pp</td></tr>
+<tr><td>typed_choice <span class="warn">&#9888;</span></td><td>13/18</td><td>18/18</td><td>17/18</td><td>18/18</td><td>-5.6 pp</td></tr>
+<tr><td>residence_statement <span class="warn">&#9888;</span></td><td>11/16</td><td>16/18</td><td>10/18</td><td>14/18</td><td>-33.3 pp</td></tr></tbody>
+</table></div>
+</section>
+<section id="s6">
+<h2>6. Case-level flips, slice1b -&gt; r3-oracle</h2>
+<div class="tw"><table>
+<thead><tr><th>slice1b -&gt; r3-oracle</th><th>cases</th></tr></thead>
+<tbody><tr><td>pass -&gt; pass</td><td>316</td></tr>
+<tr><td>pass -&gt; fail (regression)</td><td>20</td></tr>
+<tr><td>fail -&gt; pass</td><td>42</td></tr>
+<tr><td>fail -&gt; fail (joint residue)</td><td>36</td></tr>
+<tr><td>total</td><td>414</td></tr></tbody>
+</table></div>
+<h3 id="s6-1">6.1 All 20 pass -&gt; fail regressions</h3>
+<div class="tw"><table>
+<thead><tr><th class="wrapcell">id</th><th class="wrapcell">scenario</th><th class="wrapcell">band</th><th class="wrapcell">user_message</th><th class="wrapcell">expected</th><th class="wrapcell">slice1b got</th><th class="wrapcell">r3-oracle got</th></tr></thead>
+<tbody><tr><td class="wrapcell">boolean_phrase-11</td><td class="wrapcell">boolean_phrase</td><td class="wrapcell">late</td><td class="wrapcell">I've been working full-time since I graduated.</td><td class="wrapcell"><code>{"has_work_experience": true}</code></td><td class="wrapcell"><code>{"has_work_experience": true}</code></td><td class="wrapcell">(nothing) choice=<code>has_work_experience</code></td></tr>
+<tr><td class="wrapcell">bulk-02</td><td class="wrapcell">bulk</td><td class="wrapcell">late</td><td class="wrapcell">Three things at once — my email's rmt3@student.northfield.edu, my number's 07700 900461, post goes to 88 Haly…</td><td class="wrapcell"><code>{"email": "rmt3@student.northfield.edu", "phone": "07700 900461", "mailing_address": "88 Halyard Court, Apt 4B, New Bedford, MA 02740"}</code></td><td class="wrapcell"><code>{"email": "rmt3@student.northfield.edu", "phone": "07700 900461", "mailing_address": "88 Halyard Court, Apt 4B, New Bedford, MA 02740"}</code></td><td class="wrapcell"><code>{"email": "rmt3@student.northfield.edu", "phone": "(07700) 900461", "mailing_address": "88 Halyard Court, Apt 4B, New Bedford, MA 02740"}</code></td></tr>
+<tr><td class="wrapcell">compound-05</td><td class="wrapcell">compound</td><td class="wrapcell">late</td><td class="wrapcell">1704 Quarry Bend Parkway, Chattanooga, TN 37405 — and while I'm here, friends call me Sunny.</td><td class="wrapcell"><code>{"mailing_address": "1704 Quarry Bend Parkway, Chattanooga, TN 37405", "preferred_name": "Sunny"}</code></td><td class="wrapcell"><code>{"mailing_address": "1704 Quarry Bend Parkway, Chattanooga, TN 37405", "preferred_name": "Sunny"}</code></td><td class="wrapcell"><code>{"mailing_address": "1704 Quarry Bend Parkway, Chattanooga, TN 37405", "phone": "(293) 555-6163", "preferred_name": "Sunny"}</code></td></tr>
+<tr><td class="wrapcell">compound-06</td><td class="wrapcell">compound</td><td class="wrapcell">mid</td><td class="wrapcell">Perpetua Vanterpool. Oh, give me a ring on 0161 496 0123 too.</td><td class="wrapcell"><code>{"full_name": "Perpetua Vanterpool", "phone": "0161 496 0123"}</code></td><td class="wrapcell"><code>{"full_name": "Perpetua Vanterpool", "phone": "0161 496 0123"}</code></td><td class="wrapcell"><code>{"full_name": "Perpetua Vanterpool", "phone": "(0161) 496-0123"}</code></td></tr>
+<tr><td class="wrapcell">deflect-16</td><td class="wrapcell">deflect</td><td class="wrapcell">early</td><td class="wrapcell">I'd rather sort out enrollment first. What's on offer?</td><td class="wrapcell">choice: <code>enrollment_type</code></td><td class="wrapcell">(nothing) choice=<code>enrollment_type</code></td><td class="wrapcell">(nothing) choice=<code>start_term</code></td></tr>
+<tr><td class="wrapcell">no_match-00</td><td class="wrapcell">no_match</td><td class="wrapcell">mid</td><td class="wrapcell">Can I do a loan from my uncle instead?</td><td class="wrapcell">(empty)</td><td class="wrapcell">(nothing) choice=<code>funding_type</code></td><td class="wrapcell"><code>{"funding_interest": true}</code></td></tr>
+<tr><td class="wrapcell">precedence-14</td><td class="wrapcell">precedence</td><td class="wrapcell">late</td><td class="wrapcell">Not what you asked, but give me a ring on 0161 496 0123.</td><td class="wrapcell"><code>{"phone": "0161 496 0123"}</code></td><td class="wrapcell"><code>{"phone": "0161 496 0123"}</code></td><td class="wrapcell"><code>{"phone": "(016) 496-0123"}</code></td></tr>
+<tr><td class="wrapcell">residence_statement-00</td><td class="wrapcell">residence_statement</td><td class="wrapcell">early</td><td class="wrapcell">Moved to Toronto in 2019 and I've been living in Canada since.</td><td class="wrapcell"><code>{"country_residence": "CA"}</code></td><td class="wrapcell"><code>{"country_residence": "CA"}</code></td><td class="wrapcell">(nothing)</td></tr>
+<tr><td class="wrapcell">residence_statement-01</td><td class="wrapcell">residence_statement</td><td class="wrapcell">mid</td><td class="wrapcell">I'm over in Seoul these days, so South Korea.</td><td class="wrapcell"><code>{"country_residence": "KR"}</code></td><td class="wrapcell"><code>{"country_residence": "KR"}</code></td><td class="wrapcell"><code>{"country_citizenship": "KR"}</code></td></tr>
+<tr><td class="wrapcell">residence_statement-05</td><td class="wrapcell">residence_statement</td><td class="wrapcell">early</td><td class="wrapcell">Moved to Lagos in 2019 and I've been living in Nigeria since.</td><td class="wrapcell"><code>{"country_residence": "NG"}</code></td><td class="wrapcell"><code>{"country_residence": "NG"}</code></td><td class="wrapcell">(nothing)</td></tr>
+<tr><td class="wrapcell">residence_statement-06</td><td class="wrapcell">residence_statement</td><td class="wrapcell">early</td><td class="wrapcell">I'm over in Seoul these days, so South Korea.</td><td class="wrapcell"><code>{"country_residence": "KR"}</code></td><td class="wrapcell"><code>{"country_residence": "KR"}</code></td><td class="wrapcell"><code>{"country_citizenship": "KR"}</code></td></tr>
+<tr><td class="wrapcell">residence_statement-07</td><td class="wrapcell">residence_statement</td><td class="wrapcell">mid</td><td class="wrapcell">Been based in Toronto for years now — Canada, that is.</td><td class="wrapcell"><code>{"country_residence": "CA"}</code></td><td class="wrapcell"><code>{"country_residence": "CA"}</code></td><td class="wrapcell"><code>{"country_citizenship": "CA"}</code></td></tr>
+<tr><td class="wrapcell">residence_statement-08</td><td class="wrapcell">residence_statement</td><td class="wrapcell">early</td><td class="wrapcell">We relocated to Canada last spring; Toronto, specifically.</td><td class="wrapcell"><code>{"country_residence": "CA"}</code></td><td class="wrapcell"><code>{"country_residence": "CA"}</code></td><td class="wrapcell">(nothing)</td></tr>
+<tr><td class="wrapcell">residence_statement-11</td><td class="wrapcell">residence_statement</td><td class="wrapcell">early</td><td class="wrapcell">I'm over in Seoul these days, so South Korea.</td><td class="wrapcell"><code>{"country_residence": "KR"}</code></td><td class="wrapcell"><code>{"country_residence": "KR"}</code></td><td class="wrapcell"><code>{"country_citizenship": "KR"}</code></td></tr>
+<tr><td class="wrapcell">third_party_fact-00</td><td class="wrapcell">third_party_fact</td><td class="wrapcell">early</td><td class="wrapcell">My cousin went through this same application a couple of years back.</td><td class="wrapcell">(empty)</td><td class="wrapcell">(nothing)</td><td class="wrapcell"><code>{"prior_application": true}</code></td></tr>
+<tr><td class="wrapcell">third_party_name-14</td><td class="wrapcell">third_party_name</td><td class="wrapcell">late</td><td class="wrapcell">My old manager Marguerite Ibori wrote one of my references.</td><td class="wrapcell">(empty)</td><td class="wrapcell">(nothing) choice=<code>how_heard</code></td><td class="wrapcell"><code>{"funding_interest": true}</code></td></tr>
+<tr><td class="wrapcell">typed_choice-05</td><td class="wrapcell">typed_choice</td><td class="wrapcell">early</td><td class="wrapcell">Put me in mechanical engineering.</td><td class="wrapcell"><code>{"program": "engineering"}</code></td><td class="wrapcell"><code>{"program": "engineering"}</code></td><td class="wrapcell">(nothing)</td></tr>
+<tr><td class="wrapcell">wrapped_value-05</td><td class="wrapcell">wrapped_value</td><td class="wrapcell">late</td><td class="wrapcell">Half-listening, sorry, the kettle's going — post goes to Flat 12, 3 Kirkgate Terrace, Leeds LS2 7DJ.</td><td class="wrapcell"><code>{"mailing_address": "Flat 12, 3 Kirkgate Terrace, Leeds LS2 7DJ"}</code></td><td class="wrapcell"><code>{"mailing_address": "Flat 12, 3 Kirkgate Terrace, Leeds LS2 7DJ"}</code></td><td class="wrapcell"><code>{"mailing_address": "Flat 12, 3 Kirkgate Terrace, Leeds LS2 7DQ"}</code></td></tr>
+<tr><td class="wrapcell">wrapped_value-11</td><td class="wrapcell">wrapped_value</td><td class="wrapcell">late</td><td class="wrapcell">Typing one-handed with a toddler on me, so: 07700 900461.</td><td class="wrapcell"><code>{"phone": "07700 900461"}</code></td><td class="wrapcell"><code>{"phone": "07700 900461"}</code></td><td class="wrapcell">(nothing)</td></tr>
+<tr><td class="wrapcell">wrapped_value-14</td><td class="wrapcell">wrapped_value</td><td class="wrapcell">early</td><td class="wrapcell">Ignore the background noise, upstairs neighbours again — born 28 Sep 1995.</td><td class="wrapcell"><code>{"dob": "1995-09-28"}</code></td><td class="wrapcell"><code>{"dob": "1995-09-28"}</code></td><td class="wrapcell"><code>{"dob": "2025-09-28"}</code></td></tr></tbody>
+</table></div>
+<p>Grouped: residence_statement 7, wrapped_value 3, compound 2, and one each in boolean_phrase, bulk, deflect, no_match, precedence, third_party_fact, third_party_name, typed_choice (20 total).</p>
+<h3 id="s6-2">6.2 fail -&gt; pass, by scenario (42)</h3>
+<div class="tw"><table>
+<thead><tr><th class="wrapcell">scenario</th><th class="wrapcell">n</th><th class="wrapcell">case ids</th></tr></thead>
+<tbody><tr><td class="wrapcell">narrative_trap</td><td class="wrapcell">10</td><td class="wrapcell">00, 02, 03, 06, 07, 08, 12, 13, 15, 16</td></tr>
+<tr><td class="wrapcell">third_party_name</td><td class="wrapcell">6</td><td class="wrapcell">02, 05, 10, 13, 15, 17</td></tr>
+<tr><td class="wrapcell">invalid_value</td><td class="wrapcell">4</td><td class="wrapcell">05, 06, 08, 15</td></tr>
+<tr><td class="wrapcell">bulk</td><td class="wrapcell">3</td><td class="wrapcell">01, 05, 17</td></tr>
+<tr><td class="wrapcell">multi_select_subset</td><td class="wrapcell">3</td><td class="wrapcell">01, 07, 09</td></tr>
+<tr><td class="wrapcell">no_match</td><td class="wrapcell">3</td><td class="wrapcell">03, 12, 13</td></tr>
+<tr><td class="wrapcell">compound</td><td class="wrapcell">2</td><td class="wrapcell">03, 15</td></tr>
+<tr><td class="wrapcell">correction</td><td class="wrapcell">2</td><td class="wrapcell">10, 15</td></tr>
+<tr><td class="wrapcell">refusal</td><td class="wrapcell">2</td><td class="wrapcell">08, 14</td></tr>
+<tr><td class="wrapcell">wrapped_value</td><td class="wrapcell">2</td><td class="wrapcell">09, 15</td></tr>
+<tr><td class="wrapcell">bare_ambiguous</td><td class="wrapcell">1</td><td class="wrapcell">02</td></tr>
+<tr><td class="wrapcell">boolean_phrase</td><td class="wrapcell">1</td><td class="wrapcell">04</td></tr>
+<tr><td class="wrapcell">chitchat</td><td class="wrapcell">1</td><td class="wrapcell">15</td></tr>
+<tr><td class="wrapcell">precedence</td><td class="wrapcell">1</td><td class="wrapcell">00</td></tr>
+<tr><td class="wrapcell">residence_statement</td><td class="wrapcell">1</td><td class="wrapcell">04</td></tr>
+<tr><td class="wrapcell"><b>total</b></td><td class="wrapcell"><b>42</b></td><td class="wrapcell"></td></tr></tbody>
+</table></div>
+<p>Worked examples for the biggest movers:</p>
+<ul><li><b>narrative_trap-02</b> (mid), "My daughter was born the year we moved house, 2017." Expected empty. slice1b set <code>{"dob": "2017-05-23"}</code>; r3-oracle set nothing. Eight of the ten narrative_trap flips have this shape — slice1b bound a date or a country code from autobiographical narration, r3-oracle bound nothing; in the other two (<code>-03</code>, <code>-08</code>) slice1b bound a boolean (<code>prior_application</code>, <code>has_work_experience</code>).</li><li><b>third_party_name-13</b> (late), "Anselm Bergkamp filled one of these out for a different university." Expected empty. slice1b set <code>{"full_name": "Anselm Bergkamp", "country_citizenship": "US", "country_residence": "MX"}</code> — the name is from the message, the two country codes are not. r3-oracle set nothing.</li><li><b>correction-10</b> (mid), "Scratch the name I gave you — use Beatrix Ohlmann instead." Expected <code>{"full_name": "Beatrix Ohlmann"}</code>. slice1b set <code>preferred_name</code>; r3-oracle set <code>full_name</code>. <code>correction-15</code> is the same substitution on a different name.</li><li><b>invalid_value-05</b> (mid), "I believe it was sometime in early 1993." Expected empty (unplaceable — no day/month). slice1b set <code>{"dob": "1993-01-01"}</code>; r3-oracle set nothing. All four invalid_value flips are this month-less-date-to-Jan-1 pattern (<code>-15</code> used <code>1993-01-31</code>).</li><li><b>refusal-14</b> (late), "Skip the Do you have relevant work experience? for me, please." Expected empty. slice1b set <code>{"has_work_experience": false}</code>; r3-oracle set nothing. <code>refusal-08</code> is the same, on <code>funding_interest</code>.</li></ul>
+<h3 id="s6-3">6.3 fail -&gt; fail: the joint residue (36)</h3>
+<p>Cases neither student passes. This is the remaining-work list.</p>
+<div class="tw"><table>
+<thead><tr><th class="wrapcell">scenario</th><th class="wrapcell">n</th><th class="wrapcell">case ids</th></tr></thead>
+<tbody><tr><td class="wrapcell">multi_select_subset</td><td class="wrapcell">12</td><td class="wrapcell">00, 02, 05, 06, 08, 11, 12, 13, 14, 15, 16, 17</td></tr>
+<tr><td class="wrapcell">third_party_fact</td><td class="wrapcell">6</td><td class="wrapcell">02, 03, 08, 09, 14, 15</td></tr>
+<tr><td class="wrapcell">bulk</td><td class="wrapcell">4</td><td class="wrapcell">00, 04, 08, 14</td></tr>
+<tr><td class="wrapcell">compound</td><td class="wrapcell">4</td><td class="wrapcell">01, 02, 09, 14</td></tr>
+<tr><td class="wrapcell">restraint_question</td><td class="wrapcell">3</td><td class="wrapcell">02, 07, 12</td></tr>
+<tr><td class="wrapcell">third_party_name</td><td class="wrapcell">3</td><td class="wrapcell">03, 08, 12</td></tr>
+<tr><td class="wrapcell">boolean_phrase</td><td class="wrapcell">1</td><td class="wrapcell">13</td></tr>
+<tr><td class="wrapcell">narrative_trap</td><td class="wrapcell">1</td><td class="wrapcell">10</td></tr>
+<tr><td class="wrapcell">precedence</td><td class="wrapcell">1</td><td class="wrapcell">17</td></tr>
+<tr><td class="wrapcell">residence_statement</td><td class="wrapcell">1</td><td class="wrapcell">16</td></tr>
+<tr><td class="wrapcell"><b>total</b></td><td class="wrapcell"><b>36</b></td><td class="wrapcell"></td></tr></tbody>
+</table></div>
+<p>One example each for the top three scenarios:</p>
+<ul><li><b>multi_select_subset-02</b> (late), "Both apply: Fellowship and Scholarship." Expected <code>{"funding_type": ["fellowship", "scholarship"]}</code>. Both students set <code>{"funding_type": ["scholarship"]}</code> — one member of the pair. The teacher passes 15/18 here.</li><li><b>third_party_fact-03</b> (early), "My brother lives in Germany these days." Expected empty. Both students set <code>{"country_residence": "DE"}</code>. All six third_party_fact residue cases are this shape (three "My brother lives in Germany these days." -&gt; <code>country_residence: DE</code>, three "My father is a Canadian citizen." -&gt; <code>country_citizenship: CA</code>). The teacher passes 18/18 here.</li><li><b>bulk-04</b> (mid), "To save time — my email's k.oyelaran+apps@mailbox.org, my number's +49 30 901820, post goes to 62 Ashgrove Crescent, Ottawa, ON K1S 5B6." Expected all three fields; both students set phone and mailing_address and dropped <code>email</code>.</li></ul>
+</section>
+<section id="s7">
+<h2>7. Error-cause breakdown</h2>
+<h3 id="s7-1">7.1 Positive-expectation (<code>sets</code>) cases — 198 total</h3>
+<p>For each failed <code>sets</code> case, each expected field is classified as <b>dropped</b> (field id absent from <code>got_sets</code>) or <b>wrong value</b> (present, value differs). The <b>same digit-string</b> column is the subclass of wrong-value where stripping non-digits from expected and got yields the same non-empty string. <b>Extra fields</b> counts field ids in <code>got_sets</code> that are not in <code>expect</code>.</p>
+<div class="tw"><table>
+<thead><tr><th class="wrapcell">model</th><th class="wrapcell">failed <code>sets</code> cases</th><th class="wrapcell">expected fields dropped</th><th class="wrapcell">wrong value</th><th class="wrapcell">... of which same digit-string</th><th class="wrapcell">extra fields set</th></tr></thead>
+<tbody><tr><td class="wrapcell">slice1b (round 2)</td><td class="wrapcell">38</td><td class="wrapcell">26</td><td class="wrapcell">16</td><td class="wrapcell">3</td><td class="wrapcell">8</td></tr>
+<tr><td class="wrapcell">r3-oracle (round 3)</td><td class="wrapcell">39</td><td class="wrapcell">27</td><td class="wrapcell">16</td><td class="wrapcell">6</td><td class="wrapcell">7</td></tr>
+<tr><td class="wrapcell">teacher nemotron</td><td class="wrapcell">7</td><td class="wrapcell">4</td><td class="wrapcell">1</td><td class="wrapcell">0</td><td class="wrapcell">4</td></tr></tbody>
+</table></div>
+<p>Per-field detail:</p>
+<pre>slice1b -- dropped by field: {'mailing_address': 8, 'funding_interest': 6, 'preferred_name': 4, 'full_name': 3, 'email': 2, 'country_residence': 2, 'has_work_experience': 1}
+slice1b -- wrong-value by field: {'funding_type': 12, 'mailing_address': 1} ; same-digit by field: {'phone': 3}
+slice1b -- extra fields: {'preferred_name': 2, 'country_citizenship': 2, 'phone': 1, 'email': 1, 'has_work_experience': 1, 'country_residence': 1}
+slice1b -- dropped ids: compound-01/mailing_address; compound-02/preferred_name; compound-14/preferred_name; compound-15/full_name; bulk-01/mailing_address; bulk-04/email; bulk-05/mailing_address; bulk-08/mailing_address; bulk-08/preferred_name; bulk-14/mailing_address; bulk-14/preferred_name; bulk-17/email; correction-10/full_name; correction-15/full_name; wrapped_value-15/mailing_address; residence_statement-04/country_residence; residence_statement-16/country_residence; boolean_phrase-04/funding_interest; boolean_phrase-13/has_work_experience; multi_select_subset-05/funding_interest; multi_select_subset-06/funding_interest; multi_select_subset-13/funding_interest; multi_select_subset-14/funding_interest; multi_select_subset-15/funding_interest; precedence-00/mailing_address; precedence-17/mailing_address
+r3 -- dropped by field: {'country_residence': 8, 'funding_interest': 5, 'preferred_name': 4, 'mailing_address': 2, 'has_work_experience': 2, 'funding_type': 2, 'program': 1, 'full_name': 1, 'email': 1, 'phone': 1}
+r3 -- wrong-value by field: {'funding_type': 8, 'dob': 1, 'phone': 1} ; same-digit by field: {'phone': 5, 'mailing_address': 1}
+r3 -- extra fields: {'country_citizenship': 5, 'phone': 1, 'email': 1}
+r3 -- dropped ids: typed_choice-05/program; compound-01/full_name; compound-01/mailing_address; compound-02/preferred_name; compound-14/preferred_name; bulk-04/email; bulk-08/preferred_name; bulk-14/preferred_name; wrapped_value-11/phone; residence_statement-00/country_residence; residence_statement-01/country_residence; residence_statement-05/country_residence; residence_statement-06/country_residence; residence_statement-07/country_residence; residence_statement-08/country_residence; residence_statement-11/country_residence; residence_statement-16/country_residence; boolean_phrase-11/has_work_experience; boolean_phrase-13/has_work_experience; multi_select_subset-00/funding_type; multi_select_subset-05/funding_interest; multi_select_subset-06/funding_interest; multi_select_subset-13/funding_interest; multi_select_subset-14/funding_interest; multi_select_subset-14/funding_type; multi_select_subset-15/funding_interest; precedence-17/mailing_address
+teacher -- dropped by field: {'country_residence': 4}
+teacher -- wrong-value by field: {'funding_type': 1} ; same-digit by field: {}
+teacher -- extra fields: {'funding_interest': 3, 'full_name': 1}
+teacher -- dropped ids: residence_statement-01/country_residence; residence_statement-06/country_residence; residence_statement-11/country_residence; residence_statement-16/country_residence</pre>
+<p>Caveat on the same-digit-string subclass: 5 of r3-oracle's 6 are phone punctuation (<code>0161 496 0123</code> -&gt; <code>(0161) 496-0123</code>); the 6th, <code>wrapped_value-05</code>, has an identical digit string but a changed postcode letter (<code>LS2 7DJ</code> -&gt; <code>LS2 7DQ</code>), so it is a transcription error, not a reformat. All 3 of slice1b's are phone punctuation or space-stripping.</p>
+<h3 id="s7-2">7.2 Empty-expectation cases — 180 total</h3>
+<p>Which fields get set when nothing should be.</p>
+<div class="tw"><table>
+<thead><tr><th class="wrapcell">model</th><th class="wrapcell">empty cases scored</th><th class="wrapcell">cases with any set</th><th class="wrapcell">fields set</th><th class="wrapcell">field ids set (count)</th></tr></thead>
+<tbody><tr><td class="wrapcell">base Qwen3.5-0.8B</td><td class="wrapcell">150</td><td class="wrapcell">112</td><td class="wrapcell">570</td><td class="wrapcell">country_residence 62, full_name 53, country_citizenship 50, dob 36, program 35, enrollment_type 29, start_term 28, mailing_address 27, gender 26, prior_application 26, funding_interest 23, email 22, +15 more</td></tr>
+<tr><td class="wrapcell">slice1b (round 2)</td><td class="wrapcell">180</td><td class="wrapcell">40</td><td class="wrapcell">49</td><td class="wrapcell">country_residence 11, country_citizenship 9, dob 7, full_name 5, funding_interest 5, prior_application 5, enrollment_type 2, has_work_experience 2, phone 2, email 1</td></tr>
+<tr><td class="wrapcell">r3-oracle (round 3)</td><td class="wrapcell">180</td><td class="wrapcell">16</td><td class="wrapcell">16</td><td class="wrapcell">funding_interest 5, prior_application 4, country_citizenship 3, country_residence 3, has_work_experience 1</td></tr>
+<tr><td class="wrapcell">teacher nemotron</td><td class="wrapcell">180</td><td class="wrapcell">7</td><td class="wrapcell">7</td><td class="wrapcell">how_heard 3, anything_else 1, funding_interest 1, mailing_address 1, prior_application 1</td></tr></tbody>
+</table></div>
+</section>
+<section id="s8">
+<h2>8. Value-transcription check</h2>
+<p>Restricted to cases where structure is not the variable — only the value is.</p>
+<p>Both students produced exactly the expected field ids on <b>162 of the 198</b> <code>sets</code> cases. On 18 of those 162, at least one value differs from expected:</p>
+<div class="tw"><table>
+<thead><tr><th class="wrapcell">id</th><th class="wrapcell">band</th><th class="wrapcell">field</th><th class="wrapcell">expected</th><th class="wrapcell">slice1b</th><th class="wrapcell">r3-oracle</th></tr></thead>
+<tbody><tr><td class="wrapcell">compound-03</td><td class="wrapcell">mid</td><td class="wrapcell">phone</td><td class="wrapcell"><code>"0161 496 0123"</code></td><td class="wrapcell"><code>"01614960123"</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>"0161 496 0123"</code></td></tr>
+<tr><td class="wrapcell">compound-06</td><td class="wrapcell">mid</td><td class="wrapcell">phone</td><td class="wrapcell"><code>"0161 496 0123"</code></td><td class="wrapcell"><code>"0161 496 0123"</code></td><td class="wrapcell"><code>"(0161) 496-0123"</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">compound-09</td><td class="wrapcell">mid</td><td class="wrapcell">phone</td><td class="wrapcell"><code>"07700 900461"</code></td><td class="wrapcell"><code>"07700900461"</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>"(07700) 900461"</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">bulk-00</td><td class="wrapcell">early</td><td class="wrapcell">phone</td><td class="wrapcell"><code>"07700 900461"</code></td><td class="wrapcell"><code>"(07700) 900461"</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>"(07700) 900461"</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">bulk-02</td><td class="wrapcell">late</td><td class="wrapcell">phone</td><td class="wrapcell"><code>"07700 900461"</code></td><td class="wrapcell"><code>"07700 900461"</code></td><td class="wrapcell"><code>"(07700) 900461"</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">wrapped_value-05</td><td class="wrapcell">late</td><td class="wrapcell">mailing_address</td><td class="wrapcell"><code>"Flat 12, 3 Kirkgate Terrace, Leeds LS2 7DJ"</code></td><td class="wrapcell"><code>"Flat 12, 3 Kirkgate Terrace, Leeds LS2 7DJ"</code></td><td class="wrapcell"><code>"Flat 12, 3 Kirkgate Terrace, Leeds LS2 7DQ"</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">wrapped_value-09</td><td class="wrapcell">early</td><td class="wrapcell">mailing_address</td><td class="wrapcell"><code>"88 Halyard Court, Apt 4B, New Bedford, MA 02740"</code></td><td class="wrapcell"><code>"New Bedford, MA 02740"</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>"88 Halyard Court, Apt 4B, New Bedford, MA 02740"</code></td></tr>
+<tr><td class="wrapcell">wrapped_value-14</td><td class="wrapcell">early</td><td class="wrapcell">dob</td><td class="wrapcell"><code>"1995-09-28"</code></td><td class="wrapcell"><code>"1995-09-28"</code></td><td class="wrapcell"><code>"2025-09-28"</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">multi_select_subset-01</td><td class="wrapcell">mid</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["teaching_assistantship", "research_assistantship"]</code></td><td class="wrapcell"><code>["research_assistantship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["teaching_assistantship", "research_assistantship"]</code></td></tr>
+<tr><td class="wrapcell">multi_select_subset-02</td><td class="wrapcell">late</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["fellowship", "scholarship"]</code></td><td class="wrapcell"><code>["scholarship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["scholarship"]</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">multi_select_subset-07</td><td class="wrapcell">late</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["teaching_assistantship", "research_assistantship"]</code></td><td class="wrapcell"><code>["research_assistantship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["teaching_assistantship", "research_assistantship"]</code></td></tr>
+<tr><td class="wrapcell">multi_select_subset-08</td><td class="wrapcell">late</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["fellowship", "scholarship"]</code></td><td class="wrapcell"><code>["fellowship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["scholarship"]</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">multi_select_subset-09</td><td class="wrapcell">late</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["research_assistantship", "scholarship"]</code></td><td class="wrapcell"><code>["research_assistantship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["research_assistantship", "scholarship"]</code></td></tr>
+<tr><td class="wrapcell">multi_select_subset-11</td><td class="wrapcell">late</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["teaching_assistantship", "research_assistantship"]</code></td><td class="wrapcell"><code>["research_assistantship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["research_assistantship"]</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">multi_select_subset-12</td><td class="wrapcell">late</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["fellowship", "scholarship"]</code></td><td class="wrapcell"><code>["scholarship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["scholarship"]</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">multi_select_subset-16</td><td class="wrapcell">late</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["fellowship", "scholarship"]</code></td><td class="wrapcell"><code>["scholarship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["scholarship"]</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">multi_select_subset-17</td><td class="wrapcell">late</td><td class="wrapcell">funding_type</td><td class="wrapcell"><code>["teaching_assistantship", "fellowship"]</code></td><td class="wrapcell"><code>["fellowship"]</code> <span class="xm">&#10007;</span></td><td class="wrapcell"><code>["fellowship"]</code> <span class="xm">&#10007;</span></td></tr>
+<tr><td class="wrapcell">precedence-14</td><td class="wrapcell">late</td><td class="wrapcell">phone</td><td class="wrapcell"><code>"0161 496 0123"</code></td><td class="wrapcell"><code>"0161 496 0123"</code></td><td class="wrapcell"><code>"(016) 496-0123"</code> <span class="xm">&#10007;</span></td></tr></tbody>
+</table></div>
+<p><span class="xm">&#10007;</span> marks the value that does not match. Of the 18 rows: 9 are <code>funding_type</code> multi-select subsets missing one of the two expected options; 5 are phone reformatting with the same digit string (spaces vs parentheses-and-hyphens vs stripped); 1 is a dropped phone digit (r3-oracle, <code>precedence-14</code>, <code>0161</code> -&gt; <code>016</code>); 1 is a truncated address (slice1b, <code>wrapped_value-09</code>); 1 is a postcode letter change (r3-oracle, <code>wrapped_value-05</code>); 1 is a year change 1995 -&gt; 2025 (r3-oracle, <code>wrapped_value-14</code>).</p>
+</section>
+<section id="s9">
+<h2>9. Invented-PII spot check</h2>
+<p>Across all 36 <code>third_party_name</code> and <code>third_party_fact</code> cases, every <code>email</code> / <code>phone</code> / <code>dob</code> / <code>mailing_address</code> value in either student's <code>got_sets</code> was checked against the case's <code>user_message</code> plus full <code>conversation_history</code> (literal substring, then digit-string). One case produced values present in neither:</p>
+<div class="tw"><table>
+<thead><tr><th class="wrapcell">id</th><th class="wrapcell">band</th><th class="wrapcell">model</th><th class="wrapcell">field</th><th class="wrapcell">value</th></tr></thead>
+<tbody><tr><td class="wrapcell">third_party_name-08</td><td class="wrapcell">late</td><td class="wrapcell">slice1b</td><td class="wrapcell">email</td><td class="wrapcell"><code>marguerite.ibori48@example.com</code></td></tr>
+<tr><td class="wrapcell">third_party_name-08</td><td class="wrapcell">late</td><td class="wrapcell">slice1b</td><td class="wrapcell">phone</td><td class="wrapcell"><code>(587) 555-8460</code></td></tr></tbody>
+</table></div>
+<p><code>third_party_name-08</code> user_message: "Marguerite Ibori filled one of these out for a different university." slice1b's full output on that case: <code>{"full_name": "Marguerite Ibori", "country_citizenship": "OTHER", "country_residence": "US", "email": "marguerite.ibori48@example.com", "phone": "(587) 555-8460"}</code>. r3-oracle's output on the same case: <code>{"prior_application": true}</code> — wrong, but nothing invented. r3-oracle produced no invented PII value on any of the 36 cases.</p>
+</section>
+<section id="s10">
+<h2>10. Observations</h2>
+<p>Factual patterns only.</p>
+<ul><li>r3-oracle beats slice1b on field F1 (90.2 vs 84.8), precision (90.9 vs 80.2), empty-correct (91.1 vs 77.8), over-attribution (11.9 vs 25.4) and wrong-field (1.9 vs 14.8), and is behind on recall (89.5 vs 89.9), value-match (93.0 vs 93.1) and choice-correct (97.2 vs 100.0).</li><li>False positives fall from 57 to 23; false negatives rise from 26 to 27; true positives fall from 231 to 230.</li><li>On empty-expectation cases, cases-with-any-set falls from 40 to 16, and fields-set from 49 to 16. slice1b sets more than one field on 5 of its 40 (three cases with 2 fields, one with 3, one with 5); r3-oracle and the teacher never set more than one field on an empty case.</li><li>Whole-case pass: base 98/358, slice1b 336/414, r3-oracle 358/414, teacher 400/414.</li><li>narrative_trap moved 7/18 -&gt; 17/18; third_party_name 9/18 -&gt; 14/18; invalid_value 14/18 -&gt; 18/18; correction 16/18 -&gt; 18/18; refusal 16/18 -&gt; 18/18; multi_select_subset 3/18 -&gt; 6/18.</li><li>residence_statement moved 16/18 -&gt; 10/18: 7 regressions, 1 gain (<code>-04</code>), 1 joint-residue failure (<code>-16</code>). In all 7 regressions the message names a country of residence; r3-oracle set <code>country_citizenship</code> instead on 4 (<code>-01</code>, <code>-06</code>, <code>-07</code>, <code>-11</code>) and set nothing on 3 (<code>-00</code>, <code>-05</code>, <code>-08</code>). The teacher scores 14/18 on the same scenario; all 4 of its failures are the identical message "I'm over in Seoul these days, so South Korea." (<code>-01</code>, <code>-06</code>, <code>-11</code>, <code>-16</code>).</li><li><code>country_citizenship</code> is r3-oracle's most common extra field on failed <code>sets</code> cases (5 of 7); slice1b's extra fields are spread across 6 field ids.</li><li>Per band, r3-oracle is below slice1b on early (F1 87.7 vs 91.2) and above on mid (95.1 vs 91.9) and late (86.2 vs 73.0).</li><li>The late band is the weakest for both students (r3-oracle F1 86.2, value-match 84.0) and for the teacher (F1 95.7 vs 98.6 mid).</li><li>On empty cases the teacher's 7 sets are spread over 5 field ids with no repeat above 3 (<code>how_heard</code> 3); r3-oracle's 16 are spread over 5 field ids (<code>funding_interest</code> 5, <code>prior_application</code> 4).</li><li>The teacher fails 14 of 414: 4 residence_statement (all the Seoul message), 5 third_party_name, 3 multi_select_subset, 1 bare_ambiguous, 1 no_match. All 3 multi_select_subset failures add <code>funding_interest: true</code> where the expectation does not include it (<code>-09</code> also drops one <code>funding_type</code> option); the expectation includes <code>funding_interest</code> exactly on the 5 cases where <code>pending == funding_interest</code>.</li><li>r3-oracle's only choice-band failure is <code>deflect-16</code>: it offered <code>start_term</code> where <code>enrollment_type</code> was expected.</li><li>5 of the 20 regressions are same-field wrong-value (<code>compound-06</code>, <code>bulk-02</code>, <code>precedence-14</code> phone; <code>wrapped_value-05</code> postcode letter; <code>wrapped_value-14</code> dob year); the other 15 differ in which fields were set.</li></ul>
+</section>
+<section id="s11">
+<h2>11. Limitations</h2>
+<ul><li><b>Base's 56 skipped cases</b> (section 2). Base's rates are computed over 358 cases and are not comparable to the 414-case runs. The scorer skips unparseable completions rather than failing them.</li><li><b>n=1 for every run.</b> The teacher is nominally temp-0 but served remotely, so its single sample is not a guaranteed-reproducible draw; the v1 continuity table's teacher row is the only multi-sample run here (n=3, no flaky cases). <code>stability.flaky</code> is empty in all four v3 runs, which for n=1 is vacuous.</li><li><b>Bands have uneven scenario mixes</b>, so cross-band comparisons are descriptive, not controlled. Six scenarios are missing a band entirely:</li></ul>
+<div class="tw"><table>
+<thead><tr><th>scenario</th><th>early</th><th>mid</th><th>late</th></tr></thead>
+<tbody><tr><td>compound</td><td>0</td><td>12</td><td>6</td></tr>
+<tr><td>correction</td><td>0</td><td>12</td><td>6</td></tr>
+<tr><td>freetext_select</td><td>0</td><td>15</td><td>3</td></tr>
+<tr><td>invalid_value</td><td>0</td><td>17</td><td>1</td></tr>
+<tr><td>pending_answer</td><td>0</td><td>12</td><td>6</td></tr>
+<tr><td>residence_statement</td><td>12</td><td>6</td><td>0</td></tr></tbody>
+</table></div>
+<p>So residence_statement contributes nothing to the late band, and compound, correction, freetext_select, invalid_value and pending_answer contribute nothing to the early band. Band totals are also unequal (early 125 / mid 124 / late 165).</p>
+<ul><li><b>Repeated messages.</b> The 414 cases contain 286 distinct (scenario, user_message) pairs; the most-repeated message appears 5 times. Contexts differ per case, but a single message-level behaviour can move up to 5 cases at once (e.g. 3 of the 7 residence_statement regressions and all 4 of the teacher's residence_statement failures are the same Seoul sentence).</li><li><b>The <code>third_party_name</code> expectation of empty is a declared v3 ceiling</b>, not a correctness fact (see <code>tuning/v2/M4_PLAN.md</code>, "Eval v3 design decisions"): a system with a deferred-hint mechanic should carry the mention forward. Both students and the teacher lose cases to it.</li><li><b>Positive-band cases ignore choices.</b> <code>score_observation</code> checks only the set fields for <code>sets</code> cases, so a model that both sets the right field and also offers an unrelated choice still passes (e.g. slice1b passes <code>typed_choice-05</code> while recording <code>choice_field=start_term</code>).</li></ul>
+</section>
+<footer class="doc">
+<p>Generated 2026-07-26 by the eval pipeline; source JSONs in <code>tuning/v2/eval/</code>.</p>
+</footer>
+</main>
+</div>
+</body>
+</html>
