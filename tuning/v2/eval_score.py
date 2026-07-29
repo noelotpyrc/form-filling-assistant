@@ -20,11 +20,17 @@ The teacher is non-deterministic (no temp/seed), so each case is run --n times;
 every (case, sample) is one observation. We report pooled rates plus per-case
 stability (how often the N samples agree) to surface flakiness.
 
+Eval sets: v1 (frozen, byte-identical), v2 (realistic/contract bands), v3 (REAL
+farmed contexts + early/mid/late depth bands, built by eval_gen.py). v2 and v3
+require --label so they cannot clobber a v1 baseline file.
+
   Self-test (free, no model):  tuning/v2/.venv/bin/python -m tuning.v2.eval_score --selftest
   Teacher baseline ($$):       tuning/v2/.venv/bin/python -m tuning.v2.eval_score --n 5 --label teacher_v2
     (always the canonical build_teacher(schema); it carries ONE extract demo for the
      compound convention — render it natively with --backend openrouter, since the
      claude CLI flattens demos and breaks markers)
+  v3 run:                      tuning/v2/.venv/bin/python -m tuning.v2.eval_score \
+                                   --eval-set v3 --label <name> --backend student --port 8101
 """
 from __future__ import annotations
 import argparse
@@ -34,12 +40,19 @@ from pathlib import Path
 
 EVAL_SET = "tuning/v2/eval/eval_set.jsonl"
 EVAL_SET_V2 = "tuning/v2/eval/eval_set_v2.jsonl"
-EVAL_SETS = {"v1": EVAL_SET, "v2": EVAL_SET_V2}
+EVAL_SET_V3 = "tuning/v2/eval/eval_set_v3.jsonl"
+EVAL_SETS = {"v1": EVAL_SET, "v2": EVAL_SET_V2, "v3": EVAL_SET_V3}
 OUT_DIR = Path("tuning/v2/eval")
 
 # value present but no valid target -> a set here is a wrong-field-assignment
 # (doc-18.1 S16), distinct from grabbing a field out of value-free noise.
-UNPLACEABLE = {"ambiguous", "no_match", "bare_date"}
+# bare_ambiguous / invalid_value are v3 scenario names; neither occurs in v1 or v2,
+# so band_of is unchanged for every existing case and the frozen baselines stay
+# comparable.
+UNPLACEABLE = {"ambiguous", "no_match", "bare_date", "bare_ambiguous", "invalid_value"}
+
+# v3 depth bands (case["band"]) — reported as a breakdown, all of them gated.
+V3_BANDS = ("early", "mid", "late")
 
 
 # ---- pure scoring (no model; covered by --selftest) ----------------------
@@ -197,7 +210,7 @@ def run_baseline(n: int, label: str, eval_set: str, eval_set_name: str = "v1",
     print(f"backend={backend}  model={lm.model}  port={port or '-'}  program={program}"
           f"  cases={len(cases)}  n={n}  -> {len(cases)*n} extractor calls\n", flush=True)
 
-    is_v2 = eval_set_name == "v2"
+    is_v2, is_v3 = eval_set_name == "v2", eval_set_name == "v3"
     scored, bands, raw, total_cost = [], [], [], 0.0
     for si in range(n):
         for ci, case in enumerate(cases):
@@ -210,11 +223,40 @@ def run_baseline(n: int, label: str, eval_set: str, eval_set_name: str = "v1",
             scored.append(s)
             bands.append(case.get("band"))   # lockstep with scored (survives skipped cases)
             rec = {"sample": si, **s, "got_sets": obs["got_sets"], "cost": obs["cost"]}
-            if is_v2:
-                rec["band"] = case.get("band")   # realistic / contract-synthetic (not the scoring band)
+            if is_v2 or is_v3:
+                # v2: realistic / contract-synthetic. v3: early / mid / late depth.
+                # Either way this is the EVAL band, not score_observation's band.
+                rec["band"] = case.get("band")
+            if is_v3:
+                rec["source"] = case.get("source")
             raw.append(rec)
             total_cost += obs["cost"]
         print(f"  sample {si+1}/{n} done  (running ${total_cost:.2f})", flush=True)
+
+    if is_v3:
+        # v3 has ONE headline (every case is a real context, all gated) plus a
+        # depth-band breakdown: early 0-3 / mid 4-7 / late 8+ filled fields.
+        agg = aggregate(scored)
+        stab = stability(scored)
+        by_band = {b: [s for s, bd in zip(scored, bands) if bd == b] for b in V3_BANDS}
+        result = {"label": label, "model": lm.model, "n": n, "eval_set": "v3",
+                  "cost_usd": round(total_cost, 4),
+                  "metrics": agg,
+                  "metrics_by_band": {b: aggregate(rows) for b, rows in by_band.items() if rows},
+                  "band_counts": {b: len(rows) for b, rows in by_band.items()},
+                  "stability": stab, "raw": raw}
+        out = OUT_DIR / f"baseline-{label}.json"
+        json.dump(result, open(out, "w"), indent=2, default=str)
+        print_report(agg, stab, total_cost, scored,
+                     header="Tier-1 (v3, all real contexts) — HEADLINE", show_cost=False)
+        for b, rows in by_band.items():
+            if not rows:
+                continue
+            print_report(aggregate(rows), stability(rows), total_cost, rows,
+                         header=f"depth band: {b} ({len(rows)} obs)", show_cost=False)
+        print(f"\ncost: ${total_cost:.2f}")
+        print(f"\nwrote {out}")
+        return
 
     if is_v2:
         # split on the eval band: realistic is the headline (gated vs criteria);
@@ -308,6 +350,15 @@ def selftest():
         scored.append(s)
         assert s["passed"] == want_pass, f"{case['id']}: passed={s['passed']} want {want_pass}"
 
+    # the two v3 scenario names join the unplaceable band; every v1/v2 name keeps
+    # the band it had, so the frozen baselines stay comparable.
+    assert band_of(C("bare_ambiguous", {"empty": True})) == "unplaceable"
+    assert band_of(C("invalid_value", {"empty": True})) == "unplaceable"
+    for scn in ("chitchat", "trap", "third_party", "restraint", "refusal",
+                "narrative_trap", "third_party_fact"):
+        assert band_of(C(scn, {"empty": True})) == "no_value", scn
+    assert band_of(C("ambiguous", {"empty": True})) == "unplaceable"
+
     agg = aggregate(scored)
     # tp: single_name#1 (1) + bool (1) = 2; fp: trap(1)+bare_date(1) = 2; fn: 2 missed (#2 set wrong field? no)
     # #1 got==exp tp1; #2 got full_name (tp1) value wrong; #3 fn1; bool tp1; trap fp1; bare_date fp1
@@ -332,8 +383,9 @@ def main():
     ap.add_argument("--n", type=int, default=5, help="samples per case (teacher is non-deterministic)")
     ap.add_argument("--label", default=None,
                     help="output label (default teacher_v1 for v1; REQUIRED for v2 so it can't clobber v1 baselines)")
-    ap.add_argument("--eval-set", choices=["v1", "v2"], default="v1",
-                    help="v1 = frozen byte-identical set; v2 = realistic history + band split")
+    ap.add_argument("--eval-set", choices=["v1", "v2", "v3"], default="v1",
+                    help="v1 = frozen byte-identical set; v2 = realistic history + band split; "
+                         "v3 = real farmed contexts + depth bands (see eval_gen.py)")
     ap.add_argument("--limit", type=int, default=0, help="cap to first N cases (smoke)")
     ap.add_argument("--only", default="", help="comma-separated scenarios to run (band check)")
     ap.add_argument("--backend", choices=["claude", "openrouter", "student"], default="claude",
@@ -345,8 +397,9 @@ def main():
         selftest()
         return
     # validate args before any LM construction (mirrors datagen's --behaviors check)
-    if args.eval_set == "v2" and not args.label:
-        ap.error("--label is required with --eval-set v2 (a default would clobber the v1 baseline files)")
+    if args.eval_set in ("v2", "v3") and not args.label:
+        ap.error(f"--label is required with --eval-set {args.eval_set} "
+                 "(a default would clobber the v1 baseline files)")
     label = args.label or "teacher_v1"
     path = EVAL_SETS[args.eval_set]
     run_baseline(args.n, label, path, args.eval_set, args.limit, args.only,

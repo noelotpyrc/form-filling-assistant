@@ -1,0 +1,1062 @@
+{
+  "eval_set": "v3",
+  "seed": 0,
+  "quota": 18,
+  "snapshots_available": 423,
+  "snapshot_bands": {
+    "early": 125,
+    "mid": 124,
+    "late": 174
+  },
+  "cases": 414,
+  "scenarios": 23,
+  "band_distribution": {
+    "mid": 124,
+    "late": 165,
+    "early": 125
+  },
+  "snapshots_used": 414,
+  "snapshot_reuse": 0,
+  "per_scenario": {
+    "pending_answer": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 154,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 6,
+      "bands": {
+        "mid": 12,
+        "late": 6
+      },
+      "distinct_messages": 16,
+      "distinct_expected_values": 13,
+      "distinct_target_fields": 5,
+      "target_fields": {
+        "dob": 2,
+        "full_name": 10,
+        "phone": 3,
+        "email": 1,
+        "mailing_address": 2
+      },
+      "label_echo": {
+        "variants_rendered": 924,
+        "with_label": 154,
+        "pct": 16.7,
+        "max_per_snapshot": 1,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 6,
+        "used": 6,
+        "required": 4,
+        "counts": {
+          "frame0": 3,
+          "frame1": 3,
+          "frame2": 3,
+          "frame3": 3,
+          "frame4": 3,
+          "frame5": 3
+        },
+        "unused": []
+      }
+    },
+    "typed_choice": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 101,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 20,
+      "bands": {
+        "mid": 2,
+        "late": 1,
+        "early": 15
+      },
+      "distinct_messages": 17,
+      "distinct_expected_values": 11,
+      "distinct_target_fields": 5,
+      "target_fields": {
+        "gender": 1,
+        "how_heard": 1,
+        "program": 8,
+        "start_term": 6,
+        "enrollment_type": 2
+      },
+      "label_echo": {
+        "variants_rendered": 404,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 20,
+        "used": 12,
+        "required": 4,
+        "counts": {
+          "gender:0": 1,
+          "how_heard:0": 1,
+          "program:0": 2,
+          "program:1": 2,
+          "program:2": 2,
+          "program:3": 2,
+          "start_term:0": 2,
+          "start_term:1": 2,
+          "start_term:2": 1,
+          "start_term:3": 1,
+          "enrollment_type:0": 1,
+          "enrollment_type:1": 1
+        },
+        "unused": [
+          "enrollment_type:2",
+          "enrollment_type:3",
+          "gender:1",
+          "gender:2",
+          "gender:3",
+          "how_heard:1",
+          "how_heard:2",
+          "how_heard:3"
+        ]
+      }
+    },
+    "compound": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 150,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 49,
+      "bands": {
+        "mid": 12,
+        "late": 6
+      },
+      "distinct_messages": 18,
+      "distinct_expected_values": 20,
+      "distinct_target_fields": 6,
+      "target_fields": {
+        "full_name": 10,
+        "mailing_address": 8,
+        "preferred_name": 7,
+        "dob": 3,
+        "phone": 4,
+        "email": 4
+      },
+      "label_echo": {
+        "variants_rendered": 600,
+        "with_label": 150,
+        "pct": 25.0,
+        "max_per_snapshot": 1,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 4,
+        "used": 4,
+        "required": 4,
+        "counts": {
+          "frame0": 5,
+          "frame1": 5,
+          "frame2": 4,
+          "frame3": 4
+        },
+        "unused": []
+      }
+    },
+    "bulk": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 319,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 49,
+      "bands": {
+        "early": 6,
+        "mid": 6,
+        "late": 6
+      },
+      "distinct_messages": 18,
+      "distinct_expected_values": 23,
+      "distinct_target_fields": 5,
+      "target_fields": {
+        "full_name": 6,
+        "email": 15,
+        "phone": 18,
+        "mailing_address": 12,
+        "preferred_name": 3
+      },
+      "label_echo": {
+        "variants_rendered": 1276,
+        "with_label": 319,
+        "pct": 25.0,
+        "max_per_snapshot": 1,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 4,
+        "used": 4,
+        "required": 4,
+        "counts": {
+          "frame0": 5,
+          "frame1": 5,
+          "frame2": 4,
+          "frame3": 4
+        },
+        "unused": []
+      }
+    },
+    "correction": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 263,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 5,
+      "bands": {
+        "mid": 12,
+        "late": 6
+      },
+      "distinct_messages": 15,
+      "distinct_expected_values": 10,
+      "distinct_target_fields": 4,
+      "target_fields": {
+        "full_name": 8,
+        "phone": 2,
+        "email": 2,
+        "dob": 6
+      },
+      "label_echo": {
+        "variants_rendered": 1315,
+        "with_label": 263,
+        "pct": 20.0,
+        "max_per_snapshot": 1,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 5,
+        "used": 5,
+        "required": 4,
+        "counts": {
+          "frame0": 4,
+          "frame1": 4,
+          "frame2": 4,
+          "frame3": 3,
+          "frame4": 3
+        },
+        "unused": []
+      }
+    },
+    "wrapped_value": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 351,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 6,
+      "bands": {
+        "early": 8,
+        "mid": 6,
+        "late": 4
+      },
+      "distinct_messages": 15,
+      "distinct_expected_values": 13,
+      "distinct_target_fields": 4,
+      "target_fields": {
+        "dob": 3,
+        "email": 6,
+        "phone": 6,
+        "mailing_address": 3
+      },
+      "label_echo": {
+        "variants_rendered": 1762,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 6,
+        "used": 6,
+        "required": 4,
+        "counts": {
+          "dob:2": 3,
+          "email:0": 3,
+          "email:4": 3,
+          "phone:1": 3,
+          "phone:5": 3,
+          "mailing_address:3": 3
+        },
+        "unused": []
+      }
+    },
+    "freetext_select": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 59,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 10,
+      "bands": {
+        "mid": 15,
+        "late": 3
+      },
+      "distinct_messages": 16,
+      "distinct_expected_values": 9,
+      "distinct_target_fields": 2,
+      "target_fields": {
+        "country_residence": 8,
+        "country_citizenship": 10
+      },
+      "label_echo": {
+        "variants_rendered": 295,
+        "with_label": 59,
+        "pct": 20.0,
+        "max_per_snapshot": 1,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 10,
+        "used": 10,
+        "required": 4,
+        "counts": {
+          "country_residence:0": 2,
+          "country_residence:1": 2,
+          "country_residence:2": 2,
+          "country_residence:3": 1,
+          "country_residence:4": 1,
+          "country_citizenship:0": 2,
+          "country_citizenship:1": 2,
+          "country_citizenship:2": 2,
+          "country_citizenship:3": 2,
+          "country_citizenship:4": 2
+        },
+        "unused": []
+      }
+    },
+    "residence_statement": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 192,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 5,
+      "bands": {
+        "early": 12,
+        "mid": 6
+      },
+      "distinct_messages": 14,
+      "distinct_expected_values": 6,
+      "distinct_target_fields": 1,
+      "target_fields": {
+        "country_residence": 18
+      },
+      "label_echo": {
+        "variants_rendered": 960,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 5,
+        "used": 5,
+        "required": 4,
+        "counts": {
+          "frame0": 4,
+          "frame1": 4,
+          "frame2": 4,
+          "frame3": 3,
+          "frame4": 3
+        },
+        "unused": []
+      }
+    },
+    "boolean_phrase": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 87,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 20,
+      "bands": {
+        "late": 9,
+        "early": 7,
+        "mid": 2
+      },
+      "distinct_messages": 14,
+      "distinct_expected_values": 8,
+      "distinct_target_fields": 5,
+      "target_fields": {
+        "disability_accommodation": 1,
+        "gre_taken": 1,
+        "funding_interest": 4,
+        "prior_application": 8,
+        "has_work_experience": 4
+      },
+      "label_echo": {
+        "variants_rendered": 344,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 16,
+        "used": 14,
+        "required": 4,
+        "counts": {
+          "disability_accommodation:0": 1,
+          "gre_taken:0": 1,
+          "funding_interest:0": 1,
+          "funding_interest:1": 1,
+          "funding_interest:2": 1,
+          "funding_interest:3": 1,
+          "prior_application:0": 2,
+          "prior_application:1": 2,
+          "prior_application:2": 2,
+          "prior_application:3": 2,
+          "has_work_experience:0": 1,
+          "has_work_experience:1": 1,
+          "has_work_experience:2": 1,
+          "has_work_experience:3": 1
+        },
+        "unused": [
+          "disability_accommodation:1",
+          "gre_taken:1"
+        ]
+      }
+    },
+    "multi_select_subset": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 410,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 5,
+      "bands": {
+        "early": 2,
+        "mid": 2,
+        "late": 14
+      },
+      "distinct_messages": 14,
+      "distinct_expected_values": 5,
+      "distinct_target_fields": 2,
+      "target_fields": {
+        "funding_type": 18,
+        "funding_interest": 5
+      },
+      "label_echo": {
+        "variants_rendered": 2050,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 5,
+        "used": 5,
+        "required": 4,
+        "counts": {
+          "frame0": 4,
+          "frame1": 4,
+          "frame2": 4,
+          "frame3": 3,
+          "frame4": 3
+        },
+        "unused": []
+      }
+    },
+    "precedence": {
+      "kind": "sets",
+      "prefer": null,
+      "eligible": 321,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 49,
+      "bands": {
+        "early": 2,
+        "mid": 5,
+        "late": 11
+      },
+      "distinct_messages": 14,
+      "distinct_expected_values": 10,
+      "distinct_target_fields": 3,
+      "target_fields": {
+        "mailing_address": 10,
+        "email": 3,
+        "phone": 5
+      },
+      "label_echo": {
+        "variants_rendered": 1284,
+        "with_label": 321,
+        "pct": 25.0,
+        "max_per_snapshot": 1,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 4,
+        "used": 4,
+        "required": 4,
+        "counts": {
+          "frame0": 5,
+          "frame1": 5,
+          "frame2": 4,
+          "frame3": 4
+        },
+        "unused": []
+      }
+    },
+    "chitchat": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 423,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 5,
+      "bands": {
+        "early": 2,
+        "mid": 2,
+        "late": 14
+      },
+      "distinct_messages": 5,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 2115,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 5,
+        "used": 5,
+        "required": 4,
+        "counts": {
+          "frame0": 4,
+          "frame1": 4,
+          "frame2": 4,
+          "frame3": 3,
+          "frame4": 3
+        },
+        "unused": []
+      }
+    },
+    "restraint_question": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 423,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 5,
+      "bands": {
+        "early": 2,
+        "mid": 2,
+        "late": 14
+      },
+      "distinct_messages": 5,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 2115,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 5,
+        "used": 5,
+        "required": 4,
+        "counts": {
+          "frame0": 4,
+          "frame1": 4,
+          "frame2": 4,
+          "frame3": 3,
+          "frame4": 3
+        },
+        "unused": []
+      }
+    },
+    "refusal": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 423,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 5,
+      "bands": {
+        "early": 2,
+        "mid": 2,
+        "late": 14
+      },
+      "distinct_messages": 14,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 2115,
+        "with_label": 422,
+        "pct": 20.0,
+        "max_per_snapshot": 1,
+        "single_word_label_words": 4
+      },
+      "variant_coverage": {
+        "available": 5,
+        "used": 5,
+        "required": 4,
+        "counts": {
+          "frame0": 4,
+          "frame1": 4,
+          "frame2": 4,
+          "frame3": 3,
+          "frame4": 3
+        },
+        "unused": []
+      }
+    },
+    "third_party_name": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 423,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 5,
+      "bands": {
+        "early": 2,
+        "mid": 2,
+        "late": 14
+      },
+      "distinct_messages": 14,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 2115,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 5,
+        "used": 5,
+        "required": 4,
+        "counts": {
+          "frame0": 4,
+          "frame1": 4,
+          "frame2": 4,
+          "frame3": 3,
+          "frame4": 3
+        },
+        "unused": []
+      }
+    },
+    "third_party_fact": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 423,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 6,
+      "bands": {
+        "early": 8,
+        "mid": 6,
+        "late": 4
+      },
+      "distinct_messages": 6,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 1590,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 6,
+        "used": 6,
+        "required": 6,
+        "counts": {
+          "prior_application:0": 3,
+          "dob:4": 3,
+          "country_citizenship:3": 3,
+          "country_residence:2": 3,
+          "has_work_experience:1": 3,
+          "gre_taken:5": 3
+        },
+        "unused": []
+      }
+    },
+    "narrative_trap": {
+      "kind": "empty",
+      "prefer": "late",
+      "eligible": 423,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 5,
+      "bands": {
+        "late": 16,
+        "mid": 1,
+        "early": 1
+      },
+      "distinct_messages": 5,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 2115,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 5,
+        "used": 5,
+        "required": 4,
+        "counts": {
+          "frame0": 4,
+          "frame1": 4,
+          "frame2": 4,
+          "frame3": 3,
+          "frame4": 3
+        },
+        "unused": []
+      }
+    },
+    "unlisted_country": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 222,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 6,
+      "bands": {
+        "early": 11,
+        "mid": 6,
+        "late": 1
+      },
+      "distinct_messages": 6,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 1332,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 6,
+        "used": 6,
+        "required": 4,
+        "counts": {
+          "egypt": 3,
+          "ghana": 3,
+          "kenya": 3,
+          "peru": 3,
+          "portugal": 3,
+          "vietnam": 3
+        },
+        "unused": []
+      }
+    },
+    "bare_ambiguous": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 362,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 4,
+      "bands": {
+        "early": 2,
+        "mid": 1,
+        "late": 15
+      },
+      "distinct_messages": 4,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 1448,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 4,
+        "used": 4,
+        "required": 4,
+        "counts": {
+          "1974": 4,
+          "1987": 5,
+          "1996": 4,
+          "1999": 5
+        },
+        "unused": []
+      }
+    },
+    "no_match": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 122,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 4,
+      "bands": {
+        "mid": 2,
+        "late": 2,
+        "early": 14
+      },
+      "distinct_messages": 16,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 488,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 20,
+        "used": 14,
+        "required": 4,
+        "counts": {
+          "funding_type:0": 1,
+          "funding_type:1": 1,
+          "funding_type:2": 1,
+          "funding_type:3": 1,
+          "program:0": 2,
+          "program:1": 2,
+          "program:2": 1,
+          "program:3": 1,
+          "start_term:0": 2,
+          "start_term:1": 2,
+          "start_term:2": 1,
+          "start_term:3": 1,
+          "enrollment_type:0": 1,
+          "enrollment_type:1": 1
+        },
+        "unused": [
+          "enrollment_type:2",
+          "enrollment_type:3",
+          "gender:0",
+          "gender:1",
+          "gender:2",
+          "gender:3"
+        ]
+      }
+    },
+    "invalid_value": {
+      "kind": "empty",
+      "prefer": null,
+      "eligible": 33,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 4,
+      "bands": {
+        "mid": 17,
+        "late": 1
+      },
+      "distinct_messages": 12,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 0,
+      "target_fields": {},
+      "label_echo": {
+        "variants_rendered": 132,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 0
+      },
+      "variant_coverage": {
+        "available": 4,
+        "used": 4,
+        "required": 4,
+        "counts": {
+          "date:0": 5,
+          "date:1": 5,
+          "date:2": 4,
+          "date:3": 4
+        },
+        "unused": []
+      }
+    },
+    "asks_about_field": {
+      "kind": "choice",
+      "prefer": null,
+      "eligible": 411,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 4,
+      "bands": {
+        "early": 16,
+        "mid": 1,
+        "late": 1
+      },
+      "distinct_messages": 16,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 4,
+      "target_fields": {
+        "program": 4,
+        "start_term": 5,
+        "enrollment_type": 5,
+        "gender": 4
+      },
+      "label_echo": {
+        "variants_rendered": 1644,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 1393
+      },
+      "variant_coverage": {
+        "available": 16,
+        "used": 16,
+        "required": 4,
+        "counts": {
+          "frame1:program": 1,
+          "frame2:program": 1,
+          "frame0:program": 1,
+          "frame3:program": 1,
+          "frame3:start_term": 1,
+          "frame0:start_term": 2,
+          "frame1:start_term": 1,
+          "frame2:start_term": 1,
+          "frame2:enrollment_type": 1,
+          "frame0:enrollment_type": 1,
+          "frame1:enrollment_type": 2,
+          "frame3:enrollment_type": 1,
+          "frame3:gender": 1,
+          "frame1:gender": 1,
+          "frame0:gender": 1,
+          "frame2:gender": 1
+        },
+        "unused": []
+      }
+    },
+    "deflect": {
+      "kind": "choice",
+      "prefer": null,
+      "eligible": 410,
+      "quota": 18,
+      "achieved": 18,
+      "shortfall": 0,
+      "frames": 4,
+      "bands": {
+        "early": 13,
+        "late": 3,
+        "mid": 2
+      },
+      "distinct_messages": 12,
+      "distinct_expected_values": 0,
+      "distinct_target_fields": 3,
+      "target_fields": {
+        "start_term": 4,
+        "enrollment_type": 7,
+        "gender": 7
+      },
+      "label_echo": {
+        "variants_rendered": 1640,
+        "with_label": 0,
+        "pct": 0.0,
+        "max_per_snapshot": 0,
+        "single_word_label_words": 1492
+      },
+      "variant_coverage": {
+        "available": 12,
+        "used": 12,
+        "required": 4,
+        "counts": {
+          "frame0:start_term": 1,
+          "frame1:start_term": 1,
+          "frame2:start_term": 1,
+          "frame3:start_term": 1,
+          "frame1:enrollment_type": 2,
+          "frame3:enrollment_type": 1,
+          "frame0:enrollment_type": 2,
+          "frame2:enrollment_type": 2,
+          "frame0:gender": 1,
+          "frame2:gender": 2,
+          "frame1:gender": 2,
+          "frame3:gender": 2
+        },
+        "unused": []
+      }
+    }
+  },
+  "shortfalls": {},
+  "coercion_gate": {
+    "variant_checks": 30063,
+    "failures": [],
+    "passed": true
+  },
+  "variant_gate": {
+    "passed": true,
+    "failures": [],
+    "min_distinct": 4,
+    "full_coverage": [
+      "third_party_fact"
+    ]
+  },
+  "collisions": {
+    "eval_frames": 281,
+    "training_frames": 285,
+    "comparisons": 78660,
+    "failures": [],
+    "near_misses": [],
+    "passed": true
+  },
+  "review_flags": [
+    {
+      "scenario": "third_party_name",
+      "message": "{n} is the one who talked me into going back to school.",
+      "note": "'talked me into going back to school' is not 'told me about Northfield', so expect=empty; a model that binds how_heard=referral here is over-attributing, but the line is the closest any empty case comes to a defensible answer"
+    },
+    {
+      "scenario": "residence_statement",
+      "message": "Moved to {city} in 2019 and I've been living in {country} since.",
+      "note": "was narrative_trap variant 0 under expect=empty, which scored a correct country_residence=KR as a failure; it is now a POSITIVE case. Countries are restricted to the 14 in the option list \u2014 a narrative naming a country that is NOT an option (the sweep's Nairobi/Kenya turn) has no unarguable expectation (Other? clarify?) and is therefore not in v3 at all. Snapshots whose pending field is country_citizenship or country_residence are excluded, so the residence reading is the only reading"
+    },
+    {
+      "scenario": "invalid_value",
+      "message": "the 3rd of March, 1994",
+      "note": "REMOVED: a clear date that validator._DATE_FORMATS simply cannot parse. A student emitting 1994-03-03 is right, so the case measured the harness"
+    },
+    {
+      "scenario": "unlisted_country",
+      "message": "(alias gap \u2014 near-miss country names are NOT in v3)",
+      "note": "convention B (no inference): an unlisted country sets nothing and the field stays pending; OTHER binds only when the user says 'Other'. v3 uses only genuinely unlisted countries (Kenya, Portugal, Ghana, Vietnam, Egypt, Peru). 'Britain', 'Great Britain', 'America', 'Holland', 'Korea' also return [] from match_options today, but they SHOULD reach United Kingdom / United States / South Korea \u2014 that is a validator alias gap, a separate question from this convention, and freezing expect=empty for them would make a harness weakness into ground truth"
+    }
+  ]
+}
