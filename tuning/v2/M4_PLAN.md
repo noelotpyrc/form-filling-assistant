@@ -334,7 +334,7 @@ on both, so epochs/volume alone is not the answer. Booleans need their own rule 
 explicit affirmation token) or data — provenance cannot check `True`.
 Runs: `tuning/v2/stress_runs/{base_qwen35,slice1,slice1b}/` (gitignored).
 
-### Issue #1 fix — AGREED 2026-07-25: validator provenance gate (code only, no retrain)
+### Issue #1 fix — AGREED 2026-07-25, **DONE 2026-08-02**: validator provenance gate (code only, no retrain)
 
 Scope: student issue #1 ONLY (unsupported free-text values). Issues #2 (boolean/choice
 over-attribution) and third-party name binding stay OPEN — no provenance check can reach
@@ -362,6 +362,44 @@ them, see below.
   and confirm each is dropped.
 - **Not decided:** whether a dropped value is logged/surfaced anywhere, and whether the
   same gate should apply to the teacher path (it is model-agnostic by construction).
+
+**SHIPPED 2026-08-02 — as built.** `validator.value_supported(f, value, user_message)` is now
+the ONE support test; `probe._invention_check` is a thin wrapper over it (persona escape hatch
+kept), and `stress_invent` / `datagen` reach it through probe as before. `_validate_pair`
+returns `Outcome(DROPPED, fid, "value not in message")` for an unsupported non-choice value —
+nothing set, pending untouched, the composer's reask fires. The unplaced path is gated too,
+AFTER `_bind_unplaced`, accepting either the text-style test or the bound field's type test, so
+a canonicalized value the user spelled differently ("August 10, 2000." -> `2000-08-10`) still
+binds. Built as **structural insurance for the RL phase** — the motivating failure had not
+recurred with r3-oracle; the gate is there so drift under RL cannot write PII the user never
+said. Gates: 46/46 deterministic smoke (was 31; +15 for the three changes, the date-format
+regression and the replay) and the replay of all 25 recorded slice1b inventions ->
+**25/25 DROPPED**. Eval v1 / v2 / v3 are run live by the orchestrator, not here.
+
+**Date-support bug, found by the live v3 run and fixed 2026-08-02.** The first cut found date
+spans with a REGEX, which was a second copy of `_DATE_FORMATS` and had already drifted: it did
+not know the day-first `%d %b %Y` form ("2 Feb 1993") that `coerce` accepts, so the gate dropped
+6 CORRECT dates on r3-oracle's v3 run (`pending_answer-03`, `compound-09`, `correction-08/14/16`,
+`wrapped_value-14`). Support is now derived from `coerce` itself — a 1..5-token sliding window
+over the message, each window coerced and compared to the candidate's ISO value — so any format
+`coerce` learns is supported automatically and the two cannot diverge again. The same run's TRUE
+drops (invented phone/email, wrong-year and wrong-digit transcriptions) are unaffected: a wrong
+year off a right message still fails, and a differential over 11,340 probe comparisons shows
+0 non-date behavior changes and 20 date comparisons flipping False -> True, none the other way.
+
+**Two more harness changes in the same pass (2026-08-02).**
+- **Phone canonicalization.** `coerce(value, phone)` now stores digits only, keeping a leading
+  "+" ("(415) 782-3311" -> `4157823311`, "+49 30 901820" -> `+4930901820`); the >=7-digit
+  ok-condition is unchanged. Model punctuation quirks stop being a value-match variable. For
+  compatibility, `eval_score._val_eq` compares phone fields by digit string, so eval v1
+  (byte-frozen) and v3 (frozen, baselines attached) keep their SURFACE expectations — no eval
+  file was regenerated or edited.
+- **Country alias table.** `match_options` gains a small alias map keyed by OPTION VALUE (so it
+  cannot misfire on a non-country field): britain / great britain / england -> `UK`;
+  america / usa / the states / united states of america -> `US`. Closes the doc-19 §5 gap
+  ("Britain" returned `[]` although United Kingdom is an option). "korea" needed no entry (it
+  already partial-matches South Korea); "holland" was deliberately NOT added — the Netherlands
+  is not an option, so any mapping would file the applicant under the wrong country.
 
 ## Eval v3 design decisions (2026-07-25)
 

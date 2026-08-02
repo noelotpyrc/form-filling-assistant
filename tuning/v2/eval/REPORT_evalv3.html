@@ -91,6 +91,7 @@
 <a href="#s9">9. Invented-PII spot check</a>
 <a href="#s10">10. Observations</a>
 <a href="#s11">11. Limitations</a>
+<a href="#s12">12. Addendum: final-harness re-baseline</a>
 </nav>
 
 <main>
@@ -364,8 +365,26 @@ teacher -- dropped ids: residence_statement-01/country_residence; residence_stat
 <p>So residence_statement contributes nothing to the late band, and compound, correction, freetext_select, invalid_value and pending_answer contribute nothing to the early band. Band totals are also unequal (early 125 / mid 124 / late 165).</p>
 <ul><li><b>Repeated messages.</b> The 414 cases contain 286 distinct (scenario, user_message) pairs; the most-repeated message appears 5 times. Contexts differ per case, but a single message-level behaviour can move up to 5 cases at once (e.g. 3 of the 7 residence_statement regressions and all 4 of the teacher's residence_statement failures are the same Seoul sentence).</li><li><b>The <code>third_party_name</code> expectation of empty is a declared v3 ceiling</b>, not a correctness fact (see <code>tuning/v2/M4_PLAN.md</code>, "Eval v3 design decisions"): a system with a deferred-hint mechanic should carry the mention forward. Both students and the teacher lose cases to it.</li><li><b>Positive-band cases ignore choices.</b> <code>score_observation</code> checks only the set fields for <code>sets</code> cases, so a model that both sets the right field and also offers an unrelated choice still passes (e.g. slice1b passes <code>typed_choice-05</code> while recording <code>choice_field=start_term</code>).</li></ul>
 </section>
+<section id="s12">
+<h2>12. Addendum (2026-08-02): final-harness re-baseline</h2>
+<p>After this report was generated, three harness changes closed the SFT era (see <code>M4_PLAN.md</code> "Issue #1 fix — DONE" and <code>doc-18.1</code> Stage-2 addendum): a <b>provenance gate</b> in the validator (a non-choice value not supported by the current user message is DROPPED — nothing is set, the field re-asks), a <b>country alias table</b> in <code>match_options</code> ("Britain"→UK, "America"→US), and <b>phone canonicalization</b> in <code>coerce</code> (digits-only storage; the scorer compares phone fields by digit string, so the frozen eval files are unchanged). The eval set is byte-identical; only the harness and scorer changed. All four models were re-run; JSONs carry the <code>_final</code> suffix.</p>
+<div class="tw"><table>
+<thead><tr><th>v3 (414 cases)</th><th>base*</th><th>r3-oracle</th><th>teacher</th></tr></thead>
+<tbody>
+<tr><td>field F1</td><td>26.0</td><td>89.9</td><td>97.3</td></tr>
+<tr><td>precision / recall</td><td>15.8 / 74.0</td><td>91.5 / 88.3</td><td>95.8 / 98.8</td></tr>
+<tr><td>value-match</td><td>95.2</td><td>96.5</td><td>99.6</td></tr>
+<tr><td>empty-correct</td><td>32.7</td><td>91.1</td><td>95.6</td></tr>
+<tr><td>over-attribution</td><td>76.5</td><td>11.9</td><td>5.6</td></tr>
+<tr><td>wrong-field</td><td>50.0</td><td>1.9</td><td>1.9</td></tr>
+<tr><td>choice-correct</td><td>0.0</td><td>97.2</td><td>100.0</td></tr>
+<tr><td>whole-case pass</td><td>114/359</td><td>363/414</td><td>400/414</td></tr>
+</tbody></table></div>
+<p>* base scored on 359 parseable cases, 55 skipped (same caveat as section 2). slice1b was not re-run — its section-2 numbers stand as the round-2 record on the pre-fix harness.</p>
+<p>r3-oracle vs its own section-2 numbers: whole-case pass 358 → <b>363</b> (5 fixed, 0 broken — three phone-punctuation cases pass via canonicalization, one case recovers because the gate blocks an invented extra phone, one day-first date passes after the date-span fix), value-match 93.0 → <b>96.5</b>. Field F1 dips 90.2 → 89.9 by accounting only: three wrong-value transcriptions (<code>LS2 7DQ</code>, year <code>2025</code>, a dropped phone digit) are now DROPPED by the gate instead of landing as matched-field-wrong-value, converting tp to fn; the same three cases failed under both harnesses, and the wrong value no longer reaches the form. v1 tripwire unchanged (99.5 / 100.0). The gate's first live run also caught its own defect — a date-span finder narrower than <code>coerce</code>'s formats dropped six correct day-first dates — fixed by deriving span support from <code>coerce</code> itself (token-window scan), so the two cannot drift again; the numbers above are post-fix.</p>
+</section>
 <footer class="doc">
-<p>Generated 2026-07-26 by the eval pipeline; source JSONs in <code>tuning/v2/eval/</code>.</p>
+<p>Generated 2026-07-26 by the eval pipeline; section 12 added 2026-08-02. Source JSONs in <code>tuning/v2/eval/</code> (final-harness runs suffixed <code>_final</code>).</p>
 </footer>
 </main>
 </div>

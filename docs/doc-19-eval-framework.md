@@ -175,10 +175,13 @@ wrong, a concrete example, then the rule that now prevents it.
   March, 1994"* and expected the model to extract nothing — but only because our
   date parser doesn't know that format. A model that answers `1994-03-03` has read
   the date correctly and would be marked wrong. The case was removed. Same logic
-  for "Britain" and "America": our option matcher fails to map them to United
-  Kingdom / United States, which is a matcher bug to fix, not a behavior to demand.
+  for "Britain" and "America": the option matcher used to fail to map them to
+  United Kingdom / United States, which was a matcher bug to fix, not a behavior to
+  demand — and it was fixed on 2026-08-02 by a small alias table in `match_options`,
+  keyed by option value so it can only fire on a field that carries that option.
   **Rule:** if the only reason an expectation holds is a harness limitation, the
-  case does not go in the eval.
+  case does not go in the eval — fix the harness, and keep the near-miss names out
+  of the eval until it is fixed. The same rule stands for the next such gap.
 
 ## 6. The metrics
 

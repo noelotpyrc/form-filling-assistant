@@ -425,4 +425,44 @@ Factual patterns only.
 
 ---
 
-Generated 2026-07-26 by the eval pipeline; source JSONs in `tuning/v2/eval/`.
+## 12. Addendum (2026-08-02): final-harness re-baseline
+
+After this report was generated, three harness changes closed the SFT era (see
+`M4_PLAN.md` "Issue #1 fix — DONE" and `doc-18.1` Stage-2 addendum): a provenance gate
+in the validator (a non-choice value not supported by the current user message is
+DROPPED — nothing is set, the field re-asks), a country alias table in `match_options`
+("Britain"→UK, "America"→US), and phone canonicalization in `coerce` (digits-only
+storage; the scorer compares phone fields by digit string, so the frozen eval files are
+unchanged). The eval set is byte-identical; only the harness and scorer changed. All
+four models were re-run; JSONs carry the `_final` suffix.
+
+| v3 (414 cases) | base* | r3-oracle | teacher |
+|---|---|---|---|
+| field F1 | 26.0 | 89.9 | 97.3 |
+| precision / recall | 15.8 / 74.0 | 91.5 / 88.3 | 95.8 / 98.8 |
+| value-match | 95.2 | 96.5 | 99.6 |
+| empty-correct | 32.7 | 91.1 | 95.6 |
+| over-attribution | 76.5 | 11.9 | 5.6 |
+| wrong-field | 50.0 | 1.9 | 1.9 |
+| choice-correct | 0.0 | 97.2 | 100.0 |
+| whole-case pass | 114/359 | 363/414 | 400/414 |
+
+\* base scored on 359 parseable cases, 55 skipped (same caveat as §2). slice1b was not
+re-run — its §2 numbers stand as the round-2 record on the pre-fix harness.
+
+r3-oracle vs its own §2 numbers: whole-case pass 358 → **363** (5 fixed, 0 broken —
+three phone-punctuation cases pass via canonicalization, one case recovers because the
+gate blocks an invented extra phone, one day-first date passes after the date-span fix),
+value-match 93.0 → **96.5**. Field F1 dips 90.2 → 89.9 by accounting only: three
+wrong-value transcriptions (`LS2 7DQ`, year `2025`, a dropped phone digit) are now
+DROPPED by the gate instead of landing as matched-field-wrong-value, converting tp to
+fn; the same three cases failed under both harnesses, and the wrong value no longer
+reaches the form. v1 tripwire unchanged (99.5 / 100.0). The gate's first live run also
+caught its own defect — a date-span finder narrower than `coerce`'s formats dropped six
+correct day-first dates — fixed by deriving span support from `coerce` itself
+(token-window scan), so the two cannot drift again; the numbers above are post-fix.
+
+---
+
+Generated 2026-07-26 by the eval pipeline; §12 added 2026-08-02. Source JSONs in
+`tuning/v2/eval/` (final-harness runs suffixed `_final`).
