@@ -6,10 +6,13 @@ smoke in chunk 3. Run from repo root:  python3 -m tuning.v2.smoke_deterministic
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from .schema import load_schema
 from .state import TurnState, Pending, CONFIRM_SUBMIT, queue
 from . import prestep
-from .validator import validate, match_options
+from .validator import validate, match_options, coerce, DROPPED
 from .composer import compose
 
 SCHEMA = load_schema()
@@ -314,6 +317,136 @@ def s20c_multi_category():
           str(opt_values(a[0])) if a and a[0]["type"] == "ask_choice" else str(types(a)))
 
 
+# ---- SFT-era finalize (2026-08-02) --------------------------------------
+# Three validator changes: the provenance gate (code owns provenance), the country
+# alias table in match_options, and phone canonicalization in coerce.
+
+def s22a_country_alias():
+    res = SCHEMA.field("country_residence")
+    check("S22a match_options('Britain') -> unique UK (alias table)",
+          [o[0] for o in match_options("Britain", res)] == ["UK"],
+          str(match_options("Britain", res)))
+    check("S22a match_options('America') -> unique US (alias table)",
+          [o[0] for o in match_options("America", res)] == ["US"],
+          str(match_options("America", res)))
+    check("S22a alias table is keyed by option value -> cannot fire on another field",
+          match_options("America", SCHEMA.field("program")) == []
+          and match_options("Britain", SCHEMA.field("how_heard")) == [],
+          str(match_options("America", SCHEMA.field("program"))))
+    s = state_with({"full_name": "M"}, pending="country_residence")
+    a, d = run_turn(s, "I live in Britain these days.",
+                    [{"field_id": "country_residence", "value": "Britain"}])
+    check("S22a 'Britain' turn -> set_fields(country_residence=UK)",
+          types(a)[0] == "set_fields" and {"field_id": "country_residence", "value": "UK"} in a[0]["fields"],
+          str(a[0]["fields"]) if a and a[0]["type"] == "set_fields" else str(types(a)))
+    s = state_with({"full_name": "M"}, pending="country_residence")
+    a, d = run_turn(s, "I'm in America.",
+                    [{"field_id": "country_residence", "value": "America"}])
+    check("S22a 'America' turn -> set_fields(country_residence=US)",
+          types(a)[0] == "set_fields" and {"field_id": "country_residence", "value": "US"} in a[0]["fields"],
+          str(a[0]["fields"]) if a and a[0]["type"] == "set_fields" else str(types(a)))
+
+
+def s22b_provenance_unsupported():
+    # the recorded slice1b failure shape: a third-party mention, and the extractor
+    # hands back PII that appears NOWHERE in the message. Nothing may be written.
+    s = state_with({"full_name": "M"}, pending="email")
+    a, d = run_turn(s, "Ravi Ali in my office went through this exact process and swore by it.",
+                    [{"field_id": "email", "value": "ravi.ali14@example.com"},
+                     {"field_id": "phone", "value": "(892) 555-1029"}])
+    check("S22b invented email+phone -> nothing set, pending email untouched, reask fires",
+          not any(x["type"] == "set_fields" for x in a)
+          and "email" not in s.form_state and "phone" not in s.form_state
+          and s.pending and s.pending.target == "email" and has_dir(d, "reask_pending"),
+          f"types={types(a)} filled={s.form_state} pending={s.pending} dirs={[x[0] for x in d]}")
+    # a value the message DOES carry still sets, same turn shape
+    s = state_with({"full_name": "M"}, pending="email")
+    a, d = run_turn(s, "my email is ravi.ali14@example.com",
+                    [{"field_id": "email", "value": "ravi.ali14@example.com"}])
+    check("S22b same email, present in the message -> set (gate is provenance, not a blocklist)",
+          types(a)[0] == "set_fields" and s.form_state["email"] == "ravi.ali14@example.com",
+          f"types={types(a)} filled={s.form_state}")
+
+
+def s22c_phone_canonical():
+    check("S22c coerce phone -> digits, '+' kept",
+          coerce("(415) 782-3311", SCHEMA.field("phone")) == (True, "4157823311")
+          and coerce("+49 30 901820", SCHEMA.field("phone")) == (True, "+4930901820"),
+          str([coerce("(415) 782-3311", SCHEMA.field("phone")),
+               coerce("+49 30 901820", SCHEMA.field("phone"))]))
+    s = state_with({"full_name": "M"}, pending="phone")
+    a, d = run_turn(s, "you can text me at (212) 555-9981",
+                    [{"field_id": "phone", "value": "(212) 555-9981"}])
+    check("S22c phone turn -> form stores '2125559981' (punctuation is not data)",
+          types(a)[0] == "set_fields" and s.form_state.get("phone") == "2125559981",
+          f"types={types(a)} filled={s.form_state}")
+
+
+def s22d_date_support_is_coerce_span():
+    # the ISO value is NOT a substring of "January 15, 1998" — support must be decided
+    # by coercing the spans in the message, or every dated turn would be dropped.
+    s = state_with({"full_name": "M"}, pending="dob")
+    a, d = run_turn(s, "I was born January 15, 1998, in Lagos.",
+                    [{"field_id": "dob", "value": "1998-01-15"}])
+    check("S22d ISO dob + spelled-out date in the message -> supported, dob set",
+          types(a)[0] == "set_fields" and s.form_state.get("dob") == "1998-01-15",
+          f"types={types(a)} filled={s.form_state}")
+    s = state_with({"full_name": "M"}, pending="dob")
+    a, d = run_turn(s, "sure, go ahead.", [{"field_id": "dob", "value": "1998-01-15"}])
+    check("S22d same ISO dob, no date anywhere in the message -> dropped, dob unwritten",
+          not any(x["type"] == "set_fields" for x in a) and "dob" not in s.form_state
+          and s.pending and s.pending.target == "dob",
+          f"types={types(a)} filled={s.form_state} pending={s.pending}")
+
+
+def s22e_date_support_covers_every_coerce_format():
+    # v3 regression 2026-08-02: support was decided by a regex that did not know the
+    # day-first "%d %b %Y" form `coerce` accepts, so 6 CORRECT dates were dropped.
+    # Spans are now found by calling coerce over token windows — the two cannot drift.
+    s = state_with({"full_name": "M"}, pending="dob")
+    a, d = run_turn(s, "Go ahead and use 2 Feb 1993.", [{"field_id": "dob", "value": "1993-02-02"}])
+    check("S22e day-first abbreviated month ('2 Feb 1993') -> supported, dob set",
+          types(a)[0] == "set_fields" and s.form_state.get("dob") == "1993-02-02",
+          f"types={types(a)} filled={s.form_state}")
+    s = state_with({"full_name": "M", "dob": "1990-01-01"}, pending=None)
+    a, d = run_turn(s, "change my birthday to 28 Sep 1995",
+                    [{"field_id": "dob", "value": "1995-09-28"}])
+    check("S22e correction to a day-first date -> supported, dob overwritten",
+          any(x["type"] == "set_fields" for x in a) and s.form_state.get("dob") == "1995-09-28",
+          f"types={types(a)} filled={s.form_state}")
+    s = state_with({"full_name": "M"}, pending="dob")
+    a, d = run_turn(s, "I was born 28 Sep 1995", [{"field_id": "dob", "value": "2025-09-28"}])
+    check("S22e wrong year off the same message -> still dropped (the gate is not weakened)",
+          not any(x["type"] == "set_fields" for x in a) and "dob" not in s.form_state,
+          f"types={types(a)} filled={s.form_state}")
+
+
+# ---- replay gate: the 25 recorded inventions from the slice1b sweep -------
+# stress_runs/ is local (gitignored). Missing file -> loud skip, never a build break.
+
+REPLAY = Path(__file__).resolve().parent / "stress_runs" / "slice1b" / "results.jsonl"
+INVENTED_BUCKETS = {"from_corpus", "novel_in_format", "other_novel"}
+
+
+def s23_replay_slice1b_inventions():
+    if not REPLAY.exists():
+        print(f"  !! SKIPPED replay gate — {REPLAY} not found (local, gitignored) !!")
+        return
+    n, survivors = 0, []
+    for line in open(REPLAY):
+        row = json.loads(line)
+        for cl in row.get("classified") or []:
+            if cl["bucket"] not in INVENTED_BUCKETS:
+                continue
+            n += 1
+            outs = validate([{"field_id": cl["field_id"], "value": cl["value"]}],
+                            TurnState(schema=SCHEMA, form_state={}), row["user_message"])
+            if [o.kind for o in outs] != [DROPPED]:
+                survivors.append((cl["field_id"], cl["value"], [o.kind for o in outs]))
+    check(f"S23 replay: all {n} invented slice1b values DROPPED ({n - len(survivors)}/{n})",
+          n == 25 and not survivors, f"n={n} survivors={survivors[:6]}")
+
+
 def main():
     for fn in [s1_volunteered, s2_elliptical, s4_button_event, s21_unknown_option_label,
                s5_ambiguous_select,
@@ -323,7 +456,10 @@ def main():
                s19_freetext_country,
                s18a_bare_date_pending_binds, s18b_bare_date_no_pending_clarifies,
                s18c_cued_date_sets, s18d_bare_number_no_pending,
-               s20a_multi_conjunction, s20b_multi_single, s20c_multi_category]:
+               s20a_multi_conjunction, s20b_multi_single, s20c_multi_category,
+               s22a_country_alias, s22b_provenance_unsupported, s22c_phone_canonical,
+               s22d_date_support_is_coerce_span, s22e_date_support_covers_every_coerce_format,
+               s23_replay_slice1b_inventions]:
         print(f"\n{fn.__name__}")
         fn()
     passed = sum(1 for _, c, _ in _results if c)

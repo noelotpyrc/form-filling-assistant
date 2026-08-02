@@ -32,7 +32,7 @@ from .schema import load_schema, Schema
 from .state import TurnState, CONFIRM_SUBMIT, queue, is_active
 from . import persona as personas
 from .sim import run_session, SCENARIOS, DIRECTIVES
-from .validator import coerce
+from .validator import coerce, value_supported, _norm   # _norm re-exported (stress_invent, datagen)
 
 PROBE_DIR = Path(__file__).resolve().parent / "probe_runs"
 
@@ -46,10 +46,6 @@ RESUME_PREFILL = ["program", "start_term", "enrollment_type",
 # ======================================================================
 # small helpers over a transcript entry (enriched by sim.run_session)
 # ======================================================================
-
-def _norm(s) -> str:
-    return re.sub(r"[^a-z0-9]", "", str(s).lower())
-
 
 def _details(entry: dict) -> list:
     return entry.get("action_details") or []
@@ -138,11 +134,10 @@ def _canon(schema: Schema, fid: str, value):
 # 'KR' is supported iff the user typed its label 'South Korea'); their persona
 # mismatches are left to values_match_persona.
 
-_DATE_SPAN = re.compile(
-    r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b"
-    r"|\b\d{4}-\d{1,2}-\d{1,2}\b"
-    r"|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b",
-    re.I)
+# _norm / date-span finding / the per-type support rules now live in validator.py — the
+# probe, stress_invent, datagen and the validator's own provenance gate share ONE
+# implementation (`validator.value_supported`); this module re-exports the names its
+# consumers already import.
 
 
 def _session_utterances(session) -> list[str]:
@@ -153,12 +148,7 @@ def _session_utterances(session) -> list[str]:
 
 def _date_in_utterances(iso: str, f, utterances: list[str]) -> bool:
     """True iff some date-like span in an utterance coerces to the same ISO value."""
-    for u in utterances:
-        for span in _DATE_SPAN.findall(u):
-            ok, c = coerce(span, f)
-            if ok and c == iso:
-                return True
-    return False
+    return any(value_supported(f, iso, u) for u in utterances)
 
 
 def _choice_supported(f, value, norm_utts: list[str]) -> bool:
@@ -185,57 +175,48 @@ def _value_supported(schema, fid, value, utterances, persona) -> bool:
     if fid in persona and _canon(schema, fid, value) == _canon(schema, fid, persona[fid]):
         return True
     norm_utts = [_norm(u) for u in utterances]
-    if f is None:
+    if f is None or f.type == "number":
+        # number is unchecked in validator.value_supported (semantic value space);
+        # here it is still compared as text, as it always was.
         return any(_norm(value) in nu for nu in norm_utts)
-    if f.type == "email":
-        v = str(value).lower()
-        return any(v in u.lower() for u in utterances)
-    if f.type == "phone":
-        d = re.sub(r"\D", "", str(value))
-        return bool(d) and any(d in re.sub(r"\D", "", u) for u in utterances)
-    if f.type == "date":
-        return _date_in_utterances(str(value), f, utterances)
     if f.is_choice:
         return _choice_supported(f, value, norm_utts)
-    return any(_norm(value) in nu for nu in norm_utts)   # number / text / textarea
+    if f.type == "phone" and not re.sub(r"\D", "", str(value)):
+        return False                       # no digits -> nothing to trace
+    return any(value_supported(f, value, u) for u in utterances)
+
+
+def _persona_supported(f, value, pv) -> bool:
+    """The persona sheet is part of the support set: a value the SIM was told to say
+    counts as supported even when the utterance rendered it differently."""
+    if f.type == "email":
+        return str(value).lower() == str(pv).lower()
+    if f.type == "phone":
+        return re.sub(r"\D", "", str(value)) in re.sub(r"\D", "", str(pv))
+    if f.type == "date":
+        ok, c = coerce(str(pv), f)
+        return (c if ok else str(pv)) == str(value)
+    return _norm(value) in _norm(pv)       # text / textarea
 
 
 def _invention_check(schema, fid, value, utterances, persona):
     """True (supported) / False (invented) / None (unchecked) for one set value.
-    email/phone/free-text/date are checked deterministically; choices, booleans,
-    numbers and multi_selects are 'unchecked' (their value space is the schema, not
-    free text — a persona mismatch there is caught by values_match_persona)."""
+    email/phone/free-text/date are checked deterministically — via the SHARED
+    `validator.value_supported`, the same test the validator's provenance gate runs
+    per turn — plus the persona escape hatch. Choices, booleans, numbers and
+    multi_selects are 'unchecked' (their value space is the schema, not free text —
+    a persona mismatch there is caught by values_match_persona)."""
     f = schema.field(fid)
-    if f is None:
+    if f is None or f.is_choice or f.type == "number":
         return None
+    if f.type == "phone" and not re.sub(r"\D", "", str(value)):
+        return None                        # no digits -> nothing to check
+    if f.type in ("text", "textarea") and not _norm(value):
+        return None                        # no comparable content
     pv = persona.get(fid)
-    if f.type == "email":
-        v = str(value).lower()
-        if pv is not None and v == str(pv).lower():
-            return True
-        return any(v in u.lower() for u in utterances)
-    if f.type == "phone":
-        d = re.sub(r"\D", "", str(value))
-        if not d:
-            return None
-        if pv is not None and d in re.sub(r"\D", "", str(pv)):
-            return True
-        return any(d in re.sub(r"\D", "", u) for u in utterances)
-    if f.type in ("text", "textarea"):
-        nv = _norm(value)
-        if not nv:
-            return None
-        if pv is not None and nv in _norm(pv):
-            return True
-        return any(nv in _norm(u) for u in utterances)
-    if f.type == "date":
-        iso = str(value)
-        if pv is not None:
-            ok, c = coerce(str(pv), f)
-            if (c if ok else str(pv)) == iso:
-                return True
-        return _date_in_utterances(iso, f, utterances)
-    return None   # choice / boolean / number / multi_select -> unchecked
+    if pv is not None and _persona_supported(f, value, pv):
+        return True
+    return any(value_supported(f, value, u) for u in utterances)
 
 
 # ======================================================================

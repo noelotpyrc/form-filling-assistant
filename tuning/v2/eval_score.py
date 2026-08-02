@@ -68,22 +68,50 @@ def band_of(case: dict) -> str:
     return "other"
 
 
-def _val_eq(got, exp) -> bool:
+def field_types(schema=None) -> dict:
+    """{field_id: schema type}. Cached; loads the canonical schema when not given, so
+    every caller of score_observation gets type-aware comparison for free."""
+    global _FIELD_TYPES
+    if schema is None:
+        if _FIELD_TYPES is None:
+            from .schema import load_schema
+            schema = load_schema()
+            _FIELD_TYPES = {f.field_id: f.type for f in schema.fields}
+        return _FIELD_TYPES
+    return {f.field_id: f.type for f in schema.fields}
+
+
+_FIELD_TYPES = None
+
+
+def _val_eq(got, exp, ftype: str | None = None) -> bool:
+    """Exact string equality, EXCEPT phone: the validator canonicalizes a phone to
+    digits (2026-08-02), while eval v1 (byte-frozen) and v3 (frozen with baselines)
+    store the SURFACE form the user typed ("(429) 555-2786", "415.782.3311"). Phones
+    therefore compare by digit string, so one canonicalization change does not force a
+    rebuild of two frozen eval sets. Every other type is unchanged."""
     if isinstance(exp, bool) or isinstance(got, bool):
         return bool(got) == bool(exp)
+    if ftype == "phone":
+        from .validator import canon_phone
+        return canon_phone(got) == canon_phone(exp)
     return str(got).strip() == str(exp).strip()
 
 
-def score_observation(case: dict, obs: dict) -> dict:
+def score_observation(case: dict, obs: dict, ftypes: dict | None = None) -> dict:
     """One (case, sample) -> a scored record. `obs` = {got_sets, choice_offered,
-    choice_field}. Pure: the aggregate math is exercised by --selftest."""
+    choice_field}. `ftypes` = {field_id: type} for type-aware value equality (phone);
+    it defaults to the canonical schema's. Pure: the aggregate math is exercised by
+    --selftest."""
+    if ftypes is None:
+        ftypes = field_types()
     band = band_of(case)
     exp_sets = case["expect"].get("sets", {})
     exp_fids, got = set(exp_sets), obs["got_sets"]
     got_fids = set(got)
     inter = exp_fids & got_fids
     value_total = len(inter)
-    value_ok = sum(_val_eq(got[fid], exp_sets[fid]) for fid in inter)
+    value_ok = sum(_val_eq(got[fid], exp_sets[fid], ftypes.get(fid)) for fid in inter)
 
     if band == "positive":
         passed = got_fids == exp_fids and value_ok == value_total
@@ -210,6 +238,7 @@ def run_baseline(n: int, label: str, eval_set: str, eval_set_name: str = "v1",
     print(f"backend={backend}  model={lm.model}  port={port or '-'}  program={program}"
           f"  cases={len(cases)}  n={n}  -> {len(cases)*n} extractor calls\n", flush=True)
 
+    ftypes = field_types(schema)   # type-aware value equality (phone -> digits)
     is_v2, is_v3 = eval_set_name == "v2", eval_set_name == "v3"
     scored, bands, raw, total_cost = [], [], [], 0.0
     for si in range(n):
@@ -219,7 +248,7 @@ def run_baseline(n: int, label: str, eval_set: str, eval_set_name: str = "v1",
             except Exception as e:
                 print(f"  !! {case['id']} sample {si}: {type(e).__name__}: {str(e)[:120]}", flush=True)
                 continue
-            s = score_observation(case, obs)
+            s = score_observation(case, obs, ftypes)
             scored.append(s)
             bands.append(case.get("band"))   # lockstep with scored (survives skipped cases)
             rec = {"sample": si, **s, "got_sets": obs["got_sets"], "cost": obs["cost"]}
@@ -343,6 +372,12 @@ def selftest():
         (C("asks", {"choice": ["program"]}), O(choice=True, cf="program"), True),
         # choice: offered wrong field -> fail
         (C("asks", {"choice": ["program"]}), O(choice=True, cf="dob"), False),
+        # phone: the validator stores digits, the frozen eval sets store the surface
+        # form -> same number in any format is a MATCH ...
+        (C("pending_phone", {"sets": {"phone": "(429) 555-2786"}}), O({"phone": "4295552786"}), True),
+        (C("pending_phone", {"sets": {"phone": "+49 30 901820"}}), O({"phone": "+4930901820"}), True),
+        # ... and a different number is still a MISS (the gate is not weakened)
+        (C("pending_phone", {"sets": {"phone": "(429) 555-2786"}}), O({"phone": "4295552787"}), False),
     ]
     scored = []
     for case, obs, want_pass in checks:
@@ -363,8 +398,14 @@ def selftest():
     # tp: single_name#1 (1) + bool (1) = 2; fp: trap(1)+bare_date(1) = 2; fn: 2 missed (#2 set wrong field? no)
     # #1 got==exp tp1; #2 got full_name (tp1) value wrong; #3 fn1; bool tp1; trap fp1; bare_date fp1
     c = agg["field_counts"]
-    assert c == {"tp": 3, "fp": 2, "fn": 1}, c
-    assert abs(agg["value_match"] - 2 / 3) < 1e-9, agg["value_match"]   # 3 tp value-checks, 2 ok (Y wrong)
+    assert c == {"tp": 6, "fp": 2, "fn": 1}, c
+    # 6 tp value-checks, 4 ok: full_name "Y" and the wrong phone digits are the misses
+    assert abs(agg["value_match"] - 4 / 6) < 1e-9, agg["value_match"]
+    # phone equality is by digits, both directions
+    assert _val_eq("4157823311", "415.782.3311", "phone")
+    assert _val_eq("+4930901820", "+49 30 901820", "phone")
+    assert not _val_eq("4157823311", "415.782.3312", "phone")
+    assert not _val_eq("4157823311", "415.782.3311")      # no type -> exact string
     # no-value band = {chitchat clean, trap grabbed} -> 1 of 2 over-attributed
     assert agg["over_attribution"]["rate"] == 0.5 and agg["over_attribution"]["n"] == 2
     assert agg["wrong_field_assignment"]["rate"] == 1.0 and agg["wrong_field_assignment"]["n"] == 1
