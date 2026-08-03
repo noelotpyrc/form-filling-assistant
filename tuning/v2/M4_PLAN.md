@@ -486,6 +486,14 @@ substantially naturalizer semantics, not teacher unreliability.
   only if the tuned responder sounds robotic on eval). Consequence executed: all 588 responder
   targets re-captured under the new prompt via `recapture.py` (h1a_recap 143, eval_farm_p3_recap 222,
   eval_farm_p4_recap 223; parity 0 mismatch, post-canon 588/588, $1.14, full-forward replay).
+- **doc-20 ch1 items 3-6 — DONE 2026-08-03.** Tier-1 scorer `eval_responder.py` (5 check families,
+  26-check selftest); frozen 223-case set `eval/eval_responder_set.jsonl` (deterministic build,
+  seed gate 147-161, directives recomputed from recap extractor pairs — $0, no LLM); curation veto
+  in `sim_to_sft.py` (drop-and-log; 21/365 dropped post-calibration). Directive check calibrated
+  after teacher-baseline hand-read (option-label asks count; set_fields needs ack cue OR name —
+  doc-20 §2 amended). Teacher Tier-1 on frozen 223: format 41.7 (raw markers, repaired for
+  targets), directive 97.3, grounding 100, echo 100, verbosity 97.3. Thresholds are REFERENCE
+  lines, not verdicts (user decision) — go/no-go comes from hand-reading failures.
 - **third_party template wart.** "{n}, my neighbor, said this school has a great campus" is how_heard-
   adjacent → teacher bound how_heard 3/25 (curated out). Reword before next datagen round.
 - **Refusal has no skip/defer mechanic.** Both extractor conventions ([] or engagement) end in the

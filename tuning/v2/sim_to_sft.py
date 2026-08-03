@@ -167,10 +167,16 @@ def reshape(row: dict, target: str) -> dict:
             "messages": list(row["messages"]) + [{"role": "assistant", "content": target}]}
 
 
-def transform(rows: list[dict]) -> tuple[list[tuple[dict, tuple]], list[dict], Counter, dict]:
-    """(out_rows_with_group, dropped_extractor_rows, responder_canon_stats, curation).
+def transform(rows: list[dict], veto=None) -> tuple[list[tuple[dict, tuple]], list[dict], Counter, dict]:
+    """(out_rows_with_group, dropped_rows, responder_canon_stats, curation).
     out_rows_with_group is a list of (reshaped_row, group_key). `curation` maps
-    behavior -> Counter(kept / dropped / unparseable) for inject-extractor rows."""
+    behavior -> Counter(kept / dropped / unparseable) for inject-extractor rows.
+
+    `veto` (doc-20 item 5, Tier-1 responder curation): a callable row -> (drop, reason).
+    When given, a responder row it vetoes is DROPPED and logged (into `dropped`, with
+    module="responder") instead of canonicalized — teacher writes, code vetoes, exactly
+    like the inject-extractor CURATION path. When None (the default, and every existing
+    caller), the responder path is unchanged and byte-identical."""
     out: list[tuple[dict, tuple]] = []
     dropped: list[dict] = []
     canon_stats: Counter = Counter()   # "fixed" (was malformed) / "normalized" (was well-formed)
@@ -197,6 +203,13 @@ def transform(rows: list[dict]) -> tuple[list[tuple[dict, tuple]], list[dict], C
                 curation[row["behavior"]]["kept"] += 1
             target = row["completion"]
         elif module == "responder":
+            if veto is not None:
+                drop, reason = veto(row)
+                if drop:
+                    dropped.append({"idx": idx, "module": "responder", "source": row["source"],
+                                    "behavior": row["behavior"], "session": row.get("session"),
+                                    "turn": row.get("turn"), "reason": reason})
+                    continue
             was_wf = datagen.is_well_formed("responder", row["completion"])
             target = canon_responder(row["completion"])
             assert datagen.is_well_formed("responder", target), \
@@ -279,6 +292,8 @@ def build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats, curatio
                             "total": sum(canon_stats.values())},
         "extractor_drops": {"count": len([d for d in dropped if d.get("module") != "responder"]),
                             "rows": [d for d in dropped if d.get("module") != "responder"]},
+        "responder_drops": {"count": len([d for d in dropped if d.get("module") == "responder"]),
+                            "rows": [d for d in dropped if d.get("module") == "responder"]},
         "inject_extractor_curation": {
             "by_behavior": cur_by_behavior,
             "total_kept": sum(c["kept"] for c in cur_by_behavior.values()),
@@ -313,6 +328,13 @@ def print_report(rep: dict):
           f"({rc['fixed']} malformed->fixed, {rc['normalized']} well-formed->normalized)")
     ed = rep["extractor_drops"]
     print(f"extractor drops: {ed['count']} (expected 0)")
+    rd = rep.get("responder_drops", {"count": 0, "rows": []})
+    print(f"responder Tier-1 drops: {rd['count']}")
+    if rd["rows"]:
+        print(f"  {'session:turn':16} {'behavior':16} reason")
+        for d in rd["rows"]:
+            print(f"  {str(d.get('session'))+':'+str(d.get('turn')):16} "
+                  f"{str(d.get('behavior')):16} {d.get('reason', '')}")
 
     cur = rep["inject_extractor_curation"]
     print("\n" + "=" * 68)
@@ -342,9 +364,43 @@ def print_report(rep: dict):
 # driver
 # ======================================================================
 
-def bridge(in_path: Path, out_dir: Path, val_ratio: float, seed: int) -> dict:
+def _responder_veto(rows: list[dict], snapshots_path: Path):
+    """Build the Tier-1 responder veto (doc-20 item 5). Recomputes each turn's
+    (actions, directives) from its snapshot + the run's extractor rows (no LLM),
+    scores the teacher completion, and drops rows that fail Tier-1. Imported lazily so
+    the extractor path and the selftest never pull eval_responder."""
+    from .schema import load_schema
+    from . import eval_responder as ER
+    schema = load_schema()
+    snaps = {(s["session"], s["turn"]): s
+             for s in (json.loads(l) for l in open(snapshots_path) if l.strip())}
+    ext_map = {(r["session"], r["turn"]): r["completion"]
+               for r in rows if r["module"] == "extractor"}
+
+    def veto(row):
+        key = (row.get("session"), row.get("turn"))
+        snap = snaps.get(key)
+        if snap is None:                       # no snapshot -> cannot score; keep (conservative)
+            return False, ""
+        actions, directives, fs, _ = ER.recompute_actions_directives(schema, snap, ext_map.get(key))
+        # Score the CANONICALIZED target — that is the training label. canon_responder
+        # fixes markers by construction (doc-20 §2: format is repaired for targets, not
+        # vetoed), so the veto acts on the prose-level checks (directive/grounding/echo/
+        # verbosity), not on the teacher's raw marker slips.
+        case = {"form_state": fs, "user_message": snap.get("user_message", ""),
+                "actions": actions, "directives": directives, "completion": canon_responder(row["completion"])}
+        s = ER.score_case(case, schema)
+        if s["passed"]:
+            return False, ""
+        reason = "; ".join(f"{k}:{v['reason']}" for k, v in s["checks"].items() if not v["pass"])
+        return True, reason
+    return veto
+
+
+def bridge(in_path: Path, out_dir: Path, val_ratio: float, seed: int, snapshots_path: Path = None) -> dict:
     rows = [json.loads(l) for l in open(in_path) if l.strip()]
-    out_rows, dropped, canon_stats, curation = transform(rows)
+    veto = _responder_veto(rows, snapshots_path) if snapshots_path else None
+    out_rows, dropped, canon_stats, curation = transform(rows, veto)
     val_groups, all_keys = split_groups([gk for _, gk in out_rows], val_ratio, seed)
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -421,6 +477,22 @@ def selftest():
     out, dropped, cs, _ = transform([good, bad])
     assert len(out) == 1 and out[0][0]["messages"][-1]["content"] == good["completion"]
     assert len(dropped) == 1 and dropped[0]["idx"] == 1
+
+    # --- responder Tier-1 veto (doc-20 item 5): one dropped, one kept ---
+    keep_row = mk("responder", "[[ ## response_text ## ]]\nSure!\n\n[[ ## completed ## ]]",
+                  session=1, behavior="natural")
+    drop_row = mk("responder", "[[ ## response_text ## ]]\nBAD\n\n[[ ## completed ## ]]",
+                  session=2, behavior="natural")
+    def _stub_veto(row):
+        return ("BAD" in row["completion"], "tier1: stub failure")
+    out_v, dropped_v, _, _ = transform([keep_row, drop_row], veto=_stub_veto)
+    assert len(out_v) == 1, out_v                                   # kept row survives, canonicalized
+    assert out_v[0][0]["module"] == "responder"
+    rd = [d for d in dropped_v if d.get("module") == "responder"]
+    assert len(rd) == 1 and rd[0]["reason"] == "tier1: stub failure" and rd[0]["session"] == 2, rd
+    # veto=None (default) drops nothing — existing behavior byte-identical
+    out_n, dropped_n, _, _ = transform([keep_row, drop_row])
+    assert len(out_n) == 2 and not any(d.get("module") == "responder" for d in dropped_n)
 
     # --- split: group-aware, no straddle, deterministic ---
     rows = []
@@ -507,6 +579,9 @@ def main():
     ap.add_argument("--out-dir", default="", help="output dir (default sft_data/<run>/)")
     ap.add_argument("--val-ratio", type=float, default=0.15)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--snapshots", default="",
+                    help="snapshots.jsonl enabling the Tier-1 responder veto (doc-20 item 5); "
+                         "omit to keep the responder path uncurated")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
 
@@ -527,7 +602,8 @@ def main():
         ap.error(f"input not found: {in_path}")
     out_dir = Path(args.out_dir) if args.out_dir else OUT_ROOT / run_name
 
-    rep = bridge(in_path, out_dir, args.val_ratio, args.seed)
+    snaps_path = Path(args.snapshots) if args.snapshots else None
+    rep = bridge(in_path, out_dir, args.val_ratio, args.seed, snaps_path)
     print_report(rep)
     print(f"\nwritten to {out_dir}/")
 

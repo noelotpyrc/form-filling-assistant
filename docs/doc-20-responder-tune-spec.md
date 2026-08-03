@@ -61,7 +61,7 @@ model, no network.
 | check | what it asserts | why it exists |
 |---|---|---|
 | **format** | the completion is a well-formed responder target — `[[ ## response_text ## ]]` … `[[ ## completed ## ]]`, no stray markers leaking into the prose. Reuse `datagen.is_well_formed("responder", …)`. | The teacher emits malformed markers on roughly half of farm turns (measured below). `program.strip_markers` papers over it at serve time and `sim_to_sft.canon_responder` fixes the training targets, but the student must emit clean markers on its own. |
-| **directive realization** | every directive and action the harness produced this turn is reflected in the prose: `ask_target(f)` / `reask_pending(f)` → the reply asks about that field; `clarify(f)` → the reply asks the user to clarify it; `ack(x)` → the reply acknowledges `x`; `fix(err)` → apology plus a re-ask; `submit_blocked` → says it can't submit yet and offers save-or-continue; `terminal` → invites review and submit; a `set_fields` action → the set fields are acknowledged by name. | This is the whole job. A responder that writes pleasant prose about the wrong field is broken in a way no rubric score catches reliably. |
+| **directive realization** | every directive and action the harness produced this turn is reflected in the prose: `ask_target(f)` / `reask_pending(f)` → the reply asks about that field; `clarify(f)` → the reply asks the user to clarify it; `ack(x)` → the reply acknowledges `x`; `fix(err)` → apology plus a re-ask; `submit_blocked` → says it can't submit yet and offers save-or-continue; `terminal` → invites review and submit; a `set_fields` action → the set is acknowledged (an ack cue — "great", "thanks", "got it" — or the field name; **amended 2026-08-03** from "by name always" after the teacher baseline hand-read: teacher style is a generic ack, and restating five field names after a bulk set is the verbosity we're training away). A field asked via its option labels ("full-time or part-time?") counts as asking that field. | This is the whole job. A responder that writes pleasant prose about the wrong field is broken in a way no rubric score catches reliably. |
 | **grounding** | every email / phone / date / number token appearing in the prose exists in `form_state`, in the schema (labels and option labels), or in this turn's `user_message`. | The motivating incident: on a deflect turn in `tuning/v2/datagen_runs/h1_probe_mix2/`, the teacher responder invented admissions and funding policy — "part-time students are typically eligible for fewer funding opportunities (like teaching or research assistantships)…". Nothing in the schema says that. **Reuse `validator.value_supported(f, value, user_message)`** — the shared support test built for the extractor provenance gate (M4_PLAN "Issue #1 fix — DONE"). Do not write a second one; the last time this logic was duplicated, the copy drifted and dropped six correct dates (REPORT §12). |
 | **echo fidelity** | a state value repeated in the prose matches `form_state` exactly (after the same canonicalization `validator.coerce` applies — phone fields compare by digit string, per the 2026-08-02 phone change). | "I've got your number as (415) 782-3311" when the form holds something else is a trust bug, and it is free to detect. |
 | **verbosity** | token count per turn stays inside a budget indexed by turn type (ask / ack / clarify / terminal / submit_blocked). | The known wordiness mode is option re-enumeration: the composer already emits an `ask_choice` action carrying the option list, and the responder re-lists every option in prose on top of it. Budgets are OPEN (§6). |
@@ -69,12 +69,30 @@ model, no network.
 Tier-1 gates the round. If it fails, the round fails; no judged number overrides
 it.
 
+**Amended 2026-08-03 (user decision): thresholds are reference lines, not the
+verdict.** The go/no-go on the tuned student is made by hand-reading its actual
+failures on the frozen set, not by a mechanical threshold pass. Reference lines
+(set under the teacher's measured numbers: directive ≥90, grounding ≥99, echo
+≥99, verbosity ≥90; format ≥99 pre-committed) say where to look first; the
+item-8 report must carry a per-case failure dump (case, check, reason, prose) so
+that reading is possible. What stands from the original framing: a Tier-2 judged
+number still never overrides Tier-1 findings.
+
 **Tier-1 doubles as training curation.** Teacher prose is the label — an oracle
 cannot write style, so unlike the extractor's round-3 corpus there is no
 oracle-labeling option here. But a teacher row that fails Tier-1 is **dropped**,
 not repaired. Teacher writes, code vetoes: exactly the division the extractor
 convention table uses in `sim_to_sft.py` (`CURATION` / `curation_passes` — passes
 completions through unchanged, drops violators, never rewrites).
+
+**Known gap — eval-time vs serve-time directives (2026-08-03).** The frozen
+set's `actions`/`directives` are recomputed from the **teacher** extractor's
+temp-0 pairs. At serve time the **student** extractor drives `compose`, so the
+responder sees a slightly different directive distribution wherever the student
+extracts differently (its known gaps: multi-select subsets, third-party facts,
+residence statements). Tier-1 therefore measures responder quality **given
+correct harness decisions**; end-to-end all-student behavior is the probe's job
+(`probe.py`), not this eval's.
 
 ### Tier-2 — LLM-judged, ~$1-2, REPORTED, never gates
 
