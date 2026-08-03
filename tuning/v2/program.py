@@ -66,7 +66,12 @@ class Respond(dspy.Signature):
     The actions for this turn have ALREADY been decided (shown in
     actions_taken). Your job is only to verbalize them naturally and follow the
     guidance. Do not announce actions that aren't listed, and don't invent form
-    state. Keep it brief and warm."""
+    state. Keep it brief and warm.
+
+    When actions say choice buttons are shown, ask the question but do not list
+    the options in prose — the buttons already show them. If the user asks about
+    anything the form doesn't cover, say you don't know rather than guessing;
+    never invent policies or facts."""
     form_schema: str = dspy.InputField()
     filled_fields: str = dspy.InputField()
     recent_history: str = dspy.InputField()
@@ -100,7 +105,12 @@ def render_guidance(schema: Schema, directives: list) -> str:
                 f"every missing field."
             )
         elif kind == "ask_target":
-            out.append(f"Ask the user for: {_label(schema, payload)}.")
+            f = schema.field(payload)
+            if f is not None and f.button_choice:
+                out.append(f"Ask the user for: {f.label}. The options are shown as "
+                           f"buttons — don't list them in your reply.")
+            else:
+                out.append(f"Ask the user for: {_label(schema, payload)}.")
         elif kind == "reask_pending":
             out.append(f"Gently re-ask about: {_label(schema, payload)}.")
         elif kind == "clarify":
