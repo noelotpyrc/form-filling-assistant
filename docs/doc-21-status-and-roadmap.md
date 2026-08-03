@@ -244,11 +244,19 @@ plus Modal/OpenRouter credentials is a complete kit, under these conditions:
    `stress_invent`'s anchor gate reads `probe_runs/m3b_hybrid`; the smoke suite's
    25-value replay gate reads `stress_runs/slice1b`. Gates that find files missing
    print a loud SKIP — a green run with SKIP lines means the restore is incomplete.
+   **On `leon-work` this is already done** (synced 2026-08-03): run data is in
+   place under `~/work/form-filling-assistant/tuning/v2/`, and the models live at
+   `~/work/form-filling-models/` (r3-oracle MLX, slice1b MLX, base under
+   `hf_cache/`, fp16 of r3-oracle). The work machine does not take the SSD.
 3. **Rebuild the venv** from `tuning/v2/requirements.txt` (this also restores the
    `modal` CLI at `tuning/v2/.venv/bin/modal`). Secrets: `OPENROUTER_API_KEY` in the
    shell env; `modal setup` for Modal auth.
-4. **The SSD path is stable** — macOS mounts by volume name, so the absolute model
-   paths in commands and baselines keep working.
+4. **Model paths differ per machine.** Hub commands and the recorded baselines use
+   `/Volumes/Extreme SSD/form-filling-models/...`; on `leon-work` the same models
+   are at `~/work/form-filling-models/...`. Pass the local path as `--model` /
+   `V2_STUDENT_MODEL` (the mlx server loads whatever path the request names) and
+   set `HF_HOME=~/work/form-filling-models/hf_cache` when serving the base model.
+   The path inside a baseline JSON's `model` field is provenance, not a promise.
 5. **First-session check, before any new work:** run `smoke_deterministic` (46/46,
    no SKIP lines) and one known eval — r3-oracle on v1, expect F1 99.5 / value 100.
    Reproduce a known number before trusting a new one.
