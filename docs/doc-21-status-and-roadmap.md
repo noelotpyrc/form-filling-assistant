@@ -31,7 +31,7 @@ demo where you can watch it happen.
 | **Base (untuned) Qwen3.5-0.8B** | 114/359. **55 of 414 cases were unparseable and skipped, not scored as failures** — always disclose this when quoting a base number; it flatters base on every rate. |
 | **v1 tripwire** | 109-case byte-frozen set, r3-oracle: F1 99.5 / value-match 100.0 (`eval/baseline-sft_r3_oracle_evalv1_final.json`). Regression detector only. |
 | **SFT era** | CLOSED for the extractor. No further extractor SFT is planned. |
-| **Responder** | Untrained. The deployable stack today is a hybrid: student extractor local, teacher responder remote. → doc-20. |
+| **Responder** | Untrained. The deployable stack today is a hybrid: student extractor local, teacher responder remote. → doc-20. Chapter-1 progress (2026-08-03, on leon-work): guidance tweaks landed (`program.py`, doc-20 item 1) and all 588 responder targets re-captured under the new prompt (`recapture.py`, item 2) — parity 0 mismatch, post-canon well-formed 588/588, $1.14. |
 | **Multi-turn behaviour** | M3b probe, 26 sessions, all completed to the submit gate, every behavioural assertion passed. Latency p50 3.8s / p95 25.9s over 355 turns — but that bundles the remote teacher responder and its retries, so it is not a student latency number (`probe_runs/m3b_hybrid/report.json`). |
 
 **Known extractor gaps, deliberately left for RL.** From `REPORT_evalv3.md` §5
@@ -84,7 +84,7 @@ check `modal volume list` before assuming.)* Run through
 | `eval_set.jsonl` | v1, 109 cases, **byte-frozen** — never changes |
 | `eval_set_v2.jsonl` | v2, 143 cases, kept for continuity |
 | `eval_set_v3.jsonl` | v3, 414 cases on sampled real contexts — the current yardstick |
-| `baseline-*_final.json` | runs on the **final** harness; unsuffixed ones predate 2026-08-02 |
+| `baseline-*_final.json` | runs on the **final** harness; unsuffixed ones predate 2026-08-02. They record model path and metrics but **not** port, env, or command — infer the backend from the label |
 | `REPORT_evalv3.md` / `.html` | the four-model comparison, source of record |
 
 **Session-seed allocation** — farm sessions are a finite resource and each range
@@ -248,9 +248,13 @@ plus Modal/OpenRouter credentials is a complete kit, under these conditions:
    place under `~/work/form-filling-assistant/tuning/v2/`, and the models live at
    `~/work/form-filling-models/` (r3-oracle MLX, slice1b MLX, base under
    `hf_cache/`, fp16 of r3-oracle). The work machine does not take the SSD.
-3. **Rebuild the venv** from `tuning/v2/requirements.txt` (this also restores the
-   `modal` CLI at `tuning/v2/.venv/bin/modal`). Secrets: `OPENROUTER_API_KEY` in the
-   shell env; `modal setup` for Modal auth.
+3. **Rebuild the venv** with `python3.11 -m venv .venv` then
+   `pip install --only-binary=litellm -r requirements.txt` (recent litellm is
+   source-only and needs Rust ≥1.85 to build; the flag takes the newest prebuilt
+   wheel instead). This restores the `modal` CLI at `tuning/v2/.venv/bin/modal`
+   and `mlx-vlm` for serving — both are pinned in requirements.txt as of
+   2026-08-03. Secrets: `OPENROUTER_API_KEY` in the shell env; `modal setup` for
+   Modal auth.
 4. **Model paths differ per machine.** Hub commands and the recorded baselines use
    `/Volumes/Extreme SSD/form-filling-models/...`; on `leon-work` the same models
    are at `~/work/form-filling-models/...`. Pass the local path as `--model` /

@@ -477,11 +477,15 @@ substantially naturalizer semantics, not teacher unreliability.
 ## Parked decisions
 - **LLM U model at H1 scale — RESOLVED: haiku.** 3 probe sessions + mix probe eyeballed (terse/chatty/
   unsure all style-faithful; bulk 7-value turn caught 7/7). ~$0.16/session vs sonnet's ~$0.55.
-- **Pre-slice-2 responder guidance tweaks (do BEFORE responder training data).** (a) option
-  re-enumeration verbosity; (b) grounding: responder fabricated admissions/funding policy on a deflect
-  turn (h1_probe_mix2) — add "outside the form, say you don't know; never invent policy" to guidance;
-  M3b Tier-1 grounding checks target this. (c) optional temp>0 datagen responder LM via assign_lms
-  (eval stays temp 0).
+- **Pre-slice-2 responder guidance tweaks — DONE 2026-08-03 (doc-20 ch1 item 1).** (a) option
+  re-enumeration: `render_guidance` ask_target branch now says buttons are shown, don't re-list;
+  Respond docstring carries the same rule keyed on actions (covers the responsive ask_choice path).
+  Hand check: the old re-listing turn (welcome/program) now asks without enumerating. (b) grounding:
+  "say you don't know / never invent policies" added to the Respond docstring; M3b Tier-1 grounding
+  checks target this. (c) RESOLVED: temp 0 for the datagen responder LM (reproducibility; revisit
+  only if the tuned responder sounds robotic on eval). Consequence executed: all 588 responder
+  targets re-captured under the new prompt via `recapture.py` (h1a_recap 143, eval_farm_p3_recap 222,
+  eval_farm_p4_recap 223; parity 0 mismatch, post-canon 588/588, $1.14, full-forward replay).
 - **third_party template wart.** "{n}, my neighbor, said this school has a great campus" is how_heard-
   adjacent → teacher bound how_heard 3/25 (curated out). Reword before next datagen round.
 - **Refusal has no skip/defer mechanic.** Both extractor conventions ([] or engagement) end in the

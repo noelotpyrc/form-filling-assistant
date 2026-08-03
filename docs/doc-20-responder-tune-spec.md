@@ -306,10 +306,10 @@ Each of these is genuinely undecided. Do not fill one in silently.
 |---|---|---|
 | 1 | **Tier-2 judge model.** | Cost, availability and drift all matter. OpenRouter free routes churn and the free cap is account-wide (M4_PLAN "Parked"), so a paid slug is probably right for a number anyone will quote. |
 | 2 | **Verbosity budgets.** | Per turn type, in tokens. Set them from the teacher-baseline distribution at step 6 rather than guessing now. |
-| 3 | **Temperature > 0 for the datagen responder LM** (parked option (c)). | Variety in training prose vs. reproducibility of the capture. Eval stays at temperature 0 regardless. |
+| 3 | **Temperature > 0 for the datagen responder LM** (parked option (c)). | **DECIDED 2026-08-03: temperature 0** — reproducible captures, consistent with every prior artifact. Revisit only if the tuned responder sounds robotic on eval. |
 | 4 | **Gate thresholds.** | Set at step 6 from the teacher's Tier-1 numbers. The one pre-committed number is format ≥99%. |
 | 5 | **One model or two LoRAs.** | See step 7. Decided empirically, on both evals. |
-| 6 | **Cheap re-capture path.** | Replay full `forward()` (simple, matches serving exactly) vs. drive `program.respond` alone (about half the calls, but the harness state must be recomputed correctly). |
+| 6 | **Cheap re-capture path.** | **DECIDED 2026-08-03: full `forward()` replay** (`recapture.py`) — matches serving exactly, follows the `run_injection` plumbing; the respond-only saving (~$1) wasn't worth hand-recomputing harness state. |
 
 ---
 
