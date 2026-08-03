@@ -253,6 +253,23 @@ plus Modal/OpenRouter credentials is a complete kit, under these conditions:
    no SKIP lines) and one known eval — r3-oracle on v1, expect F1 99.5 / value 100.
    Reproduce a known number before trusting a new one.
 
+### Git between the two machines (set up 2026-08-03)
+
+The worker machine is `leon-work` (`ssh work`), repo at
+`~/work/form-filling-assistant`, seeded from a bundle. It has **no GitHub access
+and no credentials to the hub machine** — all traffic is hub-initiated. The hub
+holds `remote add work ssh://work/Users/lliao/work/form-filling-assistant`; the
+worker's repo has `receive.denyCurrentBranch=updateInstead`, so a hub push
+updates the worker's checkout but refuses if its tree is dirty.
+
+Flow (hub only): `git push work main` to send work; `git fetch work main` +
+`git log main..FETCH_HEAD` to review the worker's commits; ff-merge and
+`git push origin main` to publish. **Single writer on `main`:** while the worker
+owns a chapter, the hub does not commit to main — it fetches, reviews, relays.
+If the worker's agent needs anything from GitHub or the hub, it cannot get it
+itself by design; it should leave the request in its commit messages or a
+NOTES file for the hub to act on.
+
 Related: **[doc-20](doc-20-responder-tune-spec.md)** (chapter 1, in full) ·
 **[doc-19](doc-19-eval-framework.md)** (eval framework) ·
 **[doc-18](doc-18-harness-redesign.md)** + **doc-18.1** (harness and turn logic) ·
