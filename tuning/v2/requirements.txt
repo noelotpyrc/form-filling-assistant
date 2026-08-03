@@ -1,15 +1,20 @@
 # v2 harness dependencies.
 #
-# DSPy 3.3.0b1 is a PRE-RELEASE, pinned deliberately: it drops the litellm
-# dependency (litellm was flagged unsafe during a security review). Our teacher
-# LM (claude_lm.ClaudeLM) shells out to the `claude` CLI and builds its own
-# response objects, so litellm is not needed.
+# DSPy 3.3.0b1 is a PRE-RELEASE, pinned deliberately: it dropped litellm at
+# RUNTIME (flagged unsafe in a security review; our LMs POST directly and never
+# import it) — but its published metadata still declares litellm>=1.64.0, so pip
+# installs it anyway (unused). Recent litellm is source-only and needs Rust>=1.85
+# to build; --only-binary=litellm makes pip take the newest prebuilt wheel.
 #
 # Setup:
-#   python3 -m venv tuning/v2/.venv
-#   tuning/v2/.venv/bin/pip install --pre -r tuning/v2/requirements.txt
+#   python3.11 -m venv tuning/v2/.venv
+#   tuning/v2/.venv/bin/pip install --only-binary=litellm -r tuning/v2/requirements.txt
 dspy==3.3.0b1
 
 # Serving (M1.5 serve.py)
 fastapi
 uvicorn
+
+# Student serving + Modal CLI (doc-21 §6.3 expects both in this venv)
+mlx-vlm==0.6.8
+modal==1.5.3
