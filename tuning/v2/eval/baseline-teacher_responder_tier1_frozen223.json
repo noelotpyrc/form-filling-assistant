@@ -1,0 +1,5553 @@
+{
+ "label": "teacher_responder_tier1_frozen223",
+ "date": "2026-08-03",
+ "eval_set": "tuning/v2/eval/eval_responder_set.jsonl",
+ "eval_set_sha256_16": "2c7678f763a9256b",
+ "n_cases": 223,
+ "scored_completion": "raw teacher completion as captured in the case (format scored raw; training targets are canon-repaired, so format here measures teacher marker slips)",
+ "completions_model": "nvidia/nemotron-3-ultra-550b-a55b (temp 0, eval_farm_p4_recap 2026-08-03)",
+ "scorer_commit": "b4461d5d4e3b8a77c229162a2dfda82bf32fa955",
+ "budgets": {
+  "ask": 60,
+  "ack": 45,
+  "clarify": 55,
+  "terminal": 75,
+  "submit_blocked": 85
+ },
+ "reference_thresholds": {
+  "note": "REFERENCE LINES ONLY (user decision 2026-08-03) \u2014 go/no-go on a tuned student is made by hand-reading its failures, never by these thresholds alone. format >=99 pre-committed by doc-20 regardless of teacher.",
+  "format": 0.99,
+  "directive": 0.9,
+  "grounding": 0.99,
+  "echo": 0.99,
+  "verbosity": 0.9
+ },
+ "aggregate": {
+  "n": 223,
+  "passed": 86,
+  "by_check": {
+   "format": {
+    "pass": 93,
+    "rate": 0.4170403587443946
+   },
+   "directive": {
+    "pass": 217,
+    "rate": 0.9730941704035875
+   },
+   "grounding": {
+    "pass": 223,
+    "rate": 1.0
+   },
+   "echo": {
+    "pass": 223,
+    "rate": 1.0
+   },
+   "verbosity": {
+    "pass": 217,
+    "rate": 0.9730941704035875
+   }
+  },
+  "by_turn_type": {
+   "ask": 208,
+   "submit_blocked": 1,
+   "terminal": 14
+  }
+ },
+ "per_case": [
+  {
+   "session": 147,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 18,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 65,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": false,
+     "reason": "65 tokens > ask budget 60 (option re-enumeration?)"
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 51,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 22,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 64,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": false,
+     "reason": "64 tokens > ask budget 60"
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 62,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": false,
+     "reason": "62 tokens > ask budget 60"
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 56,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 13,
+   "turn_type": "ask",
+   "tokens": 69,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": false,
+     "reason": "69 tokens > ask budget 60"
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 14,
+   "turn_type": "submit_blocked",
+   "tokens": 63,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 15,
+   "turn_type": "ask",
+   "tokens": 75,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": false,
+     "reason": "75 tokens > ask budget 60"
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 16,
+   "turn_type": "ask",
+   "tokens": 59,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 147,
+   "turn": 17,
+   "turn_type": "ask",
+   "tokens": 50,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": false,
+     "reason": "set_fields: neither an ack cue nor any set field named (['start_term'])"
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 39,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 13,
+   "turn_type": "ask",
+   "tokens": 29,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 14,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 15,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 16,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 148,
+   "turn": 17,
+   "turn_type": "terminal",
+   "tokens": 29,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 149,
+   "turn": 13,
+   "turn_type": "terminal",
+   "tokens": 27,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 24,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 150,
+   "turn": 13,
+   "turn_type": "terminal",
+   "tokens": 26,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 23,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 14,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 151,
+   "turn": 10,
+   "turn_type": "terminal",
+   "tokens": 29,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 32,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 14,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 24,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 152,
+   "turn": 9,
+   "turn_type": "terminal",
+   "tokens": 23,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 14,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 6,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": false,
+     "reason": "set_fields: neither an ack cue nor any set field named (['enrollment_type'])"
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 17,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 13,
+   "turn_type": "ask",
+   "tokens": 36,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 153,
+   "turn": 14,
+   "turn_type": "terminal",
+   "tokens": 27,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 18,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 127,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": false,
+     "reason": "127 tokens > ask budget 60 (option re-enumeration?)"
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 18,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 29,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 14,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 26,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 13,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 14,
+   "turn_type": "ask",
+   "tokens": 14,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 15,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 16,
+   "turn_type": "ask",
+   "tokens": 14,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 154,
+   "turn": 17,
+   "turn_type": "terminal",
+   "tokens": 41,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 19,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 55,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 17,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 35,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 19,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 25,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 13,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 14,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 15,
+   "turn_type": "ask",
+   "tokens": 19,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 155,
+   "turn": 16,
+   "turn_type": "terminal",
+   "tokens": 39,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 25,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 26,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 23,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 17,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 19,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 22,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 19,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 20,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 156,
+   "turn": 11,
+   "turn_type": "terminal",
+   "tokens": 37,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": false,
+     "reason": "set_fields: neither an ack cue nor any set field named (['enrollment_type'])"
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 30,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 21,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 26,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 48,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 46,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 17,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 13,
+   "turn_type": "ask",
+   "tokens": 20,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 14,
+   "turn_type": "ask",
+   "tokens": 30,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 15,
+   "turn_type": "ask",
+   "tokens": 20,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 16,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 157,
+   "turn": 17,
+   "turn_type": "terminal",
+   "tokens": 37,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 25,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 6,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 158,
+   "turn": 13,
+   "turn_type": "terminal",
+   "tokens": 24,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": false,
+     "reason": "set_fields: neither an ack cue nor any set field named (['funding_interest'])"
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 18,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 6,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": false,
+     "reason": "set_fields: neither an ack cue nor any set field named (['enrollment_type'])"
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 18,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 28,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 27,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 23,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 13,
+   "turn_type": "ask",
+   "tokens": 32,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 14,
+   "turn_type": "ask",
+   "tokens": 22,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 159,
+   "turn": 15,
+   "turn_type": "terminal",
+   "tokens": 57,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 24,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 14,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 10,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 17,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 16,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 7,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": false,
+     "reason": "set_fields: neither an ack cue nor any set field named (['has_work_experience'])"
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 160,
+   "turn": 13,
+   "turn_type": "terminal",
+   "tokens": 22,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 0,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 1,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 2,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 3,
+   "turn_type": "ask",
+   "tokens": 9,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 4,
+   "turn_type": "ask",
+   "tokens": 12,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 5,
+   "turn_type": "ask",
+   "tokens": 11,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 6,
+   "turn_type": "ask",
+   "tokens": 24,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 7,
+   "turn_type": "ask",
+   "tokens": 21,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 8,
+   "turn_type": "ask",
+   "tokens": 36,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 9,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 10,
+   "turn_type": "ask",
+   "tokens": 15,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 11,
+   "turn_type": "ask",
+   "tokens": 13,
+   "passed": false,
+   "checks": {
+    "format": {
+     "pass": false,
+     "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 12,
+   "turn_type": "ask",
+   "tokens": 8,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  },
+  {
+   "session": 161,
+   "turn": 13,
+   "turn_type": "terminal",
+   "tokens": 25,
+   "passed": true,
+   "checks": {
+    "format": {
+     "pass": true
+    },
+    "directive": {
+     "pass": true
+    },
+    "grounding": {
+     "pass": true
+    },
+    "echo": {
+     "pass": true
+    },
+    "verbosity": {
+     "pass": true
+    }
+   }
+  }
+ ],
+ "cost_usd": 0.0
+}
