@@ -66,6 +66,8 @@ model, no network.
 | **echo fidelity** | a state value repeated in the prose matches `form_state` exactly (after the same canonicalization `validator.coerce` applies — phone fields compare by digit string, per the 2026-08-02 phone change). | "I've got your number as (415) 782-3311" when the form holds something else is a trust bug, and it is free to detect. |
 | **verbosity** | token count per turn stays inside a budget indexed by turn type (ask / ack / clarify / terminal / submit_blocked). | The known wordiness mode is option re-enumeration: the composer already emits an `ask_choice` action carrying the option list, and the responder re-lists every option in prose on top of it. Budgets are OPEN (§6). |
 
+| **repetition** *(added 2026-08-04)* | no degenerate text: a normalized word n-gram repeating within the prose / consecutive-sentence near-duplication fails. | Found via the round-3 curation audit: a corrupted teacher completion ("Your draft has been saved draft has been saved…") passed all five original checks — canon repairs markers, not mid-prose corruption, and it ducked under the verbosity budget. Doc-20's own rule applied: the miss became a check. |
+
 Tier-1 gates the round. If it fails, the round fails; no judged number overrides
 it.
 

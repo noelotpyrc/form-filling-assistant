@@ -486,6 +486,21 @@ substantially naturalizer semantics, not teacher unreliability.
   only if the tuned responder sounds robotic on eval). Consequence executed: all 588 responder
   targets re-captured under the new prompt via `recapture.py` (h1a_recap 143, eval_farm_p3_recap 222,
   eval_farm_p4_recap 223; parity 0 mismatch, post-canon 588/588, $1.14, full-forward replay).
+- **doc-20 ch1 items 7-8 + coverage rounds — DONE 2026-08-04. Chapter 1 complete, ship approved.**
+  Round 2a (farm-only corpus 352/75): frozen 212/223 — failed terminal 5/14, submit_blocked 0/1
+  (zero training coverage; the farm never produces those events). Round 2b (+submit/terminal
+  injections via `run_injection with_response=True`, the first responder injections): frozen
+  221/223, terminal 14/14, submit 1/1 — but a chitchat probe (60 cases, eval seeds) showed 55/60.
+  Design review → doc-22: training AND eval both sampled the organic farm distribution, so blind
+  spots were shared (clarify/fix/ack at literal zero both sides). Round 2c (+chitchat/clarify/
+  validation_error/save_draft/offform injections, corpus 533/101): **frozen 220/223 with 0
+  directive fails; probes 206/211; fix probe 60%→100%**. Scorer calibrations en route (submit
+  cues, ack token-overlap) + a 6th Tier-1 family `repetition` (degenerate-text detector — a
+  corrupted teacher row passed all 5 original checks). Veto wired for inject rows (silent-keep
+  branch closed). Serving eos fix: generation_config eos was `<|endoftext|>` only; `<|im_end|>`
+  added → runaway generation gone (r3-oracle on :8100 still carries the old config — patch +
+  re-anchor later). Models: `s2resp`/`s2bresp`/`s2cresp` MLX dirs; ship = s2cresp on :8104.
+  Round-2+3 spend ≈ $3.4 (recaptures $2.3, injections $1.2, Modal ~$0.45).
 - **doc-20 ch1 items 3-6 — DONE 2026-08-03.** Tier-1 scorer `eval_responder.py` (5 check families,
   26-check selftest); frozen 223-case set `eval/eval_responder_set.jsonl` (deterministic build,
   seed gate 147-161, directives recomputed from recap extractor pairs — $0, no LLM); curation veto
