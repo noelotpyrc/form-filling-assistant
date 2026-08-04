@@ -63,8 +63,10 @@ _REASK_CUES = ("could you", "can you", "please", "would you", "mind sharing", "a
 _CLARIFY_CUES = ("clarify", "which", "not sure", "do you mean", "didn't catch",
                  "could you", "what do you", "which one")
 _CANT_SUBMIT_CUES = ("can't submit", "cannot submit", "can't be submitted", "not yet",
-                     "before you submit", "before submitting", "still need", "still missing",
-                     "a few more", "not quite ready", "haven't filled")
+                     "before you submit", "before submitting", "before we can", "still need",
+                     "still missing", "still have", "a few more", "few required",
+                     "couple of required", "required fields left", "required sections",
+                     "left to complete", "almost there", "not quite ready", "haven't filled")
 _SAVE_CONTINUE_CUES = ("save", "draft", "continue", "keep going", "come back",
                        "pick up", "for now", "finish later")
 _TERMINAL_CUES = ("review", "submit", "all set", "looks complete", "ready to submit",
@@ -209,8 +211,13 @@ def check_directive(schema: Schema, case: dict, prose: str) -> tuple[bool, str]:
                 fails.append("clarify: no clarify cue and target field not mentioned")
         elif kind == "ack":
             xtok = _norm(payload)
-            if not (_has_cue(low, _ACK_CUES) or (xtok and xtok in _norm(prose))):
-                fails.append(f"ack: neither an ack cue nor {str(payload)!r} echoed")
+            # accept: an ack cue, a literal echo of the payload, OR a normalized
+            # token-overlap with the payload's distinctive terms (so "Your draft has
+            # been saved!" acknowledges a "Save Draft" click via "draft"/"saved").
+            pterms = _distinctive_terms(str(payload))
+            overlap = any(re.search(rf"\b{re.escape(w)}", low) for w in pterms)
+            if not (_has_cue(low, _ACK_CUES) or (xtok and xtok in _norm(prose)) or overlap):
+                fails.append(f"ack: neither an ack cue nor {str(payload)!r} acknowledged")
         elif kind == "fix":
             if not (_has_cue(low, _APOLOGY_CUES) and ("?" in prose or _has_cue(low, _REASK_CUES))):
                 fails.append("fix: needs an apology plus a re-ask")
@@ -325,10 +332,32 @@ def check_verbosity(case: dict, prose: str, budgets: dict, tt: str) -> tuple[boo
     return True, "", n
 
 
+def check_repetition(prose: str) -> tuple[bool, str]:
+    """Deterministic degenerate-text detector (doc-20 standing direction — a discovered
+    miss becomes a Tier-1 check). A stuck/looping decode repeats a whole span verbatim
+    and NEAR-ADJACENTLY ("Your draft has been saved draft has been saved"). We flag a
+    normalized word 4-gram whose two occurrences start within 5 tokens of each other —
+    a back-to-back loop. Legitimately restating a field name across a sentence boundary
+    ("Now I need your country of residence. What is your country of residence?") repeats
+    the same 4-gram but with a real gap (>=6), so it does NOT trip; option lists and a
+    varied terminal summary never repeat a 4-word span at all."""
+    toks = re.findall(r"[a-z0-9]+", prose.lower())
+    if len(toks) < 8:                              # too short to loop a 4-gram
+        return True, ""
+    positions: dict = defaultdict(list)
+    for i in range(len(toks) - 3):
+        positions[tuple(toks[i:i + 4])].append(i)
+    for g, pos in positions.items():
+        for a, b in zip(pos, pos[1:]):
+            if b - a <= 5:                         # near-adjacent repeat = a decode loop
+                return False, f"degenerate repeat: 4-gram {' '.join(g)!r} @ {a},{b}"
+    return True, ""
+
+
 # ---- combined scorer ---------------------------------------------------------
 
 def score_case(case: dict, schema: Schema | None = None, budgets: dict | None = None) -> dict:
-    """Run all five checks. Returns per-check pass/fail + reason and an overall `passed`."""
+    """Run all six checks. Returns per-check pass/fail + reason and an overall `passed`."""
     schema = schema or load_schema()
     budgets = budgets or DEFAULT_BUDGETS
     completion = case["completion"]
@@ -343,7 +372,7 @@ def score_case(case: dict, schema: Schema | None = None, budgets: dict | None = 
 
     checks = {
         "format": fmt, "directive": drc, "grounding": gnd,
-        "echo": echo, "verbosity": (vb_ok, vb_reason),
+        "echo": echo, "verbosity": (vb_ok, vb_reason), "repetition": check_repetition(prose),
     }
     return {
         "passed": all(ok for ok, _ in checks.values()),
@@ -356,7 +385,7 @@ def score_case(case: dict, schema: Schema | None = None, budgets: dict | None = 
 def aggregate(scored: list[dict]) -> dict:
     """Pass rates overall + per check family, for the item-4 runner's report."""
     n = len(scored)
-    fams = ("format", "directive", "grounding", "echo", "verbosity")
+    fams = ("format", "directive", "grounding", "echo", "verbosity", "repetition")
     per = {f: sum(1 for s in scored if s["checks"][f]["pass"]) for f in fams}
     return {
         "n": n,
@@ -434,6 +463,68 @@ def jsonable_directives(directives: list) -> list:
     return out
 
 
+def _injected_user_message(user_content: str) -> str:
+    """The message the responder actually saw, from an inject row's own rendered
+    [[ ## user_message ## ]] block (the snapshot's stored user_message is the original
+    farm turn, not the injected one)."""
+    m = re.search(r"\[\[ ## user_message ## \]\]\n(.*?)\n\n\[\[ ## ", user_content, re.DOTALL)
+    return m.group(1) if m else ""
+
+
+def recompute_cases_from_rows(rows: list, snaps: dict, schema: Schema | None = None,
+                              only_behavior: str | None = None) -> list:
+    """One place that turns captured RESPONDER rows (farm or inject) into recomputed
+    cases — shared by the probe builder and the coverage tool so the pairing/override
+    logic lives once. `snaps` is {(session,turn): snapshot}. For each responder row it
+    yields a dict {row, source, behavior, session, turn, user_message, form_state,
+    actions, directives (raw compose tuples), diag}. Inject rows: snapshot by the row's
+    snapshot ref, user_message OVERRIDDEN with the injected one, extractor paired FIFO
+    by (snapshot, behavior). Farm rows: (session,turn) key, the snapshot's own message,
+    farm extractor by (session,turn). `diag` = 'no-snapshot' when the join misses."""
+    schema = schema or load_schema()
+    farm_ext = {(r["session"], r["turn"]): r["completion"]
+                for r in rows if r["module"] == "extractor" and r.get("source") == "farm"}
+    pending_ext: dict = defaultdict(list)
+    out = []
+    for r in rows:
+        src = r.get("source")
+        if r["module"] == "extractor":
+            if src == "inject":
+                ref = r.get("snapshot")
+                gkey = ((ref["session"], ref["turn"]) if ref else None, r.get("behavior"))
+                pending_ext[gkey].append(r["completion"])
+            continue
+        if r["module"] != "responder":
+            continue
+        if only_behavior is not None and r.get("behavior") != only_behavior:
+            continue
+        if src == "inject":
+            ref = r.get("snapshot")
+            gkey = ((ref["session"], ref["turn"]) if ref else None, r.get("behavior"))
+            exts = pending_ext[gkey]
+            ext_completion = exts.pop(0) if exts else None
+            key = (ref["session"], ref["turn"]) if ref else None
+            snap = snaps.get(key) if key else None
+            um = _injected_user_message(r["messages"][-1]["content"]) if snap else None
+        else:
+            key = (r.get("session"), r.get("turn"))
+            snap = snaps.get(key)
+            ext_completion = farm_ext.get(key)
+            um = snap.get("user_message", "") if snap else None
+        session, turn = key if key else (None, None)
+        base = {"row": r, "source": src, "behavior": r.get("behavior"),
+                "session": session, "turn": turn}
+        if snap is None:
+            out.append({**base, "user_message": None, "form_state": None,
+                        "actions": None, "directives": None, "diag": "no-snapshot"})
+            continue
+        actions, directives, fs, diag = recompute_actions_directives(
+            schema, {**snap, "user_message": um}, ext_completion)
+        out.append({**base, "user_message": um, "form_state": fs,
+                    "actions": actions, "directives": directives, "diag": diag})
+    return out
+
+
 # ---- CLI + selftest ----------------------------------------------------------
 
 def _run_cases(path: str, budgets_path: str = "") -> None:
@@ -475,11 +566,32 @@ def selftest() -> bool:
         ("directive PASS: fix -> apology + re-ask",
          case("Sorry about that! Could you re-enter your email address?",
               directives=[("fix", "invalid email (field: email)")]), "directive", True),
+        # ack payload token-overlap: a save-click confirmation with no ack-cue word
+        ("directive PASS: ack via payload token-overlap ('draft'/'saved' <- 'Save Draft')",
+         case("Your draft has been saved!", directives=[("ack", "Save Draft")]), "directive", True),
+        ("directive FAIL: ack ignored entirely (no cue, no payload reference)",
+         case("What's your email address?", directives=[("ack", "Save Draft")]), "directive", False),
         ("directive PASS: submit_blocked -> can't-submit + save/continue",
          case("We can't submit yet — a couple of fields are still missing. "
               "Want to keep going, or save a draft and come back later?",
               directives=[("submit_blocked", ["dob", "phone"])],
               actions=[{"type": "show_button", "button": "save_draft"}]), "directive", True),
+        # FIX 1: natural teacher phrasings for submit_blocked (cue widening)
+        ("directive PASS: submit_blocked natural phrasing 'required sections ... complete first'",
+         case("Almost there! There are still a few required sections we need to complete "
+              "first — shall we keep going, or save a draft for now?",
+              directives=[("submit_blocked", ["dob"])],
+              actions=[{"type": "show_button", "button": "save_draft"}]), "directive", True),
+        ("directive PASS: submit_blocked natural phrasing 'before we can send it off'",
+         case("Before we can send it off, we still have a couple of required fields left — "
+              "want to continue now or save and finish later?",
+              directives=[("submit_blocked", ["phone"])],
+              actions=[{"type": "show_button", "button": "save_draft"}]), "directive", True),
+        # FIX 1 guard: a FALSE completeness claim must NOT satisfy submit_blocked
+        ("directive FAIL: false-completeness claim does not satisfy submit_blocked",
+         case("You're all set — everything's complete, submitting your application now!",
+              directives=[("submit_blocked", ["dob", "phone"])],
+              actions=[{"type": "show_button", "button": "save_draft"}]), "directive", False),
         ("directive PASS: set_fields acknowledged (ack cue)",
          case("Great, I've noted your full legal name. What's next?",
               directives=[("ack", "answer")],
@@ -546,6 +658,32 @@ def selftest() -> bool:
               directives=[("ask_target", "program")],
               actions=[{"type": "ask_choice", "question": "Program of Interest?", "options": []}]),
          "verbosity", False),
+
+        # -- repetition (degenerate-text detector) ----------------------------
+        # the real degenerate save_draft sample -> fails on a repeated 4-gram
+        ("repetition FAIL: degenerate looped decode (real sample)",
+         case("Your draft has been saved draft has been saved. Let's pick up where you "
+              "left off. To continue whenever you're ready. Which program are you ready. "
+              "interested in? You can choose from Computer Science.",
+              directives=[("ack", "Save Draft")]), "repetition", False),
+        # clean, diverse replies must NOT false-positive:
+        ("repetition PASS: short clean ack",
+         case("Your draft has been saved! Pick up anytime.", directives=[("ack", "Save Draft")]),
+         "repetition", True),
+        ("repetition PASS: option-mention ask (full-time/part-time, 'time' twice)",
+         case("Would you like to enroll full-time or part-time?",
+              directives=[("ask_target", "enrollment_type")]), "repetition", True),
+        # legit state-then-ask restatement (field name twice across a sentence break) must PASS
+        ("repetition PASS: field name restated across a sentence break",
+         case("Thanks! Now I need to know your country of residence. "
+              "What is your country of residence?",
+              directives=[("reask_pending", "country_residence")]), "repetition", True),
+        ("repetition PASS: long-but-clean terminal summary (many distinct bullets)",
+         case("Everything looks complete. Here's what I have: your program is Computer "
+              "Science, your start term is Fall 2026, enrollment is full-time, your name "
+              "is Ada Lovelace, email ada@example.com, phone on file, and citizenship "
+              "United States. Please review the summary card and submit when ready.",
+              directives=[("terminal", None)]), "repetition", True),
     ]
 
     checks: list[tuple[str, bool]] = []
@@ -565,11 +703,12 @@ def selftest() -> bool:
         if not want:
             ck(f"    -> overall passed == False for: {name}", s["passed"] is False)
 
-    ck("all five families exercised", families_hit == {"format", "directive", "grounding", "echo", "verbosity"})
+    ck("all six families exercised",
+       families_hit == {"format", "directive", "grounding", "echo", "verbosity", "repetition"})
 
     # sanity: a fully-clean case passes every family at once
     clean = case("Thanks! What's your email address?", directives=[("ask_target", "email")])
-    ck("a fully-clean ask passes all five families", score_case(clean, schema)["passed"] is True)
+    ck("a fully-clean ask passes all six families", score_case(clean, schema)["passed"] is True)
 
     passed = sum(1 for _, ok in checks if ok)
     print(f"\n=== eval_responder selftest: {passed}/{len(checks)} checks passed ===")

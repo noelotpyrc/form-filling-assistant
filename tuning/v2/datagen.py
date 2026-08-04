@@ -61,7 +61,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from .schema import load_schema, Schema
-from .state import TurnState, Pending, CONFIRM_SUBMIT
+from .state import TurnState, Pending, CONFIRM_SUBMIT, queue
 from .program import build_teacher
 from .claude_lm import ClaudeLM
 from . import context
@@ -406,6 +406,9 @@ class Behavior:
     precondition: Callable[[dict, Schema], bool]   # farm: filters snapshots
     make_oracle: Callable[[dict, Schema, random.Random], tuple]
     make_context: Optional[Callable[[Schema, random.Random], dict]] = None  # constructed only
+    with_response: bool = False                    # True -> capture the RESPONDER turn too
+                                                   # (responder-directive behaviors: submit_blocked,
+                                                   # terminal_complete). Default extractor-only.
 
     def make_message(self, snap: dict, schema: Schema, rng: random.Random) -> str:
         return self.make_oracle(snap, schema, rng)[0]
@@ -945,6 +948,225 @@ def _mk_compound_volunteer(snap, schema, rng):
     return msg, [_pair(pair[0], a), _pair(pair[1], b)]
 
 
+# ---- responder-directive injection (doc-20 round 2): scarce submit_blocked / terminal --
+# These are the FIRST with_response=True behaviors: their training value is the RESPONDER
+# reply to a submit/completion turn, not an extraction. Both are hard-guarded to TRAINING
+# snapshots only (seeds <=146); the frozen eval (147-161) and RL reserves (162-191) can
+# never be selected, whatever --snapshots is pointed at.
+
+TRAIN_SESSION_MAX = 146
+
+
+def _train_only(snap: dict) -> bool:
+    return snap.get("session", TRAIN_SESSION_MAX + 1) <= TRAIN_SESSION_MAX
+
+
+# premature-submit user messages — each contains a prestep _SUBMIT trigger
+# (submit / send it / finalize / turn it in) so wants_submit fires; with the queue
+# non-empty, compose emits the submit_blocked directive.
+_SUBMIT_MSGS = [
+    "Can I just submit this now?",
+    "I think I'm done — submit it, please.",
+    "Okay, let's finalize and send it in.",
+    "Ready to go — please submit my application.",
+    "Are we all set? Go ahead and submit.",
+    "I'd like to turn it in now.",
+    "Can you send it off for me?",
+    "I think that's everything — can I submit now?",
+    "Let's submit — I'm ready to finalize.",
+    "Just submit what we have so far, please.",
+    "Can we submit this already?",
+    "That's good enough — go ahead and submit.",
+    "How do I submit? I think I'm finished.",
+    "Alright, send it in.",
+]
+
+
+def _pre_submit_blocked(snap, schema):
+    """A training snapshot with a non-empty required queue: a submit attempt here is
+    premature, so compose -> submit_blocked."""
+    return _train_only(snap) and len(queue(rebuild_state(schema, snap))) > 0
+
+
+def _mk_submit_blocked(snap, schema, rng):
+    return rng.choice(_SUBMIT_MSGS), []   # premature submit; no extraction
+
+
+def _pre_terminal(snap, schema):
+    """Filling the (choice) pending field would empty the queue — the pre-step select
+    completes the form and the agenda declares terminal. This is the only offline,
+    deterministic route to a terminal turn on these snapshots (the farm loop breaks at
+    completion, so no snapshot is ever logged already at queue==0)."""
+    if not _train_only(snap):
+        return False
+    st = rebuild_state(schema, snap)
+    q = queue(st)
+    pfd = st.pending_field()
+    return len(q) == 1 and pfd is not None and pfd.is_choice and q[0].field_id == pfd.field_id
+
+
+def _mk_terminal(snap, schema, rng):
+    pfd = rebuild_state(schema, snap).pending_field()
+    label = rng.choice([lab for _v, lab in pfd.options])
+    return f'[system] User selected option: "{label}"', []
+
+
+# ---- chitchat-steer-back probe (round-2 s2b failure class) --------------------
+# The student answered a pleasantry while a field was pending and never steered back.
+# This behavior injects social small-talk onto EVAL snapshots that carry a pending
+# field: the empty extraction leaves pending open, so compose emits reask_pending, and
+# the responder is expected to steer back. GUARD IS INVERTED vs the training behaviors —
+# this selects ONLY the eval range (147-161); it must never touch training (<=146) or the
+# RL reserves (>=162).
+
+EVAL_SESSION_LO, EVAL_SESSION_HI = 147, 161
+
+
+def _eval_only(snap: dict) -> bool:
+    s = snap.get("session")
+    return s is not None and EVAL_SESSION_LO <= s <= EVAL_SESSION_HI
+
+
+# social small-talk aimed at the assistant; NO field values and NO prestep trigger words
+# (save/pause/later/submit/finalize/review/summary/so far/progress) so the turn stays a
+# pure pleasantry that leaves the pending field open.
+_CHITCHAT_STEER = [
+    "Hey there! How's your day going?",
+    "You're really helpful, thank you!",
+    "Lovely weather we're having, isn't it?",
+    "Got any fun weekend plans?",
+    "Hi again! Hope you're doing well.",
+    "This is a nice little chat, honestly.",
+    "You seem to really know your stuff!",
+    "How are you doing today?",
+    "It's been quite a week, hasn't it?",
+    "I appreciate you walking me through all this.",
+    "Are you having a good one today?",
+    "Nice to be chatting with such a friendly assistant.",
+    "Hope the sun is out where you are!",
+    "You're doing a wonderful job, by the way.",
+]
+
+
+def _pre_chitchat_steer(snap, schema):
+    """A snapshot whose pending field is present and still unfilled — an empty extraction
+    leaves it open and compose emits reask_pending. Seed range (train <=146 / eval 147-161)
+    is applied by the run-level --seed-range filter, same as the other both-mode behaviors,
+    so this runs for BOTH probe (eval) and training (<=146) injection."""
+    st = rebuild_state(schema, snap)
+    p = st.pending_field()
+    return p is not None and not st.is_filled(p.field_id)
+
+
+def _mk_chitchat_steer(snap, schema, rng):
+    return rng.choice(_CHITCHAT_STEER), []
+
+
+# ---- round-3 both-mode behaviors -------------------------------------------
+# No baked-in seed guard: they carry only their STRUCTURAL precondition, and the
+# run-level seed-range filter (eligible_snaps seed_lo/hi, CLI --seed-range) scopes
+# them to training (<=146) for data-gen or eval (147-161) for probes. One behavior,
+# both modes, no duplication.
+
+def _pending_unfilled(snap, schema):
+    st = rebuild_state(schema, snap)
+    p = st.pending_field()
+    return p is not None and not st.is_filled(p.field_id)
+
+
+def _pending_large_select_unfilled(snap, schema):
+    st = rebuild_state(schema, snap)
+    p = st.pending_field()
+    return (p is not None and p.is_choice and not p.button_choice
+            and not st.is_filled(p.field_id))
+
+
+# (a) clarify_answer — a vague answer to a LARGE-select pending field that matches NO
+# option -> validator CLARIFY -> compose clarify directive. (button choices give
+# CHOICE_NEEDED, not clarify; large-select no-match is the clarify route.) The realized
+# directive depends on the LIVE teacher extraction, so the probe builder must filter to
+# cases where clarify actually fired.
+_CLARIFY_ANSWER = [
+    "Somewhere in Scandinavia, I think.",
+    "A small island nation, if that helps.",
+    "Up in the north somewhere.",
+    "One of the Gulf states.",
+    "A country in central Europe.",
+    "Hard to say — I've moved around a lot.",
+    "Somewhere warm, near the equator.",
+    "A little place you've probably never heard of.",
+    "It's complicated — dual heritage, honestly.",
+    "Somewhere in the Balkans.",
+    "One of the smaller European ones.",
+    "The old country, as my family calls it.",
+]
+
+
+def _mk_clarify_answer(snap, schema, rng):
+    return rng.choice(_CLARIFY_ANSWER), []
+
+
+# (b) validation_error — a [system] Validation error event (some carrying a (field: X)
+# hint) at a pending state -> prestep FIX directive (deterministic; re-pends + holds).
+def _mk_validation_error(snap, schema, rng):
+    p = rebuild_state(schema, snap).pending_field()
+    hint = p.field_id if p else None
+    hinted = [
+        "[system] Validation error: that value doesn't look right (field: {f}).",
+        "[system] Validation error: please correct your entry (field: {f}).",
+        "[system] Validation error: the value for {f} is invalid (field: {f}).",
+    ]
+    bare = [
+        "[system] Validation error: the last entry couldn't be saved.",
+        "[system] Validation error: something's off with that value.",
+        "[system] Validation error: please re-enter that field.",
+    ]
+    if hint and rng.random() < 0.6:
+        return rng.choice(hinted).format(f=hint), []
+    return rng.choice(bare), []
+
+
+# (c) save_draft — two realized paths: a clicked [system] event -> prestep ACK (the
+# agenda then re-asks the still-pending field, so ack + reask_pending); a plain
+# "save & finish later" -> wants_save intent -> show_button(save_draft) action and the
+# agenda stands down (respond naturally, no directive).
+_SAVE_DRAFT_PLAIN = [
+    "I'd like to save and finish this later.",
+    "Can we pause here and come back to it later?",
+    "Let me save my progress and pick this up later.",
+    "I need to stop for now — save it for later, please.",
+]
+
+
+def _mk_save_draft(snap, schema, rng):
+    if rng.random() < 0.5:
+        return "[system] User clicked: Save Draft", []
+    return rng.choice(_SAVE_DRAFT_PLAIN), []
+
+
+# (d) offform_question — a policy / off-form question at a pending state: the assistant
+# should answer within what it knows (grounding) then steer back -> reask_pending. NO
+# prestep trigger words (no 'review'/'summary'/'save'/'later'/'submit'/'progress').
+_OFFFORM_Q = [
+    "Do you offer scholarships for veterans?",
+    "How long does the application process take?",
+    "Is there an interview stage?",
+    "What's your acceptance rate?",
+    "Do you provide visa support for international students?",
+    "Are there evening or part-time class options?",
+    "How much is tuition per year?",
+    "Do you have on-campus housing?",
+    "Is financial aid available for part-timers?",
+    "What are the class sizes like?",
+    "Do employers recognize this program?",
+    "Are there any application fee waivers?",
+]
+
+
+def _mk_offform_question(snap, schema, rng):
+    return rng.choice(_OFFFORM_Q), []
+
+
 REGISTRY = [
     Behavior("correction", "farm", _pre_correction, _mk_correction),
     Behavior("deflect", "farm", _pre_pending, _mk_deflect),
@@ -969,6 +1191,14 @@ REGISTRY = [
     Behavior("pending_bare", "constructed", _true, _mk_pending_bare, _pending_bare_ctx),
     Behavior("boolean_phrase", "constructed", _true, _mk_boolean_phrase, _boolean_phrase_ctx),
     Behavior("compound_volunteer", "constructed", _true, _mk_compound_volunteer, _empty_ctx),
+    Behavior("submit_blocked", "farm", _pre_submit_blocked, _mk_submit_blocked, with_response=True),
+    Behavior("terminal_complete", "farm", _pre_terminal, _mk_terminal, with_response=True),
+    Behavior("chitchat_steer", "farm", _pre_chitchat_steer, _mk_chitchat_steer, with_response=True),
+    # round-3 both-mode behaviors (structural precondition only; seed range via CLI)
+    Behavior("clarify_answer", "farm", _pending_large_select_unfilled, _mk_clarify_answer, with_response=True),
+    Behavior("validation_error", "farm", _pending_unfilled, _mk_validation_error, with_response=True),
+    Behavior("save_draft", "farm", _pending_unfilled, _mk_save_draft, with_response=True),
+    Behavior("offform_question", "farm", _pending_unfilled, _mk_offform_question, with_response=True),
 ]
 
 
@@ -1115,12 +1345,22 @@ def rebuild_state(schema: Schema, snap: dict) -> TurnState:
                      pending=Pending(tgt) if tgt else None)
 
 
-def eligible_snaps(beh: Behavior, snapshots: list[dict], schema: Schema) -> list[dict]:
+def _seed_in_range(session, seed_lo, seed_hi) -> bool:
+    if session is None:
+        return seed_lo is None and seed_hi is None
+    return (seed_lo is None or session >= seed_lo) and (seed_hi is None or session <= seed_hi)
+
+
+def eligible_snaps(beh: Behavior, snapshots: list[dict], schema: Schema,
+                   seed_lo: int | None = None, seed_hi: int | None = None) -> list[dict]:
     """Farm snapshots satisfying the behavior's precondition. confirm_submit is
     excluded everywhere (pf-based preconditions already exclude it; this covers
-    the non-pending behaviors too)."""
+    the non-pending behaviors too). `seed_lo`/`seed_hi` are the run-level seed-range
+    guard (CLI --seed-range): the both-mode behaviors carry no baked-in seed guard, so
+    this scopes them to training (<=146) or eval (147-161). Default = no restriction."""
     return [s for s in snapshots
-            if s.get("pending") != CONFIRM_SUBMIT and beh.precondition(s, schema)]
+            if s.get("pending") != CONFIRM_SUBMIT and _seed_in_range(s.get("session"), seed_lo, seed_hi)
+            and beh.precondition(s, schema)]
 
 
 # Naturalizer LM: a SEPARATE OpenRouterLM from the teacher `lm` — the capture path
@@ -1177,7 +1417,8 @@ def oracle_row(schema: Schema, beh_name: str, snap: dict, snap_ref, msg: str,
 
 def run_injection(agent, lm, schema: Schema, snapshots: list[dict], quota: int,
                   rng: random.Random, naturalize: bool, only: set[str] | None = None,
-                  oracle: bool = False, quotas: dict | None = None) -> dict:
+                  oracle: bool = False, quotas: dict | None = None,
+                  seed_lo: int | None = None, seed_hi: int | None = None) -> dict:
     rows: list[dict] = []
     coverage: list[dict] = []
     inj_cost = nat_cost = 0.0
@@ -1189,7 +1430,7 @@ def run_injection(agent, lm, schema: Schema, snapshots: list[dict], quota: int,
             continue
         q = (quotas or {}).get(beh.name, quota)
         if beh.context == "farm":
-            eligible = eligible_snaps(beh, snapshots, schema)
+            eligible = eligible_snaps(beh, snapshots, schema, seed_lo, seed_hi)
             n_elig = len(eligible)
             if n_elig == 0:
                 print(f"[WARN] behavior {beh.name!r}: ZERO eligible snapshots — "
@@ -1226,17 +1467,20 @@ def run_injection(agent, lm, schema: Schema, snapshots: list[dict], quota: int,
                     continue
 
                 msg = beh.make_message(snap, schema, rng)
-                if naturalize:
+                # never naturalize a [system] event — prestep matches it literally, and
+                # rephrasing would break the terminal_complete select.
+                if naturalize and not msg.startswith("[system]"):
                     msg, c = naturalize_message(msg, schema, rng)
                     nat_cost += c
 
                 state = rebuild_state(schema, snap)
                 prev = len(lm.history)
-                agent(state=state, user_message=msg, history=snap["history"], with_response=False)
+                wr = beh.with_response   # responder-directive behaviors capture the reply too
+                agent(state=state, user_message=msg, history=snap["history"], with_response=wr)
                 inj_cost += sum((c.get("cost") or 0.0) for c in lm.history[prev:])
                 base = {"source": "inject", "behavior": beh.name,
                         "session": None, "turn": None, "snapshot": snap_ref}
-                new_rows, ph = capture_pairs(lm, prev, False, base)
+                new_rows, ph = capture_pairs(lm, prev, wr, base)
                 prestep_handled += ph
                 rows.extend(new_rows)
                 produced += len(new_rows)
@@ -1472,11 +1716,29 @@ def selftest():
 
     # --- every registry behavior: precondition True on a satisfying snapshot,
     #     make_message non-empty; constructed -> minimal (state,history,message) shape ---
-    def snap(form_state=None, pending=None, history=None):
-        return {"session": 0, "turn": 0, "form_state": form_state or {},
+    def snap(form_state=None, pending=None, history=None, session=0):
+        return {"session": session, "turn": 0, "form_state": form_state or {},
                 "pending": pending, "history": history or [], "user_message": ""}
 
+    # a state one required boolean short of complete (pending that boolean) — the only
+    # terminal_complete-eligible shape: filling it empties the queue.
+    def _synth_val(f):
+        return (f.options[0][0] if f.is_choice else "x@e.com" if f.type == "email"
+                else "2000-01-01" if f.type == "date" else "5551234567" if f.type == "phone"
+                else 5 if f.type == "number" else "X")
+    _last_bool = next(f for f in schema.fields if f.type == "boolean" and f.required)
+    _near_complete = {f.field_id: _synth_val(f) for f in schema.fields
+                      if f.required and f.field_id != _last_bool.field_id}
+
     farm_snaps = {
+        "submit_blocked": snap(),                              # empty form -> queue non-empty
+        "terminal_complete": snap(form_state=_near_complete, pending=_last_bool.field_id),
+        "chitchat_steer": snap(pending="dob", session=150),    # EVAL session, pending unfilled
+        "clarify_answer": snap(pending="country_citizenship"),  # pending LARGE select, unfilled
+        "validation_error": snap(pending="dob"),
+        "save_draft": snap(pending="dob"),
+        "offform_question": snap(pending="dob"),
+
         "correction": snap(form_state={"full_name": "Maria Lee", "email": "m@e.com"}),
         "deflect": snap(pending="dob"),
         "restraint_question": snap(pending="dob"),
@@ -1763,6 +2025,194 @@ def oracle_selftest(schema: Schema, farm_snaps: dict):
             pass
     print("oracle selftest: guard / render / row shape / quotas all pass")
 
+    # 7. responder-directive injection (doc-20 round 2): submit_blocked / terminal_complete
+    from . import prestep
+    from .validator import validate
+    from .composer import compose
+    reg = {b.name: b for b in REGISTRY}
+    sb, tm = reg["submit_blocked"], reg["terminal_complete"]
+    assert sb.with_response and tm.with_response, "responder behaviors must set with_response"
+
+    def _snap(session, form_state, pending=None):
+        return {"session": session, "turn": 0, "form_state": dict(form_state),
+                "pending": pending, "history": [], "user_message": ""}
+
+    # eligible-state selection: submit_blocked only on a NON-empty queue --------------
+    empty_state = _snap(1, {})                     # nothing filled -> queue non-empty
+    assert sb.precondition(empty_state, schema) is True
+    # a fully-filled state -> queue empty -> submit_blocked must NOT fire
+    full_fs = {f.field_id: (f.options[0][0] if f.is_choice else ("x@e.com" if f.type == "email"
+               else "2000-01-01" if f.type == "date" else "5551234567" if f.type == "phone"
+               else 5 if f.type == "number" else "X"))
+               for f in schema.fields if f.required}
+    full_state = _snap(1, full_fs)
+    assert len(queue(rebuild_state(schema, full_state))) == 0
+    assert sb.precondition(full_state, schema) is False, "submit_blocked fired on an empty queue"
+
+    # the SUBMIT message actually drives compose -> submit_blocked (real harness) -------
+    def _fires(snap, msg):
+        st = rebuild_state(schema, snap)
+        ps = prestep.run(msg, st)
+        outs = [] if ps.handled else validate([], st, msg)
+        _, dirs = compose(st, ps, outs)
+        return {k for k, _ in dirs}
+    for m in _SUBMIT_MSGS:
+        assert "submit_blocked" in _fires(empty_state, m), f"no submit_blocked for {m!r}"
+
+    # terminal_complete: fires only when the pending CHOICE is the last required field --
+    # build a state one boolean short of complete, pending that boolean.
+    last_bool = next(f for f in schema.fields if f.type == "boolean" and f.required)
+    near_fs = {k: v for k, v in full_fs.items() if k != last_bool.field_id}
+    near = _snap(1, near_fs, pending=last_bool.field_id)
+    assert tm.precondition(near, schema) is True
+    assert sb.precondition(near, schema) is True     # queue still non-empty until the select
+    term_msg, _ = tm.make_oracle(near, schema, random.Random(0))
+    assert term_msg.startswith("[system] User selected option:")
+    assert "terminal" in _fires(near, term_msg), "terminal did not fire on the completing select"
+    # a state with 2+ required missing -> terminal precondition False
+    assert tm.precondition(empty_state, schema) is False
+
+    # HARD GUARD: nothing selects sessions >= 147 (frozen eval / RL reserves) ----------
+    for bad_sess in (147, 161, 162, 191):
+        s = _snap(bad_sess, {})
+        assert sb.precondition(s, schema) is False, f"submit_blocked selected session {bad_sess}"
+        assert tm.precondition(_snap(bad_sess, near_fs, pending=last_bool.field_id), schema) is False
+    mixed = [empty_state, near, _snap(147, {}), _snap(200, near_fs, pending=last_bool.field_id)]
+    assert all(s["session"] <= TRAIN_SESSION_MAX for s in eligible_snaps(sb, mixed, schema))
+    assert all(s["session"] <= TRAIN_SESSION_MAX for s in eligible_snaps(tm, mixed, schema))
+
+    # injected rows carry the right base metadata (stub LM, offline) -------------------
+    import dspy
+    from .program import FormAssistant
+
+    class _StubLM(dspy.BaseLM):
+        def __init__(self):
+            super().__init__(model="stub", cache=False)
+
+        def forward(self, prompt=None, messages=None, **kw):
+            from dataclasses import dataclass, field as _f
+
+            @dataclass
+            class _M:
+                content: str
+                role: str = "assistant"
+                tool_calls = None
+                reasoning_content = None
+
+            @dataclass
+            class _C:
+                message: _M
+                index: int = 0
+                finish_reason: str = "stop"
+
+            @dataclass
+            class _R:
+                choices: list
+                model: str
+                usage: dict = _f(default_factory=dict)
+                _hidden_params: dict = _f(default_factory=dict)
+            return _R(choices=[_C(_M("[[ ## response_text ## ]]\nOK\n\n[[ ## completed ## ]]"))],
+                      model="stub", _hidden_params={"response_cost": 0.0})
+
+    stub = _StubLM()
+    dspy.configure(lm=stub)
+    inj = run_injection(FormAssistant(), stub, schema, [empty_state], quota=2,
+                        rng=random.Random(0), naturalize=False, only={"submit_blocked"})
+    resp_rows = [r for r in inj["rows"] if r["module"] == "responder"]
+    assert resp_rows, "submit_blocked injection produced no responder row"
+    r0 = resp_rows[0]
+    assert r0["source"] == "inject" and r0["behavior"] == "submit_blocked"
+    assert r0["session"] is None and r0["turn"] is None
+    assert r0["snapshot"] == {"session": 1, "turn": 0}, r0["snapshot"]
+    print("responder-injection selftest: eligibility / directive-fires / session-guard / "
+          "base-metadata all pass")
+
+    # 8. chitchat_steer (round-2 s2b failure class) — now a both-mode behavior: structural
+    # precondition only, seed range applied by the run-level --seed-range filter.
+    cs_beh = reg["chitchat_steer"]
+    assert cs_beh.with_response
+    # structural precondition ignores the seed (works on train AND eval snapshots)
+    eval_snap = _snap(150, {}, pending="dob")
+    train_snap = _snap(5, {}, pending="dob")
+    assert cs_beh.precondition(eval_snap, schema) is True
+    assert cs_beh.precondition(train_snap, schema) is True
+    for m in _CHITCHAT_STEER:
+        assert not any(t in m.lower() for t in ("submit", "save", "later", "so far",
+                       "review", "summary", "recap", "progress", "finalize", "pause")), \
+            f"chitchat template has a prestep trigger word: {m!r}"
+        assert "reask_pending" in _fires(eval_snap, m), f"no reask_pending for {m!r}"
+    # a snapshot with NO pending field -> not eligible
+    assert cs_beh.precondition(_snap(150, {}), schema) is False
+    # seed-range guard via the run-level filter, BOTH directions
+    train = [_snap(5, {}, pending="dob"), _snap(146, {}, pending="dob")]
+    ev = [_snap(147, {}, pending="dob"), _snap(161, {}, pending="dob")]
+    pool = train + ev + [_snap(170, {}, pending="dob")]
+    assert eligible_snaps(cs_beh, pool, schema, None, 146) == train    # train scope (<=146)
+    assert eligible_snaps(cs_beh, pool, schema, 147, 161) == ev        # eval scope (147-161)
+    # submit_blocked / terminal_complete keep their baked train-only guard (UNTOUCHED):
+    # both reject an EVAL (147) snapshot even when it is structurally eligible.
+    assert reg["submit_blocked"].precondition(_snap(147, {}), schema) is False
+    assert reg["terminal_complete"].precondition(
+        _snap(147, near_fs, pending=last_bool.field_id), schema) is False
+    print("chitchat_steer selftest: both-mode structural precondition / seed-range filter "
+          "both directions / reask_pending fires / submit+terminal baked guards intact")
+
+    # 9. round-3 both-mode behaviors: intended directive fires (real harness, stub
+    # extraction), seed-range guard both directions, no accidental trigger words.
+    def _fires_p(snap, msg, pairs):
+        st = rebuild_state(schema, snap)
+        ps = prestep.run(msg, st)
+        outs = [] if ps.handled else validate(pairs, st, msg)
+        a, d = compose(st, ps, outs)
+        return {k for k, _ in d}, a
+
+    _NO_TRIG = ("submit", "save", "later", "review", "summary", "recap", "progress",
+                "so far", "pause", "finalize", "come back")
+
+    ca, ve, sd, oq = reg["clarify_answer"], reg["validation_error"], reg["save_draft"], reg["offform_question"]
+
+    # (a) clarify_answer — stub a non-matching value on the pending LARGE select -> CLARIFY
+    ca_snap = _snap(150, {}, pending="country_citizenship")
+    assert ca.precondition(ca_snap, schema) is True
+    assert ca.precondition(_snap(150, {}, pending="enrollment_type"), schema) is False   # button != large
+    d_ca, _ = _fires_p(ca_snap, "A small island nation, if that helps.",
+                       [{"field_id": "country_citizenship", "value": "a small island nation"}])
+    assert "clarify" in d_ca, d_ca
+    for m in _CLARIFY_ANSWER:
+        assert not any(t in m.lower() for t in _NO_TRIG), f"clarify template trigger word: {m!r}"
+
+    # (b) validation_error — [system] event -> fix (deterministic, empty extraction)
+    ve_snap = _snap(150, {}, pending="dob")
+    ve_msg, _ = ve.make_oracle(ve_snap, schema, random.Random(0))
+    assert ve_msg.startswith("[system] Validation error")
+    d_ve, _ = _fires_p(ve_snap, ve_msg, [])
+    assert "fix" in d_ve, d_ve
+
+    # (c) save_draft — clicked -> ack (+ reask_pending); plain -> save_draft action, no directive
+    sd_snap = _snap(150, {}, pending="dob")
+    d_click, _ = _fires_p(sd_snap, "[system] User clicked: Save Draft", [])
+    assert "ack" in d_click and "reask_pending" in d_click, d_click
+    d_plain, a_plain = _fires_p(sd_snap, "I'd like to save and finish this later.", [])
+    assert any(x["type"] == "show_button" and x["button"] == "save_draft" for x in a_plain), a_plain
+    assert not d_plain, d_plain                                                     # agenda stands down
+
+    # (d) offform_question — pending state -> reask_pending; no trigger words
+    for m in _OFFFORM_Q:
+        assert not any(t in m.lower() for t in _NO_TRIG), f"offform template trigger word: {m!r}"
+    d_oq, _ = _fires_p(_snap(150, {}, pending="dob"), _OFFFORM_Q[0], [])
+    assert "reask_pending" in d_oq, d_oq
+
+    # seed-range guard BOTH directions (no baked guard -> eligible_snaps seed filter)
+    for beh in (ca, ve, sd, oq):
+        pend = "country_citizenship" if beh.name == "clarify_answer" else "dob"
+        train = [_snap(5, {}, pending=pend), _snap(146, {}, pending=pend)]
+        ev = [_snap(147, {}, pending=pend), _snap(161, {}, pending=pend)]
+        pool = train + ev + [_snap(170, {}, pending=pend)]
+        assert eligible_snaps(beh, pool, schema, None, 146) == train, f"{beh.name} train-scope"
+        assert eligible_snaps(beh, pool, schema, 147, 161) == ev, f"{beh.name} eval-scope"
+    print("round-3 both-mode selftest: clarify/validation_error/save_draft/offform fire intended "
+          "directive / seed-range both directions / no trigger words all pass")
+
 
 # ======================================================================
 # CLI
@@ -1810,6 +2260,9 @@ def main():
     ap.add_argument("--oracle", action="store_true",
                     help="label injected rows from the injection spec (no teacher call). "
                          "Farm sessions are teacher-labeled, so --farm is not allowed.")
+    ap.add_argument("--seed-range", choices=["train", "eval", "all"], default="all",
+                    help="run-level seed guard for injection: train (<=146) / eval (147-161) / "
+                         "all. The both-mode behaviors carry no baked-in guard; this scopes them.")
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--parity", action="store_true")
     args = ap.parse_args()
@@ -1898,8 +2351,9 @@ def main():
             if not args.farm:
                 snapshots = [json.loads(l) for l in open(args.snapshots)]
                 print(f"loaded {len(snapshots)} snapshots from {args.snapshots}", flush=True)
+            _sr = {"train": (None, 146), "eval": (147, 161), "all": (None, None)}[args.seed_range]
             inj = run_injection(agent, lm, schema, snapshots, args.quota, rng, args.naturalize,
-                                only, args.oracle, quotas)
+                                only, args.oracle, quotas, seed_lo=_sr[0], seed_hi=_sr[1])
             train_rows.extend(inj["rows"])
             coverage = inj["coverage"]
             prestep_handled = inj["prestep_handled"]

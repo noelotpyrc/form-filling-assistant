@@ -117,7 +117,8 @@ def render_guidance(schema: Schema, directives: list) -> str:
             tgt = _label(schema, payload.field_id) if payload.field_id else "the value just given"
             out.append(f"Ask the user to clarify {tgt}.")
         elif kind == "terminal":
-            out.append("All required fields are complete — invite the user to review the summary and submit.")
+            out.append("All required fields are complete — invite the user to review the summary and submit. "
+                       "The summary card is already shown — don't repeat its contents in your reply.")
     return " ".join(out) if out else "Respond naturally."
 
 

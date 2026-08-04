@@ -159,8 +159,8 @@ def selftest() -> bool:
 
     # a built case is consumable by score_case unchanged
     s = ER.score_case(cases[0], schema)
-    ck("score_case consumes a built case (returns the 5 checks)",
-       set(s["checks"]) == {"format", "directive", "grounding", "echo", "verbosity"})
+    ck("score_case consumes a built case (returns the 6 checks)",
+       set(s["checks"]) == {"format", "directive", "grounding", "echo", "verbosity", "repetition"})
 
     passed = sum(1 for _, ok in checks if ok)
     print(f"\n=== eval_responder_build selftest: {passed}/{len(checks)} checks passed ===")

@@ -208,7 +208,8 @@ def transform(rows: list[dict], veto=None) -> tuple[list[tuple[dict, tuple]], li
                 if drop:
                     dropped.append({"idx": idx, "module": "responder", "source": row["source"],
                                     "behavior": row["behavior"], "session": row.get("session"),
-                                    "turn": row.get("turn"), "reason": reason})
+                                    "turn": row.get("turn"), "snapshot": row.get("snapshot"),
+                                    "reason": reason})
                     continue
             was_wf = datagen.is_well_formed("responder", row["completion"])
             target = canon_responder(row["completion"])
@@ -264,7 +265,7 @@ def split_groups(group_keys: list[tuple], val_ratio: float, seed: int) -> tuple[
 # ======================================================================
 
 def build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats, curation,
-                 val_groups, all_keys, file_counts, val_ratio, seed) -> dict:
+                 val_groups, all_keys, file_counts, val_ratio, seed, veto_kept_unjoinable=None) -> dict:
     def _grpstr(k):
         return f"{k[0]}:{k[1]}"
     group_sizes = Counter(gk for _, gk in out_rows)
@@ -292,8 +293,15 @@ def build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats, curatio
                             "total": sum(canon_stats.values())},
         "extractor_drops": {"count": len([d for d in dropped if d.get("module") != "responder"]),
                             "rows": [d for d in dropped if d.get("module") != "responder"]},
-        "responder_drops": {"count": len([d for d in dropped if d.get("module") == "responder"]),
-                            "rows": [d for d in dropped if d.get("module") == "responder"]},
+        "responder_drops": {
+            "count": len([d for d in dropped if d.get("module") == "responder"]),
+            "by_source": dict(Counter(d.get("source") for d in dropped if d.get("module") == "responder")),
+            "rows": [d for d in dropped if d.get("module") == "responder"],
+        },
+        "responder_veto_kept_unjoinable": {
+            "count": len(veto_kept_unjoinable or []),
+            "rows": veto_kept_unjoinable or [],
+        },
         "inject_extractor_curation": {
             "by_behavior": cur_by_behavior,
             "total_kept": sum(c["kept"] for c in cur_by_behavior.values()),
@@ -328,13 +336,18 @@ def print_report(rep: dict):
           f"({rc['fixed']} malformed->fixed, {rc['normalized']} well-formed->normalized)")
     ed = rep["extractor_drops"]
     print(f"extractor drops: {ed['count']} (expected 0)")
-    rd = rep.get("responder_drops", {"count": 0, "rows": []})
-    print(f"responder Tier-1 drops: {rd['count']}")
+    rd = rep.get("responder_drops", {"count": 0, "rows": [], "by_source": {}})
+    print(f"responder Tier-1 drops: {rd['count']}  by_source={rd.get('by_source', {})}")
     if rd["rows"]:
-        print(f"  {'session:turn':16} {'behavior':16} reason")
+        print(f"  {'src':7} {'ref':14} {'behavior':18} reason")
         for d in rd["rows"]:
-            print(f"  {str(d.get('session'))+':'+str(d.get('turn')):16} "
-                  f"{str(d.get('behavior')):16} {d.get('reason', '')}")
+            ref = (f"{d.get('session')}:{d.get('turn')}" if d.get("source") == "farm"
+                   else str(d.get("snapshot")))
+            print(f"  {str(d.get('source')):7} {ref:14} {str(d.get('behavior')):18} {d.get('reason', '')}")
+    ku = rep.get("responder_veto_kept_unjoinable", {"count": 0})
+    print(f"responder veto kept (unjoinable, snapshot-less): {ku['count']}")
+    for d in ku.get("rows", []):
+        print(f"    KEPT unjoinable: {d}")
 
     cur = rep["inject_extractor_curation"]
     print("\n" + "=" * 68)
@@ -364,25 +377,72 @@ def print_report(rep: dict):
 # driver
 # ======================================================================
 
+def _injected_user_message(user_content: str) -> str:
+    """The message the responder actually saw, from an inject row's own rendered
+    [[ ## user_message ## ]] block — authoritative (the snapshot's stored user_message
+    is the ORIGINAL farm turn, not the injected one)."""
+    m = re.search(r"\[\[ ## user_message ## \]\]\n(.*?)\n\n\[\[ ## ", user_content, re.DOTALL)
+    return m.group(1) if m else ""
+
+
 def _responder_veto(rows: list[dict], snapshots_path: Path):
     """Build the Tier-1 responder veto (doc-20 item 5). Recomputes each turn's
-    (actions, directives) from its snapshot + the run's extractor rows (no LLM),
-    scores the teacher completion, and drops rows that fail Tier-1. Imported lazily so
-    the extractor path and the selftest never pull eval_responder."""
+    (actions, directives) from its snapshot + the run's extractor rows (no LLM), scores
+    the canonicalized teacher target, and drops rows that fail Tier-1. Handles BOTH
+    farm and inject rows. Returns (veto, kept_unjoinable) — the latter is the list of
+    genuinely snapshot-less rows the veto kept (logged, never silent). Imported lazily
+    so the extractor path and the selftest never pull eval_responder."""
     from .schema import load_schema
     from . import eval_responder as ER
     schema = load_schema()
     snaps = {(s["session"], s["turn"]): s
              for s in (json.loads(l) for l in open(snapshots_path) if l.strip())}
+    # farm extractor rows key by their real (session, turn).
     ext_map = {(r["session"], r["turn"]): r["completion"]
-               for r in rows if r["module"] == "extractor"}
+               for r in rows if r["module"] == "extractor" and r.get("source") == "farm"}
+
+    # inject rows carry session=None; pair each inject responder with its own snapshot,
+    # its injected message, and its extractor completion. The extractor row directly
+    # precedes its responder row in capture order, so a FIFO queue keyed by
+    # (snapshot, behavior) pops the right one (terminal_complete is prestep-handled ->
+    # no extractor -> None). Keyed by id(row) since transform iterates these same objects.
+    inj_ext_by_id: dict[int, str | None] = {}
+    inj_msg_by_id: dict[int, str] = {}
+    _pending_ext: dict = defaultdict(list)
+    for r in rows:
+        if r.get("source") != "inject":
+            continue
+        snap_ref = r.get("snapshot")
+        gkey = ((snap_ref["session"], snap_ref["turn"]) if snap_ref else None, r.get("behavior"))
+        if r["module"] == "extractor":
+            _pending_ext[gkey].append(r["completion"])
+        elif r["module"] == "responder":
+            q = _pending_ext[gkey]
+            inj_ext_by_id[id(r)] = q.pop(0) if q else None
+            inj_msg_by_id[id(r)] = _injected_user_message(r["messages"][-1]["content"])
+
+    kept_unjoinable: list[dict] = []
 
     def veto(row):
-        key = (row.get("session"), row.get("turn"))
-        snap = snaps.get(key)
-        if snap is None:                       # no snapshot -> cannot score; keep (conservative)
-            return False, ""
-        actions, directives, fs, _ = ER.recompute_actions_directives(schema, snap, ext_map.get(key))
+        if row.get("source") == "inject":
+            snap_ref = row.get("snapshot")
+            snap = snaps.get((snap_ref["session"], snap_ref["turn"])) if snap_ref else None
+            if snap is None:
+                kept_unjoinable.append({"source": "inject", "behavior": row.get("behavior"),
+                                        "snapshot": snap_ref})
+                return False, ""
+            snap = {**snap, "user_message": inj_msg_by_id.get(id(row), snap.get("user_message", ""))}
+            ext_completion = inj_ext_by_id.get(id(row))
+        else:
+            key = (row.get("session"), row.get("turn"))
+            snap = snaps.get(key)
+            if snap is None:
+                kept_unjoinable.append({"source": "farm", "behavior": row.get("behavior"),
+                                        "session": key[0], "turn": key[1]})
+                return False, ""
+            ext_completion = ext_map.get(key)
+
+        actions, directives, fs, _ = ER.recompute_actions_directives(schema, snap, ext_completion)
         # Score the CANONICALIZED target — that is the training label. canon_responder
         # fixes markers by construction (doc-20 §2: format is repaired for targets, not
         # vetoed), so the veto acts on the prose-level checks (directive/grounding/echo/
@@ -394,12 +454,13 @@ def _responder_veto(rows: list[dict], snapshots_path: Path):
             return False, ""
         reason = "; ".join(f"{k}:{v['reason']}" for k, v in s["checks"].items() if not v["pass"])
         return True, reason
-    return veto
+    return veto, kept_unjoinable
 
 
 def bridge(in_path: Path, out_dir: Path, val_ratio: float, seed: int, snapshots_path: Path = None) -> dict:
     rows = [json.loads(l) for l in open(in_path) if l.strip()]
-    veto = _responder_veto(rows, snapshots_path) if snapshots_path else None
+    veto, veto_kept_unjoinable = (_responder_veto(rows, snapshots_path) if snapshots_path
+                                  else (None, []))
     out_rows, dropped, canon_stats, curation = transform(rows, veto)
     val_groups, all_keys = split_groups([gk for _, gk in out_rows], val_ratio, seed)
 
@@ -416,7 +477,7 @@ def bridge(in_path: Path, out_dir: Path, val_ratio: float, seed: int, snapshots_
             file_counts[name] = len(sel)
 
     rep = build_report(in_path, out_dir, rows, out_rows, dropped, canon_stats, curation,
-                       val_groups, all_keys, file_counts, val_ratio, seed)
+                       val_groups, all_keys, file_counts, val_ratio, seed, veto_kept_unjoinable)
     json.dump(rep, open(out_dir / "report.json", "w"), indent=2)
     return rep
 
@@ -493,6 +554,57 @@ def selftest():
     # veto=None (default) drops nothing — existing behavior byte-identical
     out_n, dropped_n, _, _ = transform([keep_row, drop_row])
     assert len(out_n) == 2 and not any(d.get("module") == "responder" for d in dropped_n)
+
+    # --- FIX 2: the REAL _responder_veto on INJECT rows (session=None, snapshot key) ---
+    # inject rows must be scored, not silently kept; a genuinely snapshot-less row is
+    # kept AND logged.
+    import tempfile
+    def _inj(module, completion, inj_msg, snapshot, behavior="submit_blocked"):
+        usr = (f"[[ ## form_schema ## ]]\nForm\n\n[[ ## filled_fields ## ]]\n(none)\n\n"
+               f"[[ ## recent_history ## ]]\n(none)\n\n[[ ## user_message ## ]]\n{inj_msg}\n\n"
+               f"[[ ## actions_taken ## ]]\nShowing the save_draft button.\n\n"
+               f"[[ ## guidance ## ]]\ng\n\n[[ ## completed ## ]]")
+        return {"module": module, "source": "inject", "behavior": behavior, "session": None,
+                "turn": None, "snapshot": snapshot, "well_formed": True, "completion": completion,
+                "messages": [dict(SYS), {"role": "user", "content": usr}]}
+
+    with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as tf:
+        # one real snapshot on the northfield schema; empty form -> queue non-empty
+        tf.write(json.dumps({"session": 1, "turn": 5, "form_state": {}, "pending": None,
+                             "history": [], "user_message": "tell me about the program"}) + "\n")
+        snaps_path = Path(tf.name)
+    ref15 = {"session": 1, "turn": 5}
+    SUBMIT_MSG = "Can I just submit this now?"
+    # PASS: a proper submit_blocked reply (can't-submit cue + save/continue cue)
+    good_resp = ("[[ ## response_text ## ]]\nWe can't submit yet — there are still a few "
+                 "required fields left to complete. Want to keep going, or save a draft and "
+                 "come back later?\n\n[[ ## completed ## ]]")
+    # FAIL: a FALSE completeness claim (FIX 1: this must match NO cant-submit cue)
+    bad_resp = "[[ ## response_text ## ]]\nAll set — submitting your application now!\n\n[[ ## completed ## ]]"
+
+    rows_pass = [_inj("extractor", "[[ ## extractions ## ]]\n[]\n\n[[ ## completed ## ]]", SUBMIT_MSG, ref15),
+                 _inj("responder", good_resp, SUBMIT_MSG, ref15)]
+    veto_p, kept_p = _responder_veto(rows_pass, snaps_path)
+    out_p, drop_p, _, _ = transform(rows_pass, veto_p)
+    assert any(r["module"] == "responder" for r, _ in out_p), "inject PASS row was wrongly dropped"
+    assert not [d for d in drop_p if d.get("module") == "responder"] and not kept_p, "inject PASS: unexpected drop/keep-log"
+
+    rows_fail = [_inj("extractor", "[[ ## extractions ## ]]\n[]\n\n[[ ## completed ## ]]", SUBMIT_MSG, ref15),
+                 _inj("responder", bad_resp, SUBMIT_MSG, ref15)]
+    veto_f, kept_f = _responder_veto(rows_fail, snaps_path)
+    out_f, drop_f, _, _ = transform(rows_fail, veto_f)
+    rdf = [d for d in drop_f if d.get("module") == "responder"]
+    assert len(rdf) == 1 and rdf[0]["source"] == "inject" and "directive" in rdf[0]["reason"], \
+        f"inject FAIL: false-completeness reply should be vetoed on directive: {rdf}"
+
+    # genuinely unjoinable inject row (snapshot key absent) -> KEPT and LOGGED
+    rows_unjoin = [_inj("responder", good_resp, SUBMIT_MSG, {"session": 999, "turn": 9})]
+    veto_u, kept_u = _responder_veto(rows_unjoin, snaps_path)
+    out_u, drop_u, _, _ = transform(rows_unjoin, veto_u)
+    assert any(r["module"] == "responder" for r, _ in out_u), "unjoinable row should be kept"
+    assert not [d for d in drop_u if d.get("module") == "responder"]
+    assert len(kept_u) == 1 and kept_u[0]["source"] == "inject", f"unjoinable keep not logged: {kept_u}"
+    snaps_path.unlink()
 
     # --- split: group-aware, no straddle, deterministic ---
     rows = []
