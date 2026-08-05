@@ -639,7 +639,23 @@ def _print_summary(sessions, results_by_session, p_matrix, latency):
         print(f"  {p:4} {str(p_matrix[p]['pass']):>28}  <- {', '.join(p_matrix[p]['covered_by']) or '(none)'}")
 
 
-def write_outputs(out: Path, sessions, results_by_session, p_matrix, run_name):
+def build_wiring(args) -> dict:
+    """Record which LM served each predictor, for the run's report.json. Responder is
+    the all-student StudentLM (model+port) when --respond-port is given, else the
+    default hybrid OpenRouter responder."""
+    ext = {"kind": "student", "model": args.student_model or "student", "port": args.port}
+    if getattr(args, "respond_port", None):
+        rsp = {"kind": "student", "model": args.respond_model or "student",
+               "port": args.respond_port, "temperature": 0}
+    else:
+        rsp = {"kind": "openrouter"}
+    # U-model provenance: m3b's report omitted it and the m3c/m3b comparison had to be
+    # reconstructed from per-session costs — record it always.
+    from .sim import SIM_USER_MODEL
+    return {"extractor": ext, "responder": rsp, "sim_user_model": SIM_USER_MODEL}
+
+
+def write_outputs(out: Path, sessions, results_by_session, p_matrix, run_name, wiring=None):
     out.mkdir(parents=True, exist_ok=True)
     all_lat = [l for s in sessions for l in _session_latencies(s)]
     latency = _latency_stats(all_lat)
@@ -648,6 +664,7 @@ def write_outputs(out: Path, sessions, results_by_session, p_matrix, run_name):
         "run": run_name,
         "scenarios": sorted({s["scenario"] for s in sessions}),
         "n_sessions": len(sessions),
+        "wiring": wiring or {},
         "latency": latency,
         "sessions": [],
         "p_matrix": p_matrix,
@@ -675,8 +692,12 @@ def write_outputs(out: Path, sessions, results_by_session, p_matrix, run_name):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=8100, help="student MLX server port")
+    ap.add_argument("--port", type=int, default=8100, help="student MLX server port (extractor)")
     ap.add_argument("--student-model", default=None, help="student model path/name (sent in body)")
+    ap.add_argument("--respond-port", type=int, default=None,
+                    help="serve the RESPONDER from a StudentLM on this port (temp 0) instead of "
+                         "the default OpenRouter responder — makes the probe all-student")
+    ap.add_argument("--respond-model", default=None, help="responder student model path/name (sent in body)")
     ap.add_argument("--scenarios", default="all", help="comma-list or 'all'")
     ap.add_argument("--seeds", type=int, default=2, help="run seeds 1..N per scenario")
     ap.add_argument("--run", default="m3b_hybrid")
@@ -721,9 +742,13 @@ def main():
         for seed in range(1, args.seeds + 1):
             if (scenario, seed) in done:
                 continue
-            # fresh, demo-free program per session; per-predictor hybrid wiring
+            # fresh, demo-free program per session; per-predictor wiring
             student_lm = StudentLM(model=args.student_model or "student", port=args.port)
-            respond_lm = OpenRouterLM()
+            if args.respond_port:   # all-student: responder from a local StudentLM (temp 0)
+                respond_lm = StudentLM(model=args.respond_model or "student",
+                                       port=args.respond_port, temperature=0)
+            else:                   # default hybrid: nemotron responder
+                respond_lm = OpenRouterLM()
             dspy.configure(lm=respond_lm)
             program = FormAssistant()
             assign_lms(program, extract_lm=student_lm, respond_lm=respond_lm)
@@ -745,7 +770,7 @@ def main():
         sys.exit(1)
 
     p_matrix = build_p_matrix(schema, sessions, results_by_session)
-    latency = write_outputs(out, sessions, results_by_session, p_matrix, args.run)
+    latency = write_outputs(out, sessions, results_by_session, p_matrix, args.run, build_wiring(args))
     _print_summary(sessions, results_by_session, p_matrix, latency)
     print(f"\nwritten to {out}/")
 
@@ -938,10 +963,47 @@ def selftest():
 
     # ---- run_session plumbing offline (fake agent + LMs, no network) -
     _selftest_run_session_plumbing(schema)
+    _selftest_all_student_wiring(schema)
 
     print("selftest: all assertions passed (12 assertions x pass/fail branches incl. "
           "no_invented_values + sim_infidelity classification, P-matrix build, "
-          "run_session plumbing)")
+          "run_session plumbing, all-student wiring)")
+
+
+def _selftest_all_student_wiring(schema):
+    """The --respond-port path: assign_lms receives two DISTINCT StudentLMs (extractor +
+    responder), and the run report records the responder's model+port. Offline —
+    StudentLM construction hits no network."""
+    import types
+    import tempfile
+    from .program import FormAssistant, assign_lms
+    from .student_lm import StudentLM
+
+    args = types.SimpleNamespace(port=8100, student_model="/models/r3-oracle",
+                                 respond_port=8104, respond_model="/models/s2cresp")
+    # two distinct StudentLMs wired per-predictor
+    extract_lm = StudentLM(model=args.student_model, port=args.port)
+    respond_lm = StudentLM(model=args.respond_model, port=args.respond_port, temperature=0)
+    assert extract_lm is not respond_lm
+    prog = FormAssistant()
+    assign_lms(prog, extract_lm=extract_lm, respond_lm=respond_lm)
+    assert prog.extract.lm is extract_lm and prog.respond.lm is respond_lm
+    assert respond_lm.base_url.endswith(":8104") and respond_lm.temperature == 0
+
+    # report records the all-student responder wiring (model + port)
+    w = build_wiring(args)
+    assert w["extractor"] == {"kind": "student", "model": "/models/r3-oracle", "port": 8100}, w
+    assert w["responder"]["kind"] == "student" and w["responder"]["port"] == 8104 \
+        and w["responder"]["model"] == "/models/s2cresp", w
+    with tempfile.TemporaryDirectory() as td:
+        write_outputs(Path(td), [], [], {}, "wiretest", w)
+        rep = json.loads((Path(td) / "report.json").read_text())
+        assert rep["wiring"]["responder"]["port"] == 8104, rep["wiring"]
+
+    # default (no --respond-port) still records the hybrid openrouter responder
+    dflt = build_wiring(types.SimpleNamespace(port=8100, student_model=None,
+                                              respond_port=None, respond_model=None))
+    assert dflt["responder"] == {"kind": "openrouter"}, dflt
 
 
 def _selftest_run_session_plumbing(schema):

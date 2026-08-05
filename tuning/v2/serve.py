@@ -7,6 +7,7 @@ history (browser-authoritative), and the harness keeps a per-session pending
 store across turns.
 
 Run:  tuning/v2/.venv/bin/python -m tuning.v2.serve
+Offline check:  tuning/v2/.venv/bin/python -m tuning.v2.serve --selftest
 """
 from __future__ import annotations
 from contextlib import asynccontextmanager
@@ -22,23 +23,43 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from .claude_lm import ClaudeLM
 from .schema import parse_schema
 from .state import TurnState, Pending
-from .program import FormAssistant
+from .program import FormAssistant, assign_lms
+from .student_lm import StudentLM
 
 PORT = int(os.getenv("PORT", "8200"))
+
+# doc-21 chapter 3: serve the two students, per-predictor (extractor + responder),
+# not the teacher. Paths are the leon-work local defaults, env-overridable.
+EXTRACT_MODEL = os.getenv("V2_SERVE_EXTRACT_MODEL",
+                          "/Users/lliao/work/form-filling-models/qwen35-08b-v2-r3-oracle-mlx")
+EXTRACT_PORT = int(os.getenv("V2_SERVE_EXTRACT_PORT", "8100"))
+RESPOND_MODEL = os.getenv("V2_SERVE_RESPOND_MODEL",
+                          "/Users/lliao/work/form-filling-models/qwen35-08b-v2-s2cresp-mlx")
+RESPOND_PORT = int(os.getenv("V2_SERVE_RESPOND_PORT", "8104"))
 
 _AGENT: FormAssistant | None = None
 _PENDING: dict[str, Pending | None] = {}   # session_id -> pending (harness-only)
 
 
+def build_agent() -> FormAssistant:
+    """FormAssistant with the extractor + responder students wired per-predictor
+    (assign_lms). No network at construction time — the servers are hit per request."""
+    extract_lm = StudentLM(model=EXTRACT_MODEL, port=EXTRACT_PORT, temperature=0)
+    respond_lm = StudentLM(model=RESPOND_MODEL, port=RESPOND_PORT, temperature=0)
+    dspy.configure(lm=respond_lm)     # global default; assign_lms overrides per-predictor
+    agent = FormAssistant()
+    assign_lms(agent, extract_lm=extract_lm, respond_lm=respond_lm)
+    return agent
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _AGENT
-    dspy.configure(lm=ClaudeLM())
-    _AGENT = FormAssistant()
-    print(f"[v2-harness] ready on :{PORT}  teacher={os.getenv('V2_TEACHER_MODEL', 'sonnet')}")
+    _AGENT = build_agent()
+    print(f"[v2-harness] ready on :{PORT}  extractor={EXTRACT_MODEL}@{EXTRACT_PORT}  "
+          f"responder={RESPOND_MODEL}@{RESPOND_PORT}")
     yield
 
 
@@ -105,6 +126,29 @@ async def generate(req: GenerateRequest):
     )
 
 
+def selftest() -> None:
+    """Offline: the two students are wired per-predictor and the request/SSE contract is
+    unchanged. No network — StudentLM construction and assign_lms hit nothing."""
+    agent = build_agent()
+    assert isinstance(agent.extract.lm, StudentLM) and isinstance(agent.respond.lm, StudentLM)
+    assert agent.extract.lm is not agent.respond.lm
+    assert agent.extract.lm.model == EXTRACT_MODEL and agent.extract.lm.base_url.endswith(f":{EXTRACT_PORT}")
+    assert agent.respond.lm.model == RESPOND_MODEL and agent.respond.lm.base_url.endswith(f":{RESPOND_PORT}")
+    assert agent.extract.lm.temperature == 0 and agent.respond.lm.temperature == 0
+    # request contract untouched
+    assert set(GenerateRequest.model_fields) == {
+        "session_id", "user_message", "form_state", "form_schema",
+        "conversation_history", "temperature", "augment_state"}, set(GenerateRequest.model_fields)
+    # SSE framing untouched
+    assert _sse("done", {"session_id": "x"}) == 'event: done\ndata: {"session_id": "x"}\n\n'
+    print(f"serve selftest: student wiring (extract={EXTRACT_MODEL}@{EXTRACT_PORT}, "
+          f"respond={RESPOND_MODEL}@{RESPOND_PORT}) + request/SSE contract intact")
+
+
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    import sys
+    if "--selftest" in sys.argv:
+        selftest()
+    else:
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=PORT)
