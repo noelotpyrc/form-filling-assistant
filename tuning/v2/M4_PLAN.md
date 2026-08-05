@@ -495,8 +495,12 @@ substantially naturalizer semantics, not teacher unreliability.
   The 1 miss: conditional_consistency on a volunteered value stored in a condition-inactive field
   (english_test_score before toefl_required) — ruled ACCEPTABLE-BY-DESIGN (user, 2026-08-05):
   storage ok, conditions govern use/display; refine the assertion next probe iteration. U-model
-  rule → doc-22 §5 (haiku farms, sonnet scripted probes). Deferred, properly-anchored: r3-oracle
-  eos config fix (+ v1 tripwire re-run).
+  rule → doc-22 §5 (haiku farms, sonnet scripted probes). Deferred, properly-anchored:
+  (1) r3-oracle eos config fix (+ v1 tripwire re-run); (2) conditional_consistency assertion
+  refinement; (3) **dormant-set transparency tune (user, 2026-08-05)**: when a volunteered value
+  lands on a condition-inactive field, the responder should say so ("TOEFL isn't required, but I
+  recorded it for you") — needs a `dormant_set` directive from compose (form placement unchanged →
+  cheap anchor re-check), ~25 injected turns + probe per doc-22, retrain. ~$0.50.
 - **doc-20 ch1 items 7-8 + coverage rounds — DONE 2026-08-04. Chapter 1 complete, ship approved.**
   Round 2a (farm-only corpus 352/75): frozen 212/223 — failed terminal 5/14, submit_blocked 0/1
   (zero training coverage; the farm never produces those events). Round 2b (+submit/terminal
