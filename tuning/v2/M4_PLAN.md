@@ -486,6 +486,17 @@ substantially naturalizer semantics, not teacher unreliability.
   only if the tuned responder sounds robotic on eval). Consequence executed: all 588 responder
   targets re-captured under the new prompt via `recapture.py` (h1a_recap 143, eval_farm_p3_recap 222,
   eval_farm_p4_recap 223; parity 0 mismatch, post-canon 588/588, $1.14, full-forward replay).
+- **M3c all-student probe — DONE 2026-08-05. HYBRID RETIRED.** probe.py gained
+  --respond-port/--respond-model (StudentLM responder via assign_lms; report records wiring +
+  sim_user_model); serve.py now wires both students (r3-oracle@8100 extract, s2cresp@8104 respond;
+  env-overridable). Run 1 (haiku-U): 158/164 — all 6 fails were U-infidelity (save direction
+  ignored, persona values invented), NOT the stack. Re-run (sonnet-U): **26/26 sessions to submit,
+  163/164 assertions; latency p50 2.1 / p95 2.4 / max 2.7s all-local** (m3b hybrid: 3.8/25.9).
+  The 1 miss: conditional_consistency on a volunteered value stored in a condition-inactive field
+  (english_test_score before toefl_required) — ruled ACCEPTABLE-BY-DESIGN (user, 2026-08-05):
+  storage ok, conditions govern use/display; refine the assertion next probe iteration. U-model
+  rule → doc-22 §5 (haiku farms, sonnet scripted probes). Deferred, properly-anchored: r3-oracle
+  eos config fix (+ v1 tripwire re-run).
 - **doc-20 ch1 items 7-8 + coverage rounds — DONE 2026-08-04. Chapter 1 complete, ship approved.**
   Round 2a (farm-only corpus 352/75): frozen 212/223 — failed terminal 5/14, submit_blocked 0/1
   (zero training coverage; the farm never produces those events). Round 2b (+submit/terminal

@@ -85,6 +85,23 @@ one bridge, one retrain, then the frozen 223 + all probes and a failure read.
 Decision per the standing decision rule: numbers say where to look, the
 hand-read of failures decides (doc-20 §2 amendment, 2026-08-03).
 
+## 5. LLM-U model rule (2026-08-05)
+
+Two different jobs, two different models:
+
+- **Farming (datagen + eval contexts): haiku-U.** Cheap (~$0.16/session),
+  style-faithful, and it IS the house distribution — every farm run to date
+  (h1a, eval_farm_p1-p6) used it (verified from `cost.farm_u` per session).
+- **Scripted probes (probe.py scenarios): sonnet-U.** Scenario directives are
+  stage directions ("now ask to save"); haiku-U ignored the save direction in
+  both m3c seeds, so those scenarios silently never executed. A probe needs an
+  actor that follows the script.
+- Probe reports record `wiring.sim_user_model` (added after the m3b/m3c
+  comparison had to reconstruct the U model from per-session costs).
+- Probe-assertion refinement queued: `conditional_consistency` flags volunteered
+  values stored in condition-inactive fields; ruled acceptable-by-design
+  (2026-08-05) — storage is fine, conditions govern use/display.
+
 Related: [doc-20](doc-20-responder-tune-spec.md) (chapter-1 spec; §2 Tier-1,
 §3 partition) · [doc-21](doc-21-status-and-roadmap.md) (status) ·
 `tuning/v2/M4_PLAN.md` (execution log) · doc-19 §3 (the extractor's
