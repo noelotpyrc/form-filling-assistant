@@ -1,0 +1,2192 @@
+{
+  "label": "sft_r3_oracle_evalv1_eospatch_check",
+  "model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-r3-oracle-mlx",
+  "n": 1,
+  "eval_set": "tuning/v2/eval/eval_set.jsonl",
+  "cost_usd": 0.0,
+  "metrics": {
+    "n_observations": 109,
+    "field_precision": 1.0,
+    "field_recall": 0.990909090909091,
+    "field_f1": 0.995433789954338,
+    "field_counts": {
+      "tp": 109,
+      "fp": 0,
+      "fn": 1
+    },
+    "value_match": 1.0,
+    "value_n": 109,
+    "empty_correct": {
+      "rate": 1.0,
+      "n": 15
+    },
+    "over_attribution": {
+      "rate": 0.0,
+      "n": 12
+    },
+    "wrong_field_assignment": {
+      "rate": 0.0,
+      "n": 3
+    },
+    "choice_correct": {
+      "rate": 1.0,
+      "n": 9
+    },
+    "by_scenario": {
+      "ambiguous": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "asks_about_field": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "bare_date": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "boolean": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "bulk": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "chitchat": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "compound": {
+        "rate": 0.0,
+        "n": 1
+      },
+      "correction_email": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "deflect": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "elliptical_dob": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "freetext_select": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "multi": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "no_match": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "pending_name": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "pending_phone": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "precedence": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "refusal": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "restraint": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "select_by_label": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "single_email": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "single_name": {
+        "rate": 1.0,
+        "n": 8
+      },
+      "third_party": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "trap": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "typed_choice": {
+        "rate": 1.0,
+        "n": 1
+      },
+      "wrapped_value": {
+        "rate": 1.0,
+        "n": 1
+      }
+    }
+  },
+  "stability": {
+    "cases": 109,
+    "fully_agree": 109,
+    "flaky": []
+  },
+  "raw": [
+    {
+      "sample": 0,
+      "id": "single_name-0",
+      "scenario": "single_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Mateo Tanaka"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_name-1",
+      "scenario": "single_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Ravi Nguyen"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_name-2",
+      "scenario": "single_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Okafor"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_name-3",
+      "scenario": "single_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Diego Rossi"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_name-4",
+      "scenario": "single_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Priya M\u00fcller"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_name-5",
+      "scenario": "single_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Aisha Kim"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_name-6",
+      "scenario": "single_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Zara Costa"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_name-7",
+      "scenario": "single_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Ravi Mbeki"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_email-0",
+      "scenario": "single_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "elena.m\u00fcller40@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_email-1",
+      "scenario": "single_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "elena.ali81@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_email-2",
+      "scenario": "single_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "mateo.andersson38@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_email-3",
+      "scenario": "single_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "nadia.chen39@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_email-4",
+      "scenario": "single_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "maria.okafor51@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_email-5",
+      "scenario": "single_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "liam.schmidt6@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_email-6",
+      "scenario": "single_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "diego.kim78@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "single_email-7",
+      "scenario": "single_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "mei.mbeki54@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "multi-0",
+      "scenario": "multi",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Yuki Rossi",
+        "email": "yuki.rossi63@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "multi-1",
+      "scenario": "multi",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Ravi M\u00fcller",
+        "email": "ravi.m\u00fcller84@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "multi-2",
+      "scenario": "multi",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Ravi Reyes",
+        "email": "ravi.reyes90@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "multi-3",
+      "scenario": "multi",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Ananya Yamamoto",
+        "email": "ananya.yamamoto4@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "multi-4",
+      "scenario": "multi",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Noah Novak",
+        "email": "noah.novak38@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "multi-5",
+      "scenario": "multi",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Yuki Silva",
+        "email": "yuki.silva71@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "multi-6",
+      "scenario": "multi",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Zara Yamamoto",
+        "email": "zara.yamamoto20@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "multi-7",
+      "scenario": "multi",
+      "band": "positive",
+      "passed": true,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 2,
+      "value_total": 2,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Zara Rossi",
+        "email": "zara.rossi55@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-0",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "public_health"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-1",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "engineering"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-2",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "cs"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-3",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "mba"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-4",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "education"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-5",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "engineering"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-6",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "public_health"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "select_by_label-7",
+      "scenario": "select_by_label",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "start_term",
+      "got_sets": {
+        "program": "mba"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "boolean-0",
+      "scenario": "boolean",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "prior_application": false
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "boolean-1",
+      "scenario": "boolean",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "prior_application": false
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "boolean-2",
+      "scenario": "boolean",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "prior_application": true
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "boolean-3",
+      "scenario": "boolean",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "prior_application": false
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "boolean-4",
+      "scenario": "boolean",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "prior_application": false
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "boolean-5",
+      "scenario": "boolean",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "prior_application": false
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "boolean-6",
+      "scenario": "boolean",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "prior_application": false
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "boolean-7",
+      "scenario": "boolean",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "prior_application": true
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-0",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Maria Reyes",
+        "email": "maria.reyes20@example.com",
+        "phone": "6755551595"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-1",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Priya Costa",
+        "email": "priya.costa9@example.com",
+        "phone": "4785555140"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-2",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Maria Ali",
+        "email": "maria.ali61@example.com",
+        "phone": "2835556692"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-3",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Yamamoto",
+        "email": "elena.yamamoto83@example.com",
+        "phone": "7325551712"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-4",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Tariq Lee",
+        "email": "tariq.lee97@example.com",
+        "phone": "8635558480"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-5",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Aisha Rossi",
+        "email": "aisha.rossi41@example.com",
+        "phone": "3285551314"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-6",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Omar Kim",
+        "email": "omar.kim25@example.com",
+        "phone": "2985553021"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "bulk-7",
+      "scenario": "bulk",
+      "band": "positive",
+      "passed": true,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 3,
+      "value_total": 3,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Elena Lee",
+        "email": "elena.lee20@example.com",
+        "phone": "4935551602"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-0",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1990-07-15"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-1",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1995-12-08"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-2",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-04-09"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-3",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-11-12"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-4",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1997-08-03"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-5",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1989-07-24"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-6",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "2000-06-04"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "elliptical_dob-7",
+      "scenario": "elliptical_dob",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "dob": "1986-07-26"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_name-0",
+      "scenario": "pending_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Mateo Andersson"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_name-1",
+      "scenario": "pending_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Fatima Kim"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_name-2",
+      "scenario": "pending_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Ananya Tanaka"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_name-3",
+      "scenario": "pending_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Tariq Dubois"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_name-4",
+      "scenario": "pending_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Nadia Costa"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_name-5",
+      "scenario": "pending_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Samuel Okafor"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_name-6",
+      "scenario": "pending_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Ananya Novak"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_name-7",
+      "scenario": "pending_name",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "full_name": "Noah Mbeki"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_phone-0",
+      "scenario": "pending_phone",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "4295552786"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_phone-1",
+      "scenario": "pending_phone",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "2215557654"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_phone-2",
+      "scenario": "pending_phone",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "2285559399"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_phone-3",
+      "scenario": "pending_phone",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "8215553188"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_phone-4",
+      "scenario": "pending_phone",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "9765552108"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_phone-5",
+      "scenario": "pending_phone",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "9885551007"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_phone-6",
+      "scenario": "pending_phone",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "6475555697"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "pending_phone-7",
+      "scenario": "pending_phone",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "3735559531"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "correction_email-0",
+      "scenario": "correction_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "new.yuki.novak90@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "correction_email-1",
+      "scenario": "correction_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "new.jordan.tanaka22@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "correction_email-2",
+      "scenario": "correction_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "new.jordan.reyes9@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "correction_email-3",
+      "scenario": "correction_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "new.fatima.yamamoto43@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "correction_email-4",
+      "scenario": "correction_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "new.liam.kim59@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "correction_email-5",
+      "scenario": "correction_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "new.maria.patel2@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "correction_email-6",
+      "scenario": "correction_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "new.chloe.kim63@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "correction_email-7",
+      "scenario": "correction_email",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "email": "new.kenji.okafor82@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "asks_about_field-0",
+      "scenario": "asks_about_field",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "asks_about_field-1",
+      "scenario": "asks_about_field",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "asks_about_field-2",
+      "scenario": "asks_about_field",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "asks_about_field-3",
+      "scenario": "asks_about_field",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "asks_about_field-4",
+      "scenario": "asks_about_field",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "asks_about_field-5",
+      "scenario": "asks_about_field",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "asks_about_field-6",
+      "scenario": "asks_about_field",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "asks_about_field-7",
+      "scenario": "asks_about_field",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "chitchat-0",
+      "scenario": "chitchat",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "chitchat-1",
+      "scenario": "chitchat",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "chitchat-2",
+      "scenario": "chitchat",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "chitchat-3",
+      "scenario": "chitchat",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "chitchat-4",
+      "scenario": "chitchat",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "chitchat-5",
+      "scenario": "chitchat",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "chitchat-6",
+      "scenario": "chitchat",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "chitchat-7",
+      "scenario": "chitchat",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_trap_chitchat",
+      "scenario": "trap",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_bare_ambiguous",
+      "scenario": "ambiguous",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": null,
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_deflection",
+      "scenario": "deflect",
+      "band": "choice",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_typed_choice",
+      "scenario": "typed_choice",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "enrollment_type": "full_time"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_restraint_question",
+      "scenario": "restraint",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": null,
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_confident_over_pending",
+      "scenario": "precedence",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": null,
+      "got_sets": {
+        "email": "sam.lee@example.com"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_value_not_in_options",
+      "scenario": "no_match",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_refusal",
+      "scenario": "refusal",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": null,
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_answer_plus_extra",
+      "scenario": "compound",
+      "band": "positive",
+      "passed": false,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": null,
+      "got_sets": {
+        "phone": "4155550132"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_chitchat_with_value",
+      "scenario": "wrapped_value",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "phone": "2125559981"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_third_party_name",
+      "scenario": "third_party",
+      "band": "no_value",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {},
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_freetext_country",
+      "scenario": "freetext_select",
+      "band": "positive",
+      "passed": true,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 1,
+      "value_total": 1,
+      "set_something": true,
+      "violation": null,
+      "choice_field": "program",
+      "got_sets": {
+        "country_citizenship": "KR"
+      },
+      "cost": 0.0
+    },
+    {
+      "sample": 0,
+      "id": "edge_bare_date_no_cue",
+      "scenario": "bare_date",
+      "band": "unplaceable",
+      "passed": true,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "value_ok": 0,
+      "value_total": 0,
+      "set_something": false,
+      "violation": null,
+      "choice_field": null,
+      "got_sets": {},
+      "cost": 0.0
+    }
+  ]
+}

@@ -1,0 +1,439 @@
+{
+  "label": "student_s2dresp_dormant_probe",
+  "date": "2026-08-04",
+  "eval_set": "tuning/v2/eval/eval_responder_dormant_value_probe.jsonl",
+  "eval_set_sha256_16": "72fbba993907c104",
+  "n_cases": 13,
+  "scored_completion": "raw student completion from the served model (format scored RAW \u2014 the student must emit clean markers itself; the pre-committed >=99 line)",
+  "completions_model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-s2dresp-mlx (temp 0, served localhost:8105, 2026-08-03)",
+  "scorer_commit": "9650c78769c5b605078100f49093cae541e30b32",
+  "scorer_note": "eval_responder.py is uncommitted in the working tree at run time (directive-check amendment); scorer_commit is repo HEAD, not the scorer file itself",
+  "provenance": {
+    "model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-s2dresp-mlx",
+    "port": 8105,
+    "host": "localhost",
+    "cost_usd": 0.0
+  },
+  "budgets": {
+    "ask": 60,
+    "ack": 45,
+    "clarify": 55,
+    "terminal": 75,
+    "submit_blocked": 85
+  },
+  "reference_thresholds": {
+    "note": "REFERENCE LINES ONLY (user decision 2026-08-03) \u2014 go/no-go on a tuned student is made by hand-reading its failures, never by these thresholds alone. format >=99 pre-committed by doc-20 regardless of teacher.",
+    "format": 0.99,
+    "directive": 0.9,
+    "grounding": 0.99,
+    "echo": 0.99,
+    "verbosity": 0.9
+  },
+  "aggregate": {
+    "n": 13,
+    "passed": 1,
+    "by_check": {
+      "format": {
+        "pass": 13,
+        "rate": 1.0
+      },
+      "directive": {
+        "pass": 2,
+        "rate": 0.15384615384615385
+      },
+      "grounding": {
+        "pass": 13,
+        "rate": 1.0
+      },
+      "echo": {
+        "pass": 13,
+        "rate": 1.0
+      },
+      "verbosity": {
+        "pass": 11,
+        "rate": 0.8461538461538461
+      },
+      "repetition": {
+        "pass": 13,
+        "rate": 1.0
+      }
+    },
+    "by_turn_type": {
+      "ask": 13
+    }
+  },
+  "per_case": [
+    {
+      "session": 156,
+      "turn": 10,
+      "turn_type": "ask",
+      "tokens": 18,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 27,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 11,
+      "turn_type": "ask",
+      "tokens": 26,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 1,
+      "turn_type": "ask",
+      "tokens": 17,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 16,
+      "turn_type": "ask",
+      "tokens": 65,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "65 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 70,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "70 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 15,
+      "turn_type": "ask",
+      "tokens": 26,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 2,
+      "turn_type": "ask",
+      "tokens": 33,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 12,
+      "turn_type": "ask",
+      "tokens": 21,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_score', 'english_test_type'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 7,
+      "turn_type": "ask",
+      "tokens": 27,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 3,
+      "turn_type": "ask",
+      "tokens": 21,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 6,
+      "turn_type": "ask",
+      "tokens": 58,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": false,
+          "reason": "dormant_set: ['english_test_type', 'english_test_score'] needs a not-required caveat + recorded/field mention"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 5,
+      "turn_type": "ask",
+      "tokens": 46,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    }
+  ],
+  "cost_usd": 0.0,
+  "run_diagnostics": {
+    "wall_seconds": 18.7,
+    "history_join_failures": [],
+    "empty_student_outputs": [],
+    "clipped_at_turn_terminator": 0,
+    "clip_note": "the served model did not halt on <|im_end|>; each raw completion was clipped at the first ChatML turn terminator (the student's actual turn output). A stop-token fix is server-side."
+  }
+}

@@ -1,0 +1,1130 @@
+{
+  "label": "student_mergedup2_clarify_probe",
+  "date": "2026-08-04",
+  "eval_set": "tuning/v2/eval/eval_responder_clarify_answer_probe.jsonl",
+  "eval_set_sha256_16": "195070cc7b72985a",
+  "n_cases": 39,
+  "scored_completion": "raw student completion from the served model (format scored RAW \u2014 the student must emit clean markers itself; the pre-committed >=99 line)",
+  "completions_model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-mergedup2-mlx (temp 0, served localhost:8107, 2026-08-03)",
+  "scorer_commit": "9650c78769c5b605078100f49093cae541e30b32",
+  "scorer_note": "eval_responder.py is uncommitted in the working tree at run time (directive-check amendment); scorer_commit is repo HEAD, not the scorer file itself",
+  "provenance": {
+    "model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-mergedup2-mlx",
+    "port": 8107,
+    "host": "localhost",
+    "cost_usd": 0.0
+  },
+  "budgets": {
+    "ask": 60,
+    "ack": 45,
+    "clarify": 55,
+    "terminal": 75,
+    "submit_blocked": 85
+  },
+  "reference_thresholds": {
+    "note": "REFERENCE LINES ONLY (user decision 2026-08-03) \u2014 go/no-go on a tuned student is made by hand-reading its failures, never by these thresholds alone. format >=99 pre-committed by doc-20 regardless of teacher.",
+    "format": 0.99,
+    "directive": 0.9,
+    "grounding": 0.99,
+    "echo": 0.99,
+    "verbosity": 0.9
+  },
+  "aggregate": {
+    "n": 39,
+    "passed": 37,
+    "by_check": {
+      "format": {
+        "pass": 39,
+        "rate": 1.0
+      },
+      "directive": {
+        "pass": 39,
+        "rate": 1.0
+      },
+      "grounding": {
+        "pass": 39,
+        "rate": 1.0
+      },
+      "echo": {
+        "pass": 39,
+        "rate": 1.0
+      },
+      "verbosity": {
+        "pass": 37,
+        "rate": 0.9487179487179487
+      },
+      "repetition": {
+        "pass": 39,
+        "rate": 1.0
+      }
+    },
+    "by_turn_type": {
+      "clarify": 39
+    }
+  },
+  "per_case": [
+    {
+      "session": 149,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 16,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 39,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 20,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 148,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 18,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 151,
+      "turn": 6,
+      "turn_type": "clarify",
+      "tokens": 81,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "81 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 149,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 25,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 32,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 12,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 23,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 149,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 59,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "59 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 13,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 16,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 15,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 159,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 27,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 14,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 18,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 157,
+      "turn": 11,
+      "turn_type": "clarify",
+      "tokens": 47,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 151,
+      "turn": 6,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 151,
+      "turn": 5,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 51,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 20,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 149,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 54,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 19,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 152,
+      "turn": 6,
+      "turn_type": "clarify",
+      "tokens": 34,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 19,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 19,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 20,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 17,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 13,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 28,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 21,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 157,
+      "turn": 9,
+      "turn_type": "clarify",
+      "tokens": 27,
+      "passed": true,
+      "checks": {
+        "format": {
+          "pass": true
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    }
+  ],
+  "cost_usd": 0.0,
+  "run_diagnostics": {
+    "wall_seconds": 46.9,
+    "history_join_failures": [],
+    "empty_student_outputs": [],
+    "clipped_at_turn_terminator": 0,
+    "clip_note": "the served model did not halt on <|im_end|>; each raw completion was clipped at the first ChatML turn terminator (the student's actual turn output). A stop-token fix is server-side."
+  }
+}

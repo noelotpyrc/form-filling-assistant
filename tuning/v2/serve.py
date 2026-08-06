@@ -30,14 +30,15 @@ from .student_lm import StudentLM
 
 PORT = int(os.getenv("PORT", "8200"))
 
-# doc-21 chapter 3: serve the two students, per-predictor (extractor + responder),
-# not the teacher. Paths are the leon-work local defaults, env-overridable.
-EXTRACT_MODEL = os.getenv("V2_SERVE_EXTRACT_MODEL",
-                          "/Users/lliao/work/form-filling-models/qwen35-08b-v2-r3-oracle-mlx")
-EXTRACT_PORT = int(os.getenv("V2_SERVE_EXTRACT_PORT", "8100"))
-RESPOND_MODEL = os.getenv("V2_SERVE_RESPOND_MODEL",
-                          "/Users/lliao/work/form-filling-models/qwen35-08b-v2-s2cresp-mlx")
-RESPOND_PORT = int(os.getenv("V2_SERVE_RESPOND_PORT", "8104"))
+# doc-21 chapter 3: serve the student per-predictor. Since 2026-08-06 the ship is
+# the MERGED model (mergedall) — one artifact, one mlx server, both predictors.
+# Paths are the leon-work local defaults, env-overridable; point the two vars at
+# different models/ports to run a split stack again.
+_MERGED_DEFAULT = "/Users/lliao/work/form-filling-models/qwen35-08b-v2-mergedall-mlx"
+EXTRACT_MODEL = os.getenv("V2_SERVE_EXTRACT_MODEL", _MERGED_DEFAULT)
+EXTRACT_PORT = int(os.getenv("V2_SERVE_EXTRACT_PORT", "8106"))
+RESPOND_MODEL = os.getenv("V2_SERVE_RESPOND_MODEL", _MERGED_DEFAULT)
+RESPOND_PORT = int(os.getenv("V2_SERVE_RESPOND_PORT", "8106"))
 
 _AGENT: FormAssistant | None = None
 _PENDING: dict[str, Pending | None] = {}   # session_id -> pending (harness-only)

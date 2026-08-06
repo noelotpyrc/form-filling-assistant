@@ -1,0 +1,1855 @@
+{
+  "label": "student_mergedup_chitchat_probe",
+  "date": "2026-08-04",
+  "eval_set": "tuning/v2/eval/eval_responder_chitchat_probe.jsonl",
+  "eval_set_sha256_16": "5d718a096dc238ff",
+  "n_cases": 60,
+  "scored_completion": "raw student completion from the served model (format scored RAW \u2014 the student must emit clean markers itself; the pre-committed >=99 line)",
+  "completions_model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-mergedup-mlx (temp 0, served localhost:8107, 2026-08-03)",
+  "scorer_commit": "9650c78769c5b605078100f49093cae541e30b32",
+  "scorer_note": "eval_responder.py is uncommitted in the working tree at run time (directive-check amendment); scorer_commit is repo HEAD, not the scorer file itself",
+  "provenance": {
+    "model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-mergedup-mlx",
+    "port": 8107,
+    "host": "localhost",
+    "cost_usd": 0.0
+  },
+  "budgets": {
+    "ask": 60,
+    "ack": 45,
+    "clarify": 55,
+    "terminal": 75,
+    "submit_blocked": 85
+  },
+  "reference_thresholds": {
+    "note": "REFERENCE LINES ONLY (user decision 2026-08-03) \u2014 go/no-go on a tuned student is made by hand-reading its failures, never by these thresholds alone. format >=99 pre-committed by doc-20 regardless of teacher.",
+    "format": 0.99,
+    "directive": 0.9,
+    "grounding": 0.99,
+    "echo": 0.99,
+    "verbosity": 0.9
+  },
+  "aggregate": {
+    "n": 60,
+    "passed": 0,
+    "by_check": {
+      "format": {
+        "pass": 0,
+        "rate": 0.0
+      },
+      "directive": {
+        "pass": 10,
+        "rate": 0.16666666666666666
+      },
+      "grounding": {
+        "pass": 56,
+        "rate": 0.9333333333333333
+      },
+      "echo": {
+        "pass": 59,
+        "rate": 0.9833333333333333
+      },
+      "verbosity": {
+        "pass": 27,
+        "rate": 0.45
+      },
+      "repetition": {
+        "pass": 48,
+        "rate": 0.8
+      }
+    },
+    "by_turn_type": {
+      "ask": 60
+    }
+  },
+  "per_case": [
+    {
+      "session": 149,
+      "turn": 1,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'program' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 157,
+      "turn": 10,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_type' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 12,
+      "turn_type": "ask",
+      "tokens": 257,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'has_work_experience' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "257 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'the the the the' @ 0,1"
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 2,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'start_term' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 17,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_type' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 151,
+      "turn": 6,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'country_residence' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 148,
+      "turn": 14,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'phone' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 2,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'start_term' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 1,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'program' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 7,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'country_citizenship' not asked about"
+        },
+        "grounding": {
+          "pass": false,
+          "reason": "phone '111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' not grounded in message/state/schema"
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 12,
+      "turn_type": "ask",
+      "tokens": 418,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'email' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "418 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 159,
+      "turn": 1,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'program' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 6,
+      "turn_type": "ask",
+      "tokens": 320,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'start_term' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "320 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 318,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "318 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'what is your phone' @ 32,37"
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 7,
+      "turn_type": "ask",
+      "tokens": 133,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'country_citizenship' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "133 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'respond respond respond respond' @ 7,8"
+        }
+      }
+    },
+    {
+      "session": 148,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 207,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "207 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'of birth form country' @ 30,34"
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 16,
+      "turn_type": "ask",
+      "tokens": 334,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_interest' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "334 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 128,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_type' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "128 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram '1 precautions 1 precautions' @ 3,5"
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 382,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'prior_application' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "382 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 2,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'start_term' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 3,
+      "turn_type": "ask",
+      "tokens": 284,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'enrollment_type' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "284 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 2,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'start_term' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 3,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'enrollment_type' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 1,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'program' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 159,
+      "turn": 13,
+      "turn_type": "ask",
+      "tokens": 272,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'has_work_experience' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "272 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 6,
+      "turn_type": "ask",
+      "tokens": 343,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "343 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 151,
+      "turn": 9,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'has_work_experience' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 4,
+      "turn_type": "ask",
+      "tokens": 270,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "270 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'done done done done' @ 60,61"
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 12,
+      "turn_type": "ask",
+      "tokens": 61,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'has_work_experience' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "61 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 12,
+      "turn_type": "ask",
+      "tokens": 258,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'has_work_experience' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "258 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 157,
+      "turn": 16,
+      "turn_type": "ask",
+      "tokens": 385,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'has_work_experience' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "385 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 148,
+      "turn": 10,
+      "turn_type": "ask",
+      "tokens": 259,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'email' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "259 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'form form form form' @ 10,11"
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 3,
+      "turn_type": "ask",
+      "tokens": 260,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'enrollment_type' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "260 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 149,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_type' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "149 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 6,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'dob' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'country_citizenship' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 159,
+      "turn": 1,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'program' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 157,
+      "turn": 3,
+      "turn_type": "ask",
+      "tokens": 417,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "417 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 3,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'enrollment_type' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 6,
+      "turn_type": "ask",
+      "tokens": 220,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": false,
+          "reason": "phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema; phone '2024\\n- 2025\\n- 2026\\n- 2027' not grounded in message/state/schema"
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "220 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 159,
+      "turn": 10,
+      "turn_type": "ask",
+      "tokens": 384,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'phone' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "384 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'the required field the' @ 15,18"
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 9,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'email' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 17,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_interest' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 5,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'full_name' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 3,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_type' not asked about"
+        },
+        "grounding": {
+          "pass": false,
+          "reason": "phone '1111111100000000000000 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000' not grounded in message/state/schema"
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 11,
+      "turn_type": "ask",
+      "tokens": 164,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_interest' not asked about"
+        },
+        "grounding": {
+          "pass": false,
+          "reason": "phone '2  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3' not grounded in message/state/schema"
+        },
+        "echo": {
+          "pass": false,
+          "reason": "phone '2  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3  3' contradicts stored ['4285553580']"
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "164 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram '3 3 3 3' @ 1,2"
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 10,
+      "turn_type": "ask",
+      "tokens": 265,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'phone' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "265 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 2,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'start_term' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 4,
+      "turn_type": "ask",
+      "tokens": 334,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "334 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 2,
+      "turn_type": "ask",
+      "tokens": 15,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'start_term' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'system system system system' @ 9,10"
+        }
+      }
+    },
+    {
+      "session": 157,
+      "turn": 6,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'full_name' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 13,
+      "turn_type": "ask",
+      "tokens": 512,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_interest' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "512 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 10,
+      "turn_type": "ask",
+      "tokens": 410,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'phone' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "410 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 13,
+      "turn_type": "ask",
+      "tokens": 512,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'funding_interest' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "512 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 159,
+      "turn": 8,
+      "turn_type": "ask",
+      "tokens": 261,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'country_residence' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "261 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 10,
+      "turn_type": "ask",
+      "tokens": 239,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "239 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'of birth country of' @ 19,22"
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 1,
+      "turn_type": "ask",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'program' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 9,
+      "turn_type": "ask",
+      "tokens": 341,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "341 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'what is your name' @ 1,5"
+        }
+      }
+    },
+    {
+      "session": 152,
+      "turn": 5,
+      "turn_type": "ask",
+      "tokens": 193,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "193 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 6,
+      "turn_type": "ask",
+      "tokens": 266,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "reask_pending: field 'dob' not asked about"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "266 tokens > ask budget 60"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    }
+  ],
+  "cost_usd": 0.0,
+  "run_diagnostics": {
+    "wall_seconds": 745.3,
+    "history_join_failures": [],
+    "empty_student_outputs": [],
+    "clipped_at_turn_terminator": 0,
+    "clip_note": "the served model did not halt on <|im_end|>; each raw completion was clipped at the first ChatML turn terminator (the student's actual turn output). A stop-token fix is server-side."
+  }
+}

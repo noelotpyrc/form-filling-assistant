@@ -1,0 +1,1239 @@
+{
+  "label": "student_mergedup_clarify_probe",
+  "date": "2026-08-04",
+  "eval_set": "tuning/v2/eval/eval_responder_clarify_answer_probe.jsonl",
+  "eval_set_sha256_16": "195070cc7b72985a",
+  "n_cases": 39,
+  "scored_completion": "raw student completion from the served model (format scored RAW \u2014 the student must emit clean markers itself; the pre-committed >=99 line)",
+  "completions_model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-mergedup-mlx (temp 0, served localhost:8107, 2026-08-03)",
+  "scorer_commit": "9650c78769c5b605078100f49093cae541e30b32",
+  "scorer_note": "eval_responder.py is uncommitted in the working tree at run time (directive-check amendment); scorer_commit is repo HEAD, not the scorer file itself",
+  "provenance": {
+    "model": "/Users/lliao/work/form-filling-models/qwen35-08b-v2-mergedup-mlx",
+    "port": 8107,
+    "host": "localhost",
+    "cost_usd": 0.0
+  },
+  "budgets": {
+    "ask": 60,
+    "ack": 45,
+    "clarify": 55,
+    "terminal": 75,
+    "submit_blocked": 85
+  },
+  "reference_thresholds": {
+    "note": "REFERENCE LINES ONLY (user decision 2026-08-03) \u2014 go/no-go on a tuned student is made by hand-reading its failures, never by these thresholds alone. format >=99 pre-committed by doc-20 regardless of teacher.",
+    "format": 0.99,
+    "directive": 0.9,
+    "grounding": 0.99,
+    "echo": 0.99,
+    "verbosity": 0.9
+  },
+  "aggregate": {
+    "n": 39,
+    "passed": 0,
+    "by_check": {
+      "format": {
+        "pass": 0,
+        "rate": 0.0
+      },
+      "directive": {
+        "pass": 15,
+        "rate": 0.38461538461538464
+      },
+      "grounding": {
+        "pass": 36,
+        "rate": 0.9230769230769231
+      },
+      "echo": {
+        "pass": 37,
+        "rate": 0.9487179487179487
+      },
+      "verbosity": {
+        "pass": 6,
+        "rate": 0.15384615384615385
+      },
+      "repetition": {
+        "pass": 29,
+        "rate": 0.7435897435897436
+      }
+    },
+    "by_turn_type": {
+      "clarify": 39
+    }
+  },
+  "per_case": [
+    {
+      "session": 149,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 347,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "347 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'i i i i' @ 3,4"
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 373,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "373 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 505,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "505 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 509,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "509 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'l l l l' @ 1,2"
+        }
+      }
+    },
+    {
+      "session": 148,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 265,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "265 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 151,
+      "turn": 6,
+      "turn_type": "clarify",
+      "tokens": 236,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "236 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 149,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 262,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "262 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 12,
+      "turn_type": "clarify",
+      "tokens": 254,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": false,
+          "reason": "date '05/06/2024' not grounded in message/state/schema; date 'May 1, 2024' not grounded in message/state/schema; date 'June 6, 2024' not grounded in message/state/schema"
+        },
+        "echo": {
+          "pass": false,
+          "reason": "date '05/06/2024' contradicts stored ['1991-08-17']; date 'May 1, 2024' contradicts stored ['1991-08-17']; date 'June 6, 2024' contradicts stored ['1991-08-17']"
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "254 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'email address email address' @ 51,53"
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 197,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "197 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 149,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "149 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 150,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 149,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 312,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "312 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 154,
+      "turn": 13,
+      "turn_type": "clarify",
+      "tokens": 266,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "266 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 357,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "357 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'what is your preferred' @ 44,49"
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 339,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "339 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 159,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 261,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "261 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 261,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "261 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 257,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "257 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'the 12th occurrence of' @ 2,6"
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 263,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "263 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 261,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "261 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 157,
+      "turn": 11,
+      "turn_type": "clarify",
+      "tokens": 257,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "257 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'the the the the' @ 2,3"
+        }
+      }
+    },
+    {
+      "session": 151,
+      "turn": 6,
+      "turn_type": "clarify",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 158,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 511,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "511 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 151,
+      "turn": 5,
+      "turn_type": "clarify",
+      "tokens": 184,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": false,
+          "reason": "phone '1. 2. 3. 4. 5. 6. 7. 8. 9. 10. 11. 12. 13. 14. 15. 16. 17. 18. 19. 20. 21. 22. 23. 24. 25. 26. 27. 28. 29. 30. 31. 32. 33. 34. 35. 36. 37. 38. 39. 40. 41. 42. 43. 44. 45. 46. 47. 48. 49. 50. 51. 52. 53. 54. 55. 56. 57. 58. 59. 60. 61. 62. 63. 64. 65. 66. 67. 68. 69. 70. 71. 72. 73. 74. 75. 76. 77. 78. 79. 80. 81. 82. 83. 84. 85. 86. 87. 88. 89. 90. 91. 92. 93. 94. 95. 96. 97. 98. 99. 100' not grounded in message/state/schema"
+        },
+        "echo": {
+          "pass": false,
+          "reason": "phone '1. 2. 3. 4. 5. 6. 7. 8. 9. 10. 11. 12. 13. 14. 15. 16. 17. 18. 19. 20. 21. 22. 23. 24. 25. 26. 27. 28. 29. 30. 31. 32. 33. 34. 35. 36. 37. 38. 39. 40. 41. 42. 43. 44. 45. 46. 47. 48. 49. 50. 51. 52. 53. 54. 55. 56. 57. 58. 59. 60. 61. 62. 63. 64. 65. 66. 67. 68. 69. 70. 71. 72. 73. 74. 75. 76. 77. 78. 79. 80. 81. 82. 83. 84. 85. 86. 87. 88. 89. 90. 91. 92. 93. 94. 95. 96. 97. 98. 99. 100' contradicts stored ['5785552902']"
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "184 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 156,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 256,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "256 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 214,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "214 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'start time do you' @ 3,8"
+        }
+      }
+    },
+    {
+      "session": 149,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 260,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "260 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 410,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "410 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 152,
+      "turn": 6,
+      "turn_type": "clarify",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 139,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": false,
+          "reason": "phone '1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31\\n\\n  1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31\\n\\n  1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31\\n\\n  1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31\\n\\n  1  2  3  4  5  6  7  8  9  10  11  12  13  14' not grounded in message/state/schema"
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "139 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 386,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "386 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 155,
+      "turn": 8,
+      "turn_type": "clarify",
+      "tokens": 171,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "171 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 147,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 268,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "268 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'what is your next' @ 155,160"
+        }
+      }
+    },
+    {
+      "session": 161,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 343,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "343 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'case of the sun' @ 1,6"
+        }
+      }
+    },
+    {
+      "session": 160,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 1,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": true
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 153,
+      "turn": 7,
+      "turn_type": "clarify",
+      "tokens": 263,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": true
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "263 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": true
+        }
+      }
+    },
+    {
+      "session": 157,
+      "turn": 9,
+      "turn_type": "clarify",
+      "tokens": 372,
+      "passed": false,
+      "checks": {
+        "format": {
+          "pass": false,
+          "reason": "not well-formed (missing [[ ## response_text ## ]] / [[ ## completed ## ]])"
+        },
+        "directive": {
+          "pass": false,
+          "reason": "clarify: no clarify cue and target field not mentioned"
+        },
+        "grounding": {
+          "pass": true
+        },
+        "echo": {
+          "pass": true
+        },
+        "verbosity": {
+          "pass": false,
+          "reason": "372 tokens > clarify budget 55"
+        },
+        "repetition": {
+          "pass": false,
+          "reason": "degenerate repeat: 4-gram 'your response will be' @ 46,51"
+        }
+      }
+    }
+  ],
+  "cost_usd": 0.0,
+  "run_diagnostics": {
+    "wall_seconds": 473.5,
+    "history_join_failures": [],
+    "empty_student_outputs": [],
+    "clipped_at_turn_terminator": 0,
+    "clip_note": "the served model did not halt on <|im_end|>; each raw completion was clipped at the first ChatML turn terminator (the student's actual turn output). A stop-token fix is server-side."
+  }
+}
