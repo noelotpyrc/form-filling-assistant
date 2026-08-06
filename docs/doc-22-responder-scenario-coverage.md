@@ -102,6 +102,51 @@ Two different jobs, two different models:
   values stored in condition-inactive fields; ruled acceptable-by-design
   (2026-08-05) — storage is fine, conditions govern use/display.
 
+## 6. Merged-model data mix: the upsampling lesson (2026-08-05/06)
+
+The one-vs-two-LoRAs comparison (doc-20 §6 #5, decided empirically) produced a
+finding worth keeping: **in a merged extractor+responder model, the data mix is
+a shared knob with cross-task consequences, and duplicate-upsampling a narrow
+pattern is a blunt setting.**
+
+What happened. `mergedall` (one model, union corpus, no reweighting) beat the
+frozen extractor on eval v3 — whole-case 370/414 vs 363, value 97.4 vs 96.5,
+wrong-field 0% — while holding responder parity (427/447 vs split 429). To lift
+the dormant-caveat behavior (6/13), the 17 dormant responder rows in train were
+duplicated ×4 (`mergedup2`). Dormant rose to 10/13 — but extraction paid:
+whole-case 356, value 93.9, and 22 regressed cases in three families:
+
+1. **Tail drops on multi-value turns** (bulk/compound): leading items kept, the
+   LAST item dropped (email+phone kept, mailing address lost; address kept,
+   trailing nickname lost). `multi_select_subset`, the extractor's known
+   completeness gap, fell 6/18 → 3/18.
+2. **Value-boundary leakage** (wrapped_value): the chatty wrapper copied INTO
+   the stored value ("Half-listening, sorry, the kettle's going — post goes to
+   88 Halyard Court…" stored as the address).
+3. Scattered: one leading-zero phone slip, one missed wrapped date, one
+   wrong-field.
+
+Theory (inference from the failure pattern, not proven). The failures are
+premature list termination, not misunderstanding — order preserved, survivors
+correct, only tails lost. Every duplicated row drills one-value-per-turn with a
+short prose completion that EMBEDS the value ("your TOEFL score of 105 — I've
+recorded it"). The two tasks share all weights: 68 copies × 3 epochs shifted the
+shared "how much output does a turn deserve" prior shorter (→ tail drops) and
+blurred the value/wrapper boundary (→ leakage). Test, if ever needed: retrain at
+×2 and check whether tail-drop rate moves monotonically with duplication factor.
+
+Rules of thumb this yields:
+- Prefer **varied new exemplars** over duplicates when strengthening a rare
+  behavior in a merged model; variety spreads the signal without concentrating
+  its side patterns.
+- Any reweighting of a merged corpus obligates **both** frozen evals, not just
+  the task being tuned.
+- Measurement hygiene, learned the hard way the same day: **one served model
+  per eval run.** With ~6 concurrent 1.7GB MLX servers on a 16GB machine,
+  inference silently degenerated (`!!!!…` to the token cap) with no server
+  error; the same bytes served alone were clean. Kill other servers before any
+  number you intend to keep.
+
 Related: [doc-20](doc-20-responder-tune-spec.md) (chapter-1 spec; §2 Tier-1,
 §3 partition) · [doc-21](doc-21-status-and-roadmap.md) (status) ·
 `tuning/v2/M4_PLAN.md` (execution log) · doc-19 §3 (the extractor's

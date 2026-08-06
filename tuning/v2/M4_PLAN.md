@@ -486,6 +486,33 @@ substantially naturalizer semantics, not teacher unreliability.
   only if the tuned responder sounds robotic on eval). Consequence executed: all 588 responder
   targets re-captured under the new prompt via `recapture.py` (h1a_recap 143, eval_farm_p3_recap 222,
   eval_farm_p4_recap 223; parity 0 mismatch, post-canon 588/588, $1.14, full-forward replay).
+- **Polish batch + one-vs-two decision — 2026-08-05/06.** eos fix on r3-oracle (v1 tripwire
+  bit-for-bit); conditional_consistency → informational; eval_score incremental writes;
+  dormant-set transparency (composer `dormant_set` directive, imperative guidance after the
+  teacher paraphrased the soft form away 17/25, curly-apostrophe cue fold, 19 curated exemplars).
+  **One-vs-two (doc-20 §6 #5): MERGED wins** — `mergedall` (union corpus, no reweighting)
+  extractor v3 370/414 / value 97.4 / wrong-field 0% (frozen r3-oracle: 363 / 96.5 / 1.9) with
+  responder 427/447 (split s2d: 429), one server instead of two. Upsampling dormant ×4
+  (`mergedup2`) lifted dormant 6→10/13 but cost extraction (356/414, value 93.9): tail drops on
+  multi-value turns + wrapped-value boundary leakage — the shared-weights data-mix lesson,
+  full account + theory in **doc-22 §6**. Also there: the multi-server measurement hazard
+  (6 concurrent MLX servers on 16GB → silent degenerate inference; one model per eval box).
+  Models: `mergedall` = ship candidate; `s2dresp`/`mergedup2` kept for reference.
+- **MERGEDALL ADOPTED — 2026-08-06 (m3d probe + stress sweep).** m3d_merged_sonnetU (one model,
+  both predictors, single port 8106): 26/26 sessions to submit, 135/138 counting assertions,
+  p50 2.0 / p95 2.25s. The 3 fails read: 2 = sonnet-U infidelity (declined the scripted save;
+  clicked No instead of refusing — even sonnet goes off-script, noted in doc-22 §5), 1 REAL:
+  extractor invented `prior_application=True` from "Let's save progress and finish later"
+  (boolean pending + save-phrasing — a cell neither the stress grid nor the provenance gate
+  covers: the gate skips choice-typed fields). Dedicated stress sweep (576 calls): mergedall
+  invention **0.0%** vs slice1b 1.6% — profile clean; the probe invention is a rare edge.
+  Also observed once (save/2): responder announced sets that didn't happen ("I've saved your
+  Intended Start Term") — fabricated-announcement, single occurrence, watch at next probe.
+  **Queued (harness v2.1, needs re-anchor ceremony): boolean/choice provenance guard** —
+  require message support (option label or yes/no-ish cue) before accepting a choice-typed set
+  on intent turns. Anchors for mergedall: clean v1 tripwire + v3 baselines
+  (`baseline-mergedall_clean_*`), stress_runs/mergedall (anchor recorded via --no-gate),
+  probe_runs/m3d_merged_sonnetU. Serving: ONE server, port 8106; serve.py defaults updated.
 - **M3c all-student probe — DONE 2026-08-05. HYBRID RETIRED.** probe.py gained
   --respond-port/--respond-model (StudentLM responder via assign_lms; report records wiring +
   sim_user_model); serve.py now wires both students (r3-oracle@8100 extract, s2cresp@8104 respond;
