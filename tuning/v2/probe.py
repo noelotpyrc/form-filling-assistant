@@ -224,8 +224,10 @@ def _invention_check(schema, fid, value, utterances, persona):
 # pass is True / False / "N/A" (N/A = not applicable to this scenario)
 # ======================================================================
 
-def _res(name, ok, detail=""):
-    return {"name": name, "pass": ok, "detail": detail}
+def _res(name, ok, detail="", informational=False):
+    # informational=True -> runs and reports (report.json + P-matrix) but does NOT count
+    # in the pass/fail tallies (a non-counting warning category).
+    return {"name": name, "pass": ok, "detail": detail, "informational": informational}
 
 
 def a_opening_shape(schema, session):
@@ -318,8 +320,10 @@ def a_no_invented_values(schema, session):
 
 
 def a_conditional_consistency(schema, session):
-    """5. conditional fields never set when their gate is off: gre_* need
-    gre_taken==True; funding_type needs funding_interest==True; english_test_*
+    """5. conditional fields set when their gate is off. INFORMATIONAL only (user ruling
+    2026-08-05: dormant storage is by design — see doc-22). Still runs and reports its
+    violations in report.json + the P-matrix, but does not count in the pass/fail tally.
+    gre_* need gre_taken==True; funding_type needs funding_interest==True; english_test_*
     need toefl_required==True."""
     final = session["filled"]
     def _filled(fid):
@@ -335,7 +339,7 @@ def a_conditional_consistency(schema, session):
             for d in deps:
                 if _filled(d):
                     viol.append(f"{d} set but {gate_fid}!={need}")
-    return _res("conditional_consistency", not viol, f"violations={viol}")
+    return _res("conditional_consistency", not viol, f"violations={viol}", informational=True)
 
 
 def a_no_trap_bind(schema, session):
@@ -626,12 +630,20 @@ def _transcript_md(session) -> str:
 
 def _print_summary(sessions, results_by_session, p_matrix, latency):
     print("\n=== scenario x seed grid (pass/total assertions, real only) ===")
-    print(f"{'scenario':12} {'seed':>4}  {'pass/real':>10}  fails")
+    print(f"{'scenario':12} {'seed':>4}  {'pass/real':>10}  fails  [warnings]")
+    warn_total = 0
     for s, res in zip(sessions, results_by_session):
-        real = [r for r in res if r["pass"] != "N/A"]
+        # informational assertions (e.g. conditional_consistency) are non-counting warnings
+        real = [r for r in res if r["pass"] != "N/A" and not r.get("informational")]
         npass = sum(1 for r in real if r["pass"])
         fails = [r["name"] for r in real if not r["pass"]]
-        print(f"{s['scenario']:12} {s['seed']:>4}  {npass:>4}/{len(real):<5}  {', '.join(fails) or '-'}")
+        warns = [r["name"] for r in res if r.get("informational") and r["pass"] is False]
+        warn_total += len(warns)
+        wstr = f"  [warn: {', '.join(warns)}]" if warns else ""
+        print(f"{s['scenario']:12} {s['seed']:>4}  {npass:>4}/{len(real):<5}  {', '.join(fails) or '-'}{wstr}")
+    if warn_total:
+        print(f"\n(informational warnings — NOT counted: {warn_total} conditional_consistency notes; "
+              f"dormant storage is by design, see report.json detail)")
     print(f"\nlatency (per-turn, s): p50={latency['p50']} p95={latency['p95']} "
           f"max={latency['max']} n={latency['n']}")
     print("\n=== P-coverage matrix ===")
@@ -678,8 +690,8 @@ def write_outputs(out: Path, sessions, results_by_session, p_matrix, run_name, w
             })
             dump = {k: v for k, v in s.items() if k != "_schema"}
             jf.write(json.dumps(dump, default=str) + "\n")
-            # transcript.md for any FAILING session
-            if any(r["pass"] is False for r in res):
+            # transcript.md for any FAILING session (informational warnings don't count)
+            if any(r["pass"] is False and not r.get("informational") for r in res):
                 (out / f"transcript-{s['seed']}-{s['scenario']}.md").write_text(_transcript_md(s))
 
     (out / "report.json").write_text(json.dumps(report, indent=2, default=str))
@@ -880,13 +892,19 @@ def selftest():
                                                 {"has_work_experience": True}, {"has_work_experience": False}))
     assert ru["pass"] is False and "unsupported" in ru["detail"], ru
 
-    # ---- 5. conditional_consistency: pass + fail --------------------
+    # ---- 5. conditional_consistency: fires + reports, but INFORMATIONAL (non-counting) --
     ok_cond = {"funding_interest": False}
-    assert a_conditional_consistency(schema, session("straight", [], ok_cond))["pass"] is True
+    r_ok = a_conditional_consistency(schema, session("straight", [], ok_cond))
+    assert r_ok["pass"] is True and r_ok["informational"] is True
     bad_cond = {"funding_interest": False, "funding_type": ["fellowship"]}
-    assert a_conditional_consistency(schema, session("straight", [], bad_cond))["pass"] is False
+    r_bad = a_conditional_consistency(schema, session("straight", [], bad_cond))
+    assert r_bad["pass"] is False and r_bad["informational"] is True and "funding_type" in r_bad["detail"]
     bad_gre = {"gre_taken": False, "gre_verbal": 160}
     assert a_conditional_consistency(schema, session("straight", [], bad_gre))["pass"] is False
+    # the informational fail does NOT count in the session pass/fail tally
+    res_mix = [_res("required_complete", True), r_bad]     # one real pass + one warning
+    real = [r for r in res_mix if r["pass"] != "N/A" and not r.get("informational")]
+    assert len(real) == 1 and all(r["pass"] for r in real), "informational fail must not fail the tally"
 
     # ---- 6. no_trap_bind: pass + fail (trap at u_turn 2 -> tr idx 3) -
     trap_tr = [entry(0), entry(1), entry(2),

@@ -71,6 +71,10 @@ _SAVE_CONTINUE_CUES = ("save", "draft", "continue", "keep going", "come back",
                        "pick up", "for now", "finish later")
 _TERMINAL_CUES = ("review", "submit", "all set", "looks complete", "ready to submit",
                   "take a look", "everything looks", "double-check", "go ahead")
+_NOT_REQUIRED_CUES = ("not required", "isn't required", "not needed", "don't need",
+                      "doesn't need", "optional", "not necessary", "no need", "aren't required")
+_RECORDED_CUES = ("record", "noted", "saved", "kept", "logged", "on file", "stored",
+                  "have it", "got it", "jotted", "held onto")
 
 _STOP = {"of", "the", "a", "an", "your", "and", "to", "in", "id", "you", "yes", "if"}
 
@@ -193,10 +197,21 @@ def _response_segment(c: str) -> str:
     return c[i:j] if j >= 0 else c[i:]
 
 
+def _low(prose: str) -> str:
+    """Lowercased prose with unicode apostrophes/quotes folded to ASCII, so cue matching
+    ("isn't", "can't", "don't") fires on curly-quote prose ("isn't" U+2019) too. One
+    place — every cue family that reads `low` benefits."""
+    return prose.lower().translate(_QUOTE_FOLD)
+
+
+_QUOTE_FOLD = str.maketrans({"’": "'", "‘": "'", "ʼ": "'",
+                             "“": '"', "”": '"'})
+
+
 def check_directive(schema: Schema, case: dict, prose: str) -> tuple[bool, str]:
     """Every directive + set_fields action of the turn is reflected in the prose.
     Pre-step directives (ack, fix) are first-class (doc-20 §3 — ~half of turns)."""
-    low = prose.lower()
+    low = _low(prose)
     fails = []
     for kind, payload in case.get("directives", []):
         if kind in ("ask_target", "reask_pending"):
@@ -224,6 +239,8 @@ def check_directive(schema: Schema, case: dict, prose: str) -> tuple[bool, str]:
         elif kind == "submit_blocked":
             if not (_has_cue(low, _CANT_SUBMIT_CUES) and _has_cue(low, _SAVE_CONTINUE_CUES)):
                 fails.append("submit_blocked: needs can't-submit-yet plus a save/continue offer")
+        elif kind == "dormant_set":
+            pass   # per-TURN check after the loop (one caveat covers all dormant fields)
         elif kind == "terminal":
             if not _has_cue(low, _TERMINAL_CUES):
                 fails.append("terminal: no review/submit invitation")
@@ -239,6 +256,16 @@ def check_directive(schema: Schema, case: dict, prose: str) -> tuple[bool, str]:
         if not acked:
             fids = [fld["field_id"] for fld in set_fields]
             fails.append(f"set_fields: neither an ack cue nor any set field named ({fids})")
+    # dormant_set: per-TURN (doc-22). One caveat sentence covering the volunteered fact
+    # satisfies all dormant_set directives of the turn — a not-required cue PLUS a recorded
+    # cue or a mention of ANY dormant field (label/option-label).
+    dormant_fids = [p for k, p in case.get("directives", []) if k == "dormant_set"]
+    if dormant_fids:
+        not_req = _has_cue(low, _NOT_REQUIRED_CUES)
+        recorded = _has_cue(low, _RECORDED_CUES) or any(
+            _mentions_field(prose, schema.field(fid)) for fid in dormant_fids)
+        if not (not_req and recorded):
+            fails.append(f"dormant_set: {dormant_fids} needs a not-required caveat + recorded/field mention")
     return (not fails), "; ".join(fails)
 
 
@@ -566,6 +593,27 @@ def selftest() -> bool:
         ("directive PASS: fix -> apology + re-ask",
          case("Sorry about that! Could you re-enter your email address?",
               directives=[("fix", "invalid email (field: email)")]), "directive", True),
+        # doc-22 dormant_set: not-required caveat + recorded cue
+        ("directive PASS: dormant_set caveat ('isn't required' + 'noted')",
+         case("I've noted your TOEFL score, though it isn't required given your current answers.",
+              directives=[("dormant_set", "english_test_score")]), "directive", True),
+        # curly apostrophe (U+2019) must still match the "isn't" cue
+        ("directive PASS: dormant caveat with a curly apostrophe (isn’t)",
+         case("Noted — the English proficiency test isn’t required given your current answers, "
+              "but I’ve recorded it anyway.",
+              directives=[("dormant_set", "english_test_type")]), "directive", True),
+        # per-TURN: ONE caveat sentence covers TWO dormant fields
+        ("directive PASS: two dormant fields, one caveat covers both",
+         case("Thanks — I've recorded those, though they aren't required given your current answers.",
+              directives=[("dormant_set", "english_test_score"), ("dormant_set", "english_test_type")]),
+         "directive", True),
+        ("directive FAIL: dormant_set with no not-required caveat",
+         case("Got it! Now, what's your program of interest?",
+              directives=[("dormant_set", "english_test_score")]), "directive", False),
+        ("directive FAIL: two dormant fields, no caveat at all",
+         case("Great, and what's your program of interest?",
+              directives=[("dormant_set", "english_test_score"), ("dormant_set", "english_test_type")]),
+         "directive", False),
         # ack payload token-overlap: a save-click confirmation with no ack-cue word
         ("directive PASS: ack via payload token-overlap ('draft'/'saved' <- 'Save Draft')",
          case("Your draft has been saved!", directives=[("ack", "Save Draft")]), "directive", True),

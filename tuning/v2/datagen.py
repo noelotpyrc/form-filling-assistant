@@ -61,7 +61,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from .schema import load_schema, Schema
-from .state import TurnState, Pending, CONFIRM_SUBMIT, queue
+from .state import TurnState, Pending, CONFIRM_SUBMIT, queue, is_active
 from .program import build_teacher
 from .claude_lm import ClaudeLM
 from . import context
@@ -1167,6 +1167,44 @@ def _mk_offform_question(snap, schema, rng):
     return rng.choice(_OFFFORM_Q), []
 
 
+# (e) dormant_value — the user VOLUNTEERS a value for a condition-INACTIVE field
+# (english_test_score before toefl_required=True; prior_application_year when the user
+# hasn't said they applied before). The validator sets it anyway (dormant storage) and
+# compose emits dormant_set. Natural volunteering; no prestep trigger words.
+_DORMANT_FIELDS = ("english_test_score", "prior_application_year")
+_DORMANT_MSGS = {
+    "english_test_score": [
+        "oh and my TOEFL score is 100",
+        "by the way, I got a 105 on the TOEFL",
+        "my TOEFL came back at 98, if that helps",
+        "just so you have it, I scored 110 on the TOEFL",
+    ],
+    "prior_application_year": [
+        "by the way I applied back in 2015",
+        "oh, I actually applied once before, in 2018",
+        "I think I first applied in 2016",
+        "just so you know, I applied previously in 2019",
+    ],
+}
+
+
+def _dormant_targets(snap, schema):
+    """Condition-INACTIVE, unfilled fields the user could volunteer a value for."""
+    st = rebuild_state(schema, snap)
+    return [fid for fid in _DORMANT_FIELDS
+            if schema.field(fid) is not None and not st.is_filled(fid)
+            and not is_active(schema.field(fid), st.form_state)]
+
+
+def _pre_dormant_value(snap, schema):
+    return len(_dormant_targets(snap, schema)) > 0
+
+
+def _mk_dormant_value(snap, schema, rng):
+    fid = rng.choice(_dormant_targets(snap, schema))
+    return rng.choice(_DORMANT_MSGS[fid]), []
+
+
 REGISTRY = [
     Behavior("correction", "farm", _pre_correction, _mk_correction),
     Behavior("deflect", "farm", _pre_pending, _mk_deflect),
@@ -1199,6 +1237,7 @@ REGISTRY = [
     Behavior("validation_error", "farm", _pending_unfilled, _mk_validation_error, with_response=True),
     Behavior("save_draft", "farm", _pending_unfilled, _mk_save_draft, with_response=True),
     Behavior("offform_question", "farm", _pending_unfilled, _mk_offform_question, with_response=True),
+    Behavior("dormant_value", "farm", _pre_dormant_value, _mk_dormant_value, with_response=True),
 ]
 
 
@@ -1738,6 +1777,7 @@ def selftest():
         "validation_error": snap(pending="dob"),
         "save_draft": snap(pending="dob"),
         "offform_question": snap(pending="dob"),
+        "dormant_value": snap(pending="dob"),   # english_test_score/prior_application_year inactive
 
         "correction": snap(form_state={"full_name": "Maria Lee", "email": "m@e.com"}),
         "deflect": snap(pending="dob"),
@@ -2212,6 +2252,33 @@ def oracle_selftest(schema: Schema, farm_snaps: dict):
         assert eligible_snaps(beh, pool, schema, 147, 161) == ev, f"{beh.name} eval-scope"
     print("round-3 both-mode selftest: clarify/validation_error/save_draft/offform fire intended "
           "directive / seed-range both directions / no trigger words all pass")
+
+    # 10. dormant_value (doc-22): volunteering a value for a condition-INACTIVE field ->
+    # validator SETS it (dormant storage) -> compose emits dormant_set.
+    dv = reg["dormant_value"]
+    assert dv.with_response
+    # a snapshot where toefl_required is unset -> english_test_score is inactive+unfilled -> eligible
+    dv_snap = _snap(150, {}, pending="dob")
+    assert dv.precondition(dv_snap, schema) is True
+    # if toefl_required=True is already set, english_test_score becomes ACTIVE; and if
+    # prior_application=True, prior_application_year is active -> neither is dormant -> ineligible
+    active_fs = {"toefl_required": True, "prior_application": True}
+    assert dv.precondition(_snap(150, active_fs, pending="dob"), schema) is False
+    dv_msg, _ = dv.make_oracle(dv_snap, schema, random.Random(0))
+    assert not any(t in dv_msg.lower() for t in _NO_TRIG), f"dormant_value trigger word: {dv_msg!r}"
+    # the validator actually SETS the volunteered value, and compose emits dormant_set
+    d_dv, a_dv = _fires_p(dv_snap, "oh and my TOEFL score is 100",
+                          [{"field_id": "english_test_score", "value": "100"}])
+    assert "dormant_set" in d_dv, d_dv
+    assert any(x["type"] == "set_fields" and any(fl["field_id"] == "english_test_score"
+               for fl in x["fields"]) for x in a_dv), a_dv
+    # seed-range guard both directions
+    pool = ([_snap(5, {}, pending="dob"), _snap(146, {}, pending="dob")]
+            + [_snap(147, {}, pending="dob"), _snap(161, {}, pending="dob")] + [_snap(170, {}, pending="dob")])
+    assert eligible_snaps(dv, pool, schema, None, 146) == pool[:2]
+    assert eligible_snaps(dv, pool, schema, 147, 161) == pool[2:4]
+    print("dormant_value selftest: validator sets the inactive field / dormant_set fires / "
+          "seed-range both directions / no trigger words all pass")
 
 
 # ======================================================================

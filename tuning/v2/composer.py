@@ -8,7 +8,7 @@ program.py; this module is pure code and fully unit-testable.
 from __future__ import annotations
 import json
 
-from .state import TurnState, Pending, CONFIRM_SUBMIT, queue
+from .state import TurnState, Pending, CONFIRM_SUBMIT, queue, is_active
 from .schema import Field
 from .validator import Outcome, VALID_SET, CORRECTION, CHOICE_NEEDED, CLARIFY
 
@@ -79,6 +79,16 @@ def compose(state: TurnState, prestep, outcomes: list[Outcome]):
             state.form_state[fid] = val
         actions.append({"type": "set_fields",
                         "fields": [{"field_id": fid, "value": val} for fid, val in sets]})
+        # doc-22 dormant-set transparency: a value recorded onto a field whose schema
+        # condition is NOT currently satisfied is DORMANT storage (by design, user ruling
+        # 2026-08-05). Flag it so the reply can note it's recorded-but-not-required.
+        # Directives only — placement/actions unchanged. One per dormant field, in order.
+        seen_dormant = set()
+        for fid, _ in sets:
+            f = state.schema.field(fid)
+            if f is not None and not is_active(f, state.form_state) and fid not in seen_dormant:
+                seen_dormant.add(fid)
+                directives.append(("dormant_set", fid))
     # clear pending if its field just got filled (held pending is never auto-cleared)
     p = state.pending
     if p and not p.held and p.target != CONFIRM_SUBMIT and state.is_filled(p.target):

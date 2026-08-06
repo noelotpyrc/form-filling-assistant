@@ -447,6 +447,22 @@ def s23_replay_slice1b_inventions():
           n == 25 and not survivors, f"n={n} survivors={survivors[:6]}")
 
 
+def s24_dormant_set():
+    # doc-22: a value recorded onto a field whose schema condition is NOT satisfied is
+    # dormant storage -> emit ("dormant_set", fid); placement/actions unchanged.
+    s = state_with({}, pending="english_test_score")   # condition: toefl_required == True (unset)
+    actions, directives = run_turn(s, "oh, my TOEFL score is 100",
+                                   [{"field_id": "english_test_score", "value": "100"}])
+    check("S24 dormant set -> set_fields action + dormant_set directive",
+          "set_fields" in types(actions) and has_dir(directives, "dormant_set"))
+    check("S24 english_test_score was still recorded (placement unchanged)",
+          s.form_state.get("english_test_score") == 100)
+    # an ACTIVE-condition field (unconditional) must NOT be flagged dormant
+    s2 = state_with({}, pending="full_name")
+    _, d2 = run_turn(s2, "I'm Ada Lovelace", [{"field_id": "full_name", "value": "Ada Lovelace"}])
+    check("S24b active-field set emits NO dormant_set", not has_dir(d2, "dormant_set"))
+
+
 def main():
     for fn in [s1_volunteered, s2_elliptical, s4_button_event, s21_unknown_option_label,
                s5_ambiguous_select,
@@ -459,7 +475,7 @@ def main():
                s20a_multi_conjunction, s20b_multi_single, s20c_multi_category,
                s22a_country_alias, s22b_provenance_unsupported, s22c_phone_canonical,
                s22d_date_support_is_coerce_span, s22e_date_support_covers_every_coerce_format,
-               s23_replay_slice1b_inventions]:
+               s23_replay_slice1b_inventions, s24_dormant_set]:
         print(f"\n{fn.__name__}")
         fn()
     passed = sum(1 for _, c, _ in _results if c)

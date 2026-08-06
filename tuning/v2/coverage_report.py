@@ -28,7 +28,8 @@ V2_DIR = Path(__file__).resolve().parent
 RUN_DIR = V2_DIR / "datagen_runs"
 
 # directive kinds compose can emit (doc-18.1) — the reachable set we check for gaps.
-REACHABLE = ["ack", "fix", "clarify", "reask_pending", "ask_target", "submit_blocked", "terminal"]
+REACHABLE = ["ack", "fix", "clarify", "reask_pending", "ask_target", "submit_blocked",
+             "terminal", "dormant_set"]
 NATURAL = "(none/natural)"
 
 

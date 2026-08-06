@@ -241,6 +241,11 @@ def run_baseline(n: int, label: str, eval_set: str, eval_set_name: str = "v1",
     ftypes = field_types(schema)   # type-aware value equality (phone -> digits)
     is_v2, is_v3 = eval_set_name == "v2", eval_set_name == "v3"
     scored, bands, raw, total_cost = [], [], [], 0.0
+    # incremental progress log (doc-21 §5 known gap): every scored obs is appended to a
+    # per-case jsonl as the run goes, so an interruption at 90% loses one case, not the
+    # sweep. The final artifact JSON below is unchanged — this is an additional file.
+    progress_path = OUT_DIR / f"{label}.progress.jsonl"
+    pf = open(progress_path, "w")
     for si in range(n):
         for ci, case in enumerate(cases):
             try:
@@ -259,8 +264,11 @@ def run_baseline(n: int, label: str, eval_set: str, eval_set_name: str = "v1",
             if is_v3:
                 rec["source"] = case.get("source")
             raw.append(rec)
+            pf.write(json.dumps(rec, default=str) + "\n")   # persist immediately (crash safety)
+            pf.flush()
             total_cost += obs["cost"]
         print(f"  sample {si+1}/{n} done  (running ${total_cost:.2f})", flush=True)
+    pf.close()
 
     if is_v3:
         # v3 has ONE headline (every case is a real context, all gated) plus a

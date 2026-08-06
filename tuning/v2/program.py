@@ -90,6 +90,7 @@ def _label(schema: Schema, fid: str) -> str:
 
 def render_guidance(schema: Schema, directives: list) -> str:
     out = []
+    dormant = [p for k, p in directives if k == "dormant_set"]   # combined into ONE line below
     for kind, payload in directives:
         if kind == "ack":
             out.append(f"Acknowledge that the user just did: {payload}.")
@@ -116,10 +117,29 @@ def render_guidance(schema: Schema, directives: list) -> str:
         elif kind == "clarify":
             tgt = _label(schema, payload.field_id) if payload.field_id else "the value just given"
             out.append(f"Ask the user to clarify {tgt}.")
+        elif kind == "dormant_set":
+            pass   # handled once, after the loop (one combined line for the whole turn)
         elif kind == "terminal":
             out.append("All required fields are complete — invite the user to review the summary and submit. "
                        "The summary card is already shown — don't repeat its contents in your reply.")
+    if dormant:
+        # ONE combined, IMPERATIVE caveat for the whole turn (temp-0 teachers paraphrase a
+        # soft "note that…" away; and multiple fields must not push an enumeration).
+        labels = [_label(schema, p) for p in dormant]
+        if len(labels) == 1:
+            out.append(f"You must tell the user explicitly that {labels[0]} isn't required given "
+                       f"their current answers, and that you've recorded it anyway.")
+        else:
+            out.append(f"You must tell the user explicitly that the volunteered details "
+                       f"({_join_labels(labels)}) aren't required given their current answers, "
+                       f"and that you've recorded them anyway.")
     return " ".join(out) if out else "Respond naturally."
+
+
+def _join_labels(labels: list[str]) -> str:
+    if len(labels) == 2:
+        return f"{labels[0]} and {labels[1]}"
+    return ", ".join(labels[:-1]) + f", and {labels[-1]}"
 
 
 # The teacher sometimes emits a malformed DSPy end-marker (e.g. "[[ ## completed ]]",
