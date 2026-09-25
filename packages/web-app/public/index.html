@@ -658,6 +658,7 @@
     }
     .cost-info { align-self: center; font-size: 11px; color: var(--text-muted); padding: 4px 12px; }
 
+    .phone-note { display: none; }
     /* ── Phone layout: chat only, form panel hidden ── */
     @media (max-width: 760px) {
       body { height: 100dvh; }
@@ -666,6 +667,7 @@
       .header .status { display: none; }
       .main-container { flex-direction: column; }
       .form-panel { display: none; }
+      .phone-note { display: block; font-size: 13px; }
       .messages { padding: 14px; gap: 12px; }
       .message { max-width: 94%; }
       .input-area { padding: 10px 12px; }
@@ -689,6 +691,7 @@
         <div class="welcome" id="welcome">
           <h2>Welcome!</h2>
           <p>I help you fill out forms through conversation. Enter your email to get started.</p>
+          <p class="phone-note">Works best on a computer, where the form fills in beside the chat.</p>
           <div class="login-form" id="loginForm">
             <input type="email" id="loginEmail" placeholder="you@example.com"
               onkeydown="if(event.key==='Enter')handleLogin()">
