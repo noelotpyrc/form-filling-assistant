@@ -657,13 +657,14 @@
       padding: 8px 16px; border-radius: 8px; font-size: 13px; border: 1px solid #fecaca;
     }
     .cost-info { align-self: center; font-size: 11px; color: var(--text-muted); padding: 4px 12px; }
+
   </style>
 </head>
 <body>
 
   <div class="header">
     <h1>Form-Filling Assistant</h1>
-    <span class="badge">Powered by Claude</span>
+    <span class="badge" id="backendBadge">Powered by Claude</span>
     <span class="status connected" id="status">Ready</span>
   </div>
 
@@ -761,6 +762,7 @@
       ? new ChatProvider.LocalSFTProvider('/api/generate-local')
       : new ChatProvider.CLIProxyProvider('/api/generate');
     console.log('[chat] backend =', __backend, chatProvider);
+    if (__backend === 'local') document.getElementById('backendBadge').textContent = 'Local model, Qwen3.5-0.8B';
 
     // Conversation history (only consumed by LocalSFTProvider; CLI provider
     // gets multi-turn state via Claude's --resume mechanism).
@@ -926,6 +928,9 @@
       // technical terms (no "draft", "vault", "schema", "set_fields", etc.).
       // The model is a form-filling assistant; it should reason about what
       // the applicant has done, not about the underlying storage system.
+      // The local student model reads an email address in the kickoff as a
+      // value the user just provided and acknowledges it instead of greeting.
+      const kickoffWho = (__backend === 'local') ? 'The applicant' : currentUserEmail;
       if (draftData) {
         // Returning applicant — restore their answers and brief the model on
         // what's already been provided so it doesn't have to ask again.
@@ -935,7 +940,7 @@
           autoStart: true,
           preserveValues: true,
           message:
-            `${currentUserEmail} is continuing their ${meta.name} from a previous visit. ` +
+            `${kickoffWho} is continuing their ${meta.name} from a previous visit. ` +
             `They've already provided: ${summary}. ` +
             `Welcome them back warmly, give them a brief overview of what's been completed and what still needs to be filled in, ` +
             `then ask where they'd like to pick up.`
@@ -947,8 +952,9 @@
         // selectable options.
         selectForm(meta, {
           autoStart: true,
-          message:
-            `${currentUserEmail} is starting a brand-new ${meta.name}. ` +
+          message: (__backend === 'local')
+            ? `Hi, I'd like to start my ${meta.name}.`
+            : `${kickoffWho} is starting a brand-new ${meta.name}. ` +
             `Nothing has been filled in yet, and there's no information from any past applications to reuse. ` +
             `Welcome them warmly and ask which graduate program they'd like to apply to, presenting the available programs as choices they can pick from.`
         });
