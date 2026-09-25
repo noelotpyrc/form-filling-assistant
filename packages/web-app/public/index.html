@@ -658,6 +658,26 @@
     }
     .cost-info { align-self: center; font-size: 11px; color: var(--text-muted); padding: 4px 12px; }
 
+    /* ── Phone layout: stack chat over a short, scrollable form panel ── */
+    @media (max-width: 760px) {
+      body { height: 100dvh; }
+      .header { padding: 10px 14px; gap: 8px; }
+      .header h1 { font-size: 16px; }
+      .header .status { display: none; }
+      .main-container { flex-direction: column; }
+      .form-panel {
+        width: 100%;
+        max-height: 34dvh;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        order: 2;
+      }
+      .messages { padding: 14px; gap: 12px; }
+      .message { max-width: 94%; }
+      .input-area { padding: 10px 12px; }
+      .input-row textarea, .login-form input[type="email"] { font-size: 16px; }
+      .form-card, .login-form input[type="email"], .login-form button { width: min(320px, 100%); }
+    }
   </style>
 </head>
 <body>
